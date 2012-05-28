@@ -37,6 +37,24 @@ class CDVDOverlayCodecCC;
 
 #define VIDEO_PICTURE_QUEUE_SIZE 1
 
+class CDroppingStats
+{
+public:
+  void Reset();
+  void AddOutputDropGain(double pts, double frametime);
+  struct CGain
+  {
+    double gain;
+    double pts;
+  };
+  std::deque<CGain> m_gain;
+  double m_totalGain;
+  double m_lastDecoderPts;
+  double m_lastRenderPts;
+  unsigned int m_lateFrames;
+  unsigned int m_dropRequests;
+};
+
 class CDVDPlayerVideo : public CThread, public IDVDStreamPlayer
 {
 public:
@@ -105,6 +123,7 @@ protected:
 #define EOS_ABORT 1
 #define EOS_DROPPED 2
 #define EOS_VERYLATE 4
+#define EOS_BUFFER_LEVEL 8
 
   void AutoCrop(DVDVideoPicture* pPicture);
   void AutoCrop(DVDVideoPicture *pPicture, RECT &crop);
@@ -131,6 +150,7 @@ protected:
 
   void   ResetFrameRateCalc();
   void   CalcFrameRate();
+  int    CalcDropRequirement(double pts);
 
   double m_fFrameRate;       //framerate of the video currently playing
   bool   m_bCalcFrameRate;  //if we should calculate the framerate from the timestamps
@@ -184,5 +204,7 @@ protected:
   CPullupCorrection m_pullupCorrection;
 
   std::list<DVDMessageListItem> m_packets;
+
+  CDroppingStats m_droppingStats;
 };
 
