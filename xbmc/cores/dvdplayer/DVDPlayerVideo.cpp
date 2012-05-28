@@ -1498,7 +1498,7 @@ void CDVDPlayerVideo::CalcFrameRate()
     frameduration = m_pullupCorrection.GetMinFrameDuration();
 
   if ((frameduration==DVD_NOPTS_VALUE) ||
-      ((g_advancedSettings.m_videoFpsDetect == 1) && ((m_pullupCorrection.GetPatternLength() > 1) && !m_pullupCorrection.VFRDetection())))
+      ((g_advancedSettings.m_videoFpsDetect == 1) && ((m_pullupCorrection.GetPatternLength() > 1) && !m_pullupCorrection.VFRDetection() && !m_bFpsInvalid)))
   {
     //reset the stored framerates if no good framerate was detected
     m_fStableFrameRate = 0.0;
