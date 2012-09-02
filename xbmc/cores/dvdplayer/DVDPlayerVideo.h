@@ -97,7 +97,7 @@ public:
   bool IsStalled() const                            { return m_stalled; }
   bool IsEOS()                                      { return false; }
 
-  double GetCurrentPts()                           { return m_iCurrentPts; }
+  double GetCurrentPts();
 
   double GetOutputDelay(); /* returns the expected delay, from that a packet is put in queue */
   std::string GetPlayerInfo();
