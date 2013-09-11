@@ -255,7 +255,13 @@ bool CAESinkALSA::InitializeHW(AEAudioFormat &format)
   unsigned int sampleRate   = format.m_sampleRate;
   unsigned int channelCount = format.m_channelLayout.Count();
   snd_pcm_hw_params_set_rate_near    (m_pcm, hw_params, &sampleRate, NULL);
-  snd_pcm_hw_params_set_channels_near(m_pcm, hw_params, &channelCount);
+
+  // try to set speficic number of channels directly as some drivers implement 
+  // snd_set_channels_near in a wrong way
+  if (snd_pcm_hw_params_set_channels(m_pcm, hw_params, channelCount) < 0)
+  {
+    snd_pcm_hw_params_set_channels_near(m_pcm, hw_params, &channelCount);
+  }
 
   /* ensure we opened X channels or more */
   if (format.m_channelLayout.Count() > channelCount)
