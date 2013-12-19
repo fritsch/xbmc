@@ -6001,7 +6001,12 @@ msgctxt "#13440"
 msgid "Frame Multi Threaded Decoding (less reliable)"
 msgstr ""
 
-#empty strings from id 13441 to 13499
+#: system/settings/settings.xml
+msgctxt "#13441"
+msgid "Use SW Filter for VAAPI"
+msgstr ""
+
+#empty strings from id 13442 to 13499
 
 #: system/settings/settings.xml
 msgctxt "#13500"
@@ -14750,7 +14755,12 @@ msgctxt "#36428"
 msgid "Record"
 msgstr ""
 
-#empty strings from id 36429 to 36499
+#: system/settings/settings.xml
+msgctxt "#36429"
+msgid "This option enables the deinterlacing methods available for software decoding. It gives the possiblity to use high quality deinterlacers in combination with VAAPI."
+msgstr ""
+
+#empty strings from id 36430 to 36499
 #end reservation
 
 #: system/settings/settings.xml
