@@ -323,4 +323,6 @@ public:
    *
    */
   virtual void SetCodecControl(int flags) {}
+
+  virtual bool IsInterlaced() { return false; }
 };
