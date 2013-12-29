@@ -6006,7 +6006,19 @@ msgctxt "#13441"
 msgid "Use SW Filter for VAAPI"
 msgstr ""
 
-#empty strings from id 13442 to 13499
+msgctxt "#13442"
+msgid "Use Mpeg-2 VAAPI"
+msgstr ""
+
+msgctxt "#13443"
+msgid "Use Mpeg-4 VAAPI"
+msgstr ""
+
+msgctxt "#13444"
+msgid "Use VC-1 VAAPI"
+msgstr ""
+
+#empty strings from id 13445 to 13499
 
 #: system/settings/settings.xml
 msgctxt "#13500"

@@ -287,12 +287,20 @@ bool CDecoder::Open(AVCodecContext *avctx, enum PixelFormat fmt, unsigned int su
   vector<VAProfile> accepted;
   switch (avctx->codec_id) {
     case AV_CODEC_ID_MPEG2VIDEO:
-      accepted.push_back(VAProfileMPEG2Main);
+      if (CSettings::Get().GetBool("videoplayer.usevaapimpeg2"))
+        accepted.push_back(VAProfileMPEG2Main);
+      else
+        return false;
       break;
     case AV_CODEC_ID_MPEG4:
     case AV_CODEC_ID_H263:
-      accepted.push_back(VAProfileMPEG4AdvancedSimple);
+    {
+      if (CSettings::Get().GetBool("videoplayer.usevaapimpeg4"))
+        accepted.push_back(VAProfileMPEG4AdvancedSimple);
+      else
+        return false;
       break;
+    }
     case AV_CODEC_ID_H264:
     {
 #ifdef FF_PROFILE_H264_BASELINE
@@ -313,11 +321,21 @@ bool CDecoder::Open(AVCodecContext *avctx, enum PixelFormat fmt, unsigned int su
       break;
     }
     case AV_CODEC_ID_WMV3:
-      accepted.push_back(VAProfileVC1Main);
+    {
+      if (CSettings::Get().GetBool("videoplayer.usevaapivc1"))
+        accepted.push_back(VAProfileVC1Main);
+      else
+       return false;
       break;
+    }
     case AV_CODEC_ID_VC1:
-      accepted.push_back(VAProfileVC1Advanced);
+    {
+      if (CSettings::Get().GetBool("videoplayer.usevaapivc1"))
+        accepted.push_back(VAProfileVC1Advanced);
+      else
+        return false;
       break;
+    }
     default:
       return false;
   }
