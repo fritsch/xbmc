@@ -786,6 +786,7 @@ unsigned int CActiveAESink::OutputSamples(CSampleBuffer* samples)
       m_stats->UpdateSinkDelay(0, samples->pool ? maxFrames : 0);
       return 0;
     }
+    retry=0;
     frames -= written;
     buffer += written*m_sinkFormat.m_frameSize;
     sinkDelay = m_sink->GetDelay();
