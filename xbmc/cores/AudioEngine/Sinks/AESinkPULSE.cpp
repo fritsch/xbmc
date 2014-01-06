@@ -193,18 +193,22 @@ struct SinkInfoStruct
 {
   AEDeviceInfoList *list;
   bool isHWDevice;
+  bool error;
   pa_threaded_mainloop *mainloop;
 };
 
 static void SinkInfoCallback(pa_context *c, const pa_sink_info *i, int eol, void *userdata)
 {
-	SinkInfoStruct *sinkStruct = (SinkInfoStruct *)userdata;
-	if(eol)
-	 return;
-	if(i && i->flags && (i->flags & PA_SINK_HARDWARE))
-	  sinkStruct->isHWDevice = true;
-
-	pa_threaded_mainloop_signal(sinkStruct->mainloop, 0);
+  SinkInfoStruct *sinkStruct = (SinkInfoStruct *)userdata;
+  if(eol)
+  {
+    sinkStruct->error = true;
+    pa_threaded_mainloop_signal(sinkStruct->mainloop, 0); 
+    return;
+  }
+  if (i && i->flags && (i->flags & PA_SINK_HARDWARE))
+    sinkStruct->isHWDevice = true;
+    pa_threaded_mainloop_signal(sinkStruct->mainloop, 0);
 }
 
 static AEChannel PAChannelToAEChannel(pa_channel_position_t channel)
@@ -257,10 +261,14 @@ static CAEChannelInfo PAChannelToAEChannelMap(pa_channel_map channels)
 static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eol, void *userdata)
 {
 
-  if(eol)
-    return;
-
   SinkInfoStruct *sinkStruct = (SinkInfoStruct *)userdata;
+  
+  if(eol)
+  {
+    sinkStruct->error = true;
+    pa_threaded_mainloop_signal(sinkStruct->mainloop, 0);
+    return;
+  }
 
   if(sinkStruct && sinkStruct->list->empty())
   {
@@ -419,10 +427,20 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   SinkInfoStruct sinkStruct;
   sinkStruct.mainloop = m_MainLoop;
   sinkStruct.isHWDevice = false;
-  WaitForOperation(pa_context_get_sink_info_by_name(m_Context, isDefaultDevice ? NULL : device.c_str(),SinkInfoCallback, &sinkStruct), m_MainLoop, "Get Sink Info");
+  sinkStruct.error = false;
+  if (!isDefaultDevice)
+    WaitForOperation(pa_context_get_sink_info_by_name(m_Context, device.c_str(),SinkInfoCallback, &sinkStruct), m_MainLoop, "Get Sink Info");
+  
+  if(sinkStruct.error)
+  {
+    // device not found, fallback to default device
+    CLog::Log(LOGERROR, "PulseAudio: Failed to open %s output device - will use default device", device.c_str());
+    sinkStruct.error = false;
+    isDefaultDevice = true;
+  }
   // 200ms max latency
   // 50ms min packet size
-  if(sinkStruct.isHWDevice)
+  if(sinkStruct.isHWDevice || isDefaultDevice)
   {
     unsigned int latency = m_BytesPerSecond / 5;
     unsigned int process_time = latency / 4;
