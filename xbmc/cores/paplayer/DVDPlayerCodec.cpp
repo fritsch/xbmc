@@ -24,6 +24,7 @@
 #include "cores/dvdplayer/DVDInputStreams/DVDFactoryInputStream.h"
 #include "cores/dvdplayer/DVDDemuxers/DVDFactoryDemuxer.h"
 #include "cores/dvdplayer/DVDDemuxers/DVDDemuxUtils.h"
+#include "cores/dvdplayer/DVDDemuxers/DVDDemuxFFmpeg.h"
 #include "cores/dvdplayer/DVDStreamInfo.h"
 #include "cores/dvdplayer/DVDCodecs/DVDFactoryCodec.h"
 #include "music/tags/TagLoaderTagLib.h"
@@ -262,7 +263,11 @@ int64_t DVDPlayerCodec::Seek(int64_t iSeekTime)
     CDVDDemuxUtils::FreeDemuxPacket(m_pPacket);
   m_pPacket = NULL;
 
-  m_pDemuxer->SeekTime((int)iSeekTime, false);
+  CDVDDemuxFFmpeg *ffmpegDemuxer = dynamic_cast<CDVDDemuxFFmpeg*>(m_pDemuxer);
+  if (ffmpegDemuxer)
+    ffmpegDemuxer->SeekByte(av_rescale(iSeekTime, m_pInputStream->GetLength(), m_TotalTime));
+  else
+    m_pDemuxer->SeekTime((int)iSeekTime, false);
   m_pAudioCodec->Reset();
 
   m_decoded = NULL;
