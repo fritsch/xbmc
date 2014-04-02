@@ -801,9 +801,7 @@ bool CAESinkDARWINIOS::HasVolume()
 
 void  CAESinkDARWINIOS::SetVolume(float scale)
 {
-  // CoreAudio uses fixed steps, reverse scale back to percent
-  float gain = CAEUtil::ScaleToGain(scale);
-  m_volume = CAEUtil::GainToPercent(gain);
+  m_volume = scale;
   m_volume_changed = true;
 }
 
