@@ -338,6 +338,7 @@ protected:
   std::vector<CActiveAESound*> m_sounds;
 
   float m_volume;
+  float m_volumeScaled;
   bool m_muted;
   bool m_sinkHasVolume;
 
