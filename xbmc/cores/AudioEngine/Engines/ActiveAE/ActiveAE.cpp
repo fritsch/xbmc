@@ -227,6 +227,8 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
         case CActiveAEControlProtocol::VOLUME:
           m_volume = *(float*)msg->data;
           m_volumeScaled = CAEUtil::GainToScale(CAEUtil::PercentToGain(m_volume));
+          if (m_volumeScaled >= 0.99f)
+            m_volumeScaled = 1.0f;
           if (m_sinkHasVolume)
             m_sink.m_controlPort.SendOutMessage(CSinkControlProtocol::VOLUME, &m_volume, sizeof(float));
           return;
