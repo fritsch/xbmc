@@ -671,7 +671,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
       {
         CLog::Log(LOGDEBUG, "PulseAudio: Stream is muted - perhaps was a user wish - if volume is changed we unmute");
       }
-    }   
+    } 
   }
 
   const pa_buffer_attr *a;
