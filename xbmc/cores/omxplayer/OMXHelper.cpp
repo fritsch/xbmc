@@ -23,6 +23,7 @@
 #ifdef HAS_OMXPLAYER
 
 #include "DVDPlayer.h"
+#include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/MediaSettings.h"
 #include "DVDInputStreams/DVDInputStream.h"
@@ -140,7 +141,8 @@ bool OMXDoProcessing(struct SOmxPlayerState &m_OmxPlayerState, int m_playSpeed, 
     m_OmxPlayerState.video_fifo = (int)(100.0*(m_dvdPlayerVideo->GetDecoderBufferSize()-m_dvdPlayerVideo->GetDecoderFreeSpace())/m_dvdPlayerVideo->GetDecoderBufferSize());
     m_OmxPlayerState.audio_fifo = (int)(100.0*audio_fifo/m_dvdPlayerAudio->GetCacheTotal());
 
-    #ifdef _DEBUG
+  if (g_advancedSettings.CanLogComponent(LOGOMXPLAYER))
+  {
     static unsigned count;
     if ((count++ & 7) == 0)
     {
@@ -160,7 +162,7 @@ bool OMXDoProcessing(struct SOmxPlayerState &m_OmxPlayerState, int m_playSpeed, 
       vc_gencmd(response, sizeof response, "render_bar 7 audio_queue %d %d %d %d",
             m_dvdPlayerAudio->GetLevel(), 0, 0, 100);
     }
-    #endif
+  }
     if (audio_pts != DVD_NOPTS_VALUE)
     {
       audio_fifo_low = m_HasAudio && audio_fifo < threshold;
@@ -176,15 +178,15 @@ bool OMXDoProcessing(struct SOmxPlayerState &m_OmxPlayerState, int m_playSpeed, 
     if (!m_HasVideo && m_HasAudio)
       video_fifo_high = true;
 
-    #ifdef _DEBUG
+  if (g_advancedSettings.CanLogComponent(LOGOMXPLAYER))
+  {
     CLog::Log(LOGDEBUG, "%s::%s M:%.6f-%.6f (A:%.6f V:%.6f) PEF:%d%d%d S:%.2f A:%.2f V:%.2f/T:%.2f (A:%d%d V:%d%d) A:%d%% V:%d%% (%.2f,%.2f)", "CDVDPlayer", __FUNCTION__,
       m_OmxPlayerState.stamp*1e-6, m_OmxPlayerState.av_clock.OMXClockAdjustment()*1e-6, audio_pts*1e-6, video_pts*1e-6,
       m_OmxPlayerState.av_clock.OMXIsPaused(), m_OmxPlayerState.bOmxSentEOFs, not_accepts_data, m_playSpeed * (1.0f/DVD_PLAYSPEED_NORMAL),
       audio_pts == DVD_NOPTS_VALUE ? 0.0:audio_fifo, video_pts == DVD_NOPTS_VALUE ? 0.0:video_fifo, m_OmxPlayerState.threshold,
       audio_fifo_low, audio_fifo_high, video_fifo_low, video_fifo_high,
       m_dvdPlayerAudio->GetLevel(), m_dvdPlayerVideo->GetLevel(), m_dvdPlayerAudio->GetDelay(), (float)m_dvdPlayerAudio->GetCacheTotal());
-    #endif
-
+  }
     if(!m_Pause && (m_OmxPlayerState.bOmxSentEOFs || not_accepts_data || (audio_fifo_high && video_fifo_high) || m_playSpeed != DVD_PLAYSPEED_NORMAL))
     {
       if (m_OmxPlayerState.av_clock.OMXIsPaused())

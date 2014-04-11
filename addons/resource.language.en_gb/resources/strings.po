@@ -2915,6 +2915,11 @@ msgctxt "#680"
 msgid "Verbose logging for VIDEO component"
 msgstr ""
 
+#: xbmc/settings/AdvancedSettings.cpp
+msgctxt "#697"
+msgid "Verbose logging for OMXPLAYER"
+msgstr ""
+
 #empty strings from id 681 to 699
 
 msgctxt "#700"
