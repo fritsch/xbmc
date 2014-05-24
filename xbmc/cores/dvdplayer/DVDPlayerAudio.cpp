@@ -580,9 +580,6 @@ void CDVDPlayerAudio::Process()
       m_messageParent.Put(new CDVDMsgInt(CDVDMsg::PLAYER_STARTED, DVDPLAYER_AUDIO));
     }
 
-    if( m_dvdAudio.GetPlayingPts() == DVD_NOPTS_VALUE )
-      continue;
-
     if( m_speed != DVD_PLAYSPEED_NORMAL )
       continue;
 

@@ -282,17 +282,6 @@ void CDVDAudio::Resume()
   if (m_pAudioStream) m_pAudioStream->Resume();
 }
 
-double CDVDAudio::GetDelay()
-{
-  CSingleLock lock (m_critSection);
-
-  double delay = 0.0;
-  if(m_pAudioStream)
-    delay = m_pAudioStream->GetDelay();
-
-  return delay * DVD_TIME_BASE;
-}
-
 void CDVDAudio::Flush()
 {
   CSingleLock lock (m_critSection);
@@ -340,17 +329,8 @@ double CDVDAudio::GetCacheTime()
   return delay;
 }
 
-double CDVDAudio::GetCacheTotal()
-{
-  CSingleLock lock (m_critSection);
-  if(!m_pAudioStream)
-    return 0.0;
-  return m_pAudioStream->GetCacheTotal();
-}
-
 double CDVDAudio::GetPlayingPts()
 {
-  CSingleLock lock (m_critSection);
   if(!m_pAudioStream)
     return DVD_NOPTS_VALUE;
 
@@ -363,7 +343,6 @@ double CDVDAudio::GetPlayingPts()
 
 void CDVDAudio::Discontinuity()
 {
-  CSingleLock lock (m_critSection);
   if(!m_pAudioStream)
     return;
 

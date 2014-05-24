@@ -72,11 +72,9 @@ public:
   bool IsValidFormat(const DVDAudioFrame &audioframe);
   void Destroy();
   unsigned int AddPackets(const DVDAudioFrame &audioframe);
-  double GetDelay(); // returns the time it takes to play a packet if we add one at this time
   double GetPlayingPts();
   void   SetPlayingPts(double pts);
   double GetCacheTime();  // returns total amount of data cached in audio output at this time
-  double GetCacheTotal(); // returns total amount the audio device can buffer
   void Flush();
   void Finish();
   void Drain();
