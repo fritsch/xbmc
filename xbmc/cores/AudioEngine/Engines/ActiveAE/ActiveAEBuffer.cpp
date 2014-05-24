@@ -44,7 +44,8 @@ CSoundPacket::~CSoundPacket()
 CSampleBuffer::CSampleBuffer() : pkt(NULL), pool(NULL)
 {
   refCount = 0;
-  timestamp = 0.0;
+  timestamp = 0;
+  clockId = -1;
 }
 
 CSampleBuffer::~CSampleBuffer()
@@ -231,7 +232,10 @@ bool CActiveAEBufferPoolResample::ResampleBuffers(double timestamp)
       in = m_inputSamples.front();
       m_inputSamples.pop_front();
       if (timestamp)
+      {
         in->timestamp = timestamp;
+        in->clockId = -1;
+      }
       m_outputSamples.push_back(in);
       busy = true;
     }
@@ -290,11 +294,15 @@ bool CActiveAEBufferPoolResample::ResampleBuffers(double timestamp)
       if (in)
       {
         if (!timestamp)
+        {
           m_lastSamplePts = in->timestamp;
+          m_procSample->clockId = in->clockId;
+        }
         else
         {
           m_lastSamplePts = timestamp;
           in->pkt_start_offset = 0;
+          m_procSample->clockId = -1;
         }
 
         // pts of last sample we added to the buffer

@@ -359,7 +359,12 @@ int CDVDPlayerAudio::DecodeFrame(DVDAudioFrame &audioframe)
 
       m_ptsInput.Flush();
       if (pMsgGeneralResync->m_clock)
-        m_pClock->Discontinuity(m_dvdAudio.GetPlayingPts());
+      {
+        if (m_dvdAudio.GetPlayingPts() != DVD_NOPTS_VALUE)
+          m_pClock->Discontinuity(m_dvdAudio.GetPlayingPts());
+        else
+          m_pClock->Discontinuity(m_audioClock);
+      }
     }
     else if (pMsg->IsType(CDVDMsg::GENERAL_RESET))
     {
@@ -634,6 +639,7 @@ void CDVDPlayerAudio::HandleSyncError(double duration)
     m_errors.Flush();
     m_error = 0;
     m_syncclock = false;
+    m_dvdAudio.Discontinuity();
 
     return;
   }
@@ -664,7 +670,8 @@ void CDVDPlayerAudio::HandleSyncError(double duration)
         error = m_error;
       }
 
-      m_pClock->Update(clock+error, absolute, limit - 0.001, "CDVDPlayerAudio::HandleSyncError2");
+      if (m_pClock->Update(clock+error, absolute, limit - 0.001, "CDVDPlayerAudio::HandleSyncError2"))
+        m_dvdAudio.Discontinuity();
     }
     else if (m_synctype == SYNC_RESAMPLE)
     {

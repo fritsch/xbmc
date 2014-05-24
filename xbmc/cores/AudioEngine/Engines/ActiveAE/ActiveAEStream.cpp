@@ -217,6 +217,7 @@ unsigned int CActiveAEStream::AddData(uint8_t* const *data, unsigned int offset,
       if (!copied)
       {
         m_currentBuffer->timestamp = pts;
+        m_currentBuffer->clockId = m_clockId;
         m_currentBuffer->pkt_start_offset = m_currentBuffer->pkt->nb_samples;
       }
 
@@ -277,6 +278,11 @@ double CActiveAEStream::GetDelay()
 int64_t CActiveAEStream::GetPlayingPTS()
 {
   return AE.GetPlayingPTS();
+}
+
+void CActiveAEStream::Discontinuity()
+{
+  m_clockId = AE.Discontinuity();
 }
 
 bool CActiveAEStream::IsBuffering()

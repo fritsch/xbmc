@@ -80,6 +80,7 @@ public:
   void Flush();
   void Finish();
   void Drain();
+  void Discontinuity();
 
   void SetSpeed(int iSpeed);
   void SetResampleRatio(double ratio);

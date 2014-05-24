@@ -233,5 +233,10 @@ public:
    * Slave a stream to resume when this stream has drained
    */
   virtual void RegisterSlave(IAEStream *stream) = 0;
+
+  /**
+   * Sginal a clock change
+   */
+  virtual void Discontinuity() = 0;
 };
 

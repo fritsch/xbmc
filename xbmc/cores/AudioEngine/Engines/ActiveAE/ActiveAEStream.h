@@ -78,6 +78,7 @@ public:
   virtual void FadeVolume(float from, float to, unsigned int time);
   virtual bool IsFading();
   virtual void RegisterSlave(IAEStream *stream);
+  virtual void Discontinuity();
 
 protected:
 
@@ -100,6 +101,7 @@ protected:
   CSampleBuffer *m_currentBuffer;
   CSoundPacket *m_remapBuffer;
   CActiveAEResample *m_remapper;
+  int m_clockId;
 
   // only accessed by engine
   CActiveAEBufferPool *m_inputBuffers;

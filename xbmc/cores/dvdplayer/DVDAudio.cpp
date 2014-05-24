@@ -360,3 +360,12 @@ double CDVDAudio::GetPlayingPts()
 
   return DVD_MSEC_TO_TIME(pts);
 }
+
+void CDVDAudio::Discontinuity()
+{
+  CSingleLock lock (m_critSection);
+  if(!m_pAudioStream)
+    return;
+
+  m_pAudioStream->Discontinuity();
+}

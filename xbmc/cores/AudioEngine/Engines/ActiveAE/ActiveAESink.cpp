@@ -862,7 +862,7 @@ unsigned int CActiveAESink::OutputSamples(CSampleBuffer* samples)
       if (pts < 0)
         pts = 0;
     }
-    m_stats->UpdateSinkDelay(sinkDelay, samples->pool ? written : 0, pts);
+    m_stats->UpdateSinkDelay(sinkDelay, samples->pool ? written : 0, pts, samples->clockId);
   }
   return sinkDelay*1000;
 }
