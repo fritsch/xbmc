@@ -86,11 +86,8 @@ public:
 
   IAEStream *m_pAudioStream;
 protected:
-  CPTSOutputQueue m_time;
-  unsigned int AddPacketsRenderer(unsigned char* data, unsigned int len, CSingleLock &lock);
-  uint8_t*     m_pBuffer; // should be [m_dwPacketSize]
-  unsigned int m_iBufferSize;
-  unsigned int m_dwPacketSize;
+  unsigned int AddPacketsRenderer(uint8_t* const *data, unsigned int frames, double pts, CSingleLock &lock);
+  unsigned int m_frameSize;
   CCriticalSection m_critSection;
 
   int m_iBitrate;
