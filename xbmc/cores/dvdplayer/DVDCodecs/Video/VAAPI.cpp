@@ -519,6 +519,8 @@ int CDecoder::Decode(AVCodecContext* avctx, AVFrame* frame)
       m_surfaces_proc.push_back(pic);
       if (m_surfaces_proc.size() < m_renderbuffers_count)
         return VC_BUFFER;
+
+      return VC_PICTURE;
     }
 
     return VC_BUFFER | VC_PICTURE;
