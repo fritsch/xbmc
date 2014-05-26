@@ -517,7 +517,7 @@ int CDecoder::Decode(AVCodecContext* avctx, AVFrame* frame)
       av_frame_ref(&pic.frame, frame);
       pic.surface = *it;
       m_surfaces_proc.push_back(pic);
-      if (m_surfaces_proc.size() < m_renderbuffers_count)
+      if (m_surfaces_proc.size() < m_renderbuffers_count + 1)
         return VC_BUFFER;
 
       return VC_PICTURE;
@@ -526,7 +526,15 @@ int CDecoder::Decode(AVCodecContext* avctx, AVFrame* frame)
     return VC_BUFFER | VC_PICTURE;
   }
   else
-    return VC_BUFFER;
+  {
+    if (m_use_filter)
+    {
+      if (m_surfaces_proc.size() < m_renderbuffers_count + 1)
+        return VC_BUFFER;
+    }
+    else
+      return VC_BUFFER;
+  }
 }
 
 bool CDecoder::GetPicture(AVCodecContext* avctx, AVFrame* frame, DVDVideoPicture* picture)
