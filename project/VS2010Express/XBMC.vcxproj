@@ -2616,7 +2616,6 @@
     <ClInclude Include="..\..\lib\DllSidplay2.h" />
     <ClInclude Include="..\..\lib\DllStSound.h" />
     <ClInclude Include="..\..\lib\DllTimidity.h" />
-    <ClInclude Include="..\..\lib\DllVorbisfile.h" />
     <ClInclude Include="..\..\xbmc\cores\paplayer\DVDPlayerCodec.h" />
     <ClInclude Include="..\..\xbmc\cores\paplayer\ICodec.h" />
     <ClInclude Include="..\..\xbmc\cores\paplayer\ModplugCodec.h" />

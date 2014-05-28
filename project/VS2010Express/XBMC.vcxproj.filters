@@ -3448,9 +3448,6 @@
     <ClInclude Include="..\..\lib\DllTimidity.h">
       <Filter>cores\paplayer</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\lib\DllVorbisfile.h">
-      <Filter>cores\paplayer</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\xbmc\cores\paplayer\DVDPlayerCodec.h">
       <Filter>cores\paplayer</Filter>
     </ClInclude>
