@@ -5339,7 +5339,6 @@
 		E38E15FB0D25F9FA00618676 /* DllSidplay2.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DllSidplay2.h; sourceTree = "<group>"; };
 		E38E15FC0D25F9FA00618676 /* DllStSound.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DllStSound.h; sourceTree = "<group>"; };
 		E38E15FD0D25F9FA00618676 /* DllTimidity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DllTimidity.h; sourceTree = "<group>"; };
-		E38E15FE0D25F9FA00618676 /* DllVorbisfile.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DllVorbisfile.h; sourceTree = "<group>"; };
 		E38E160E0D25F9FA00618676 /* ICodec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ICodec.h; sourceTree = "<group>"; };
 		E38E161B0D25F9FA00618676 /* NSFCodec.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NSFCodec.cpp; sourceTree = "<group>"; };
 		E38E161C0D25F9FA00618676 /* NSFCodec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NSFCodec.h; sourceTree = "<group>"; };
@@ -9441,7 +9440,6 @@
 				E38E15FB0D25F9FA00618676 /* DllSidplay2.h */,
 				E38E15FC0D25F9FA00618676 /* DllStSound.h */,
 				E38E15FD0D25F9FA00618676 /* DllTimidity.h */,
-				E38E15FE0D25F9FA00618676 /* DllVorbisfile.h */,
 			);
 			path = lib;
 			sourceTree = "<group>";
