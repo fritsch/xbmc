@@ -925,7 +925,7 @@ int CXBMCRenderManager::AddVideoPicture(DVDVideoPicture& pic)
 #endif
 #ifdef HAVE_LIBVA
   else if(pic.format == RENDER_FMT_VAAPI)
-    m_pRenderer->AddProcessor(*pic.vaapi, index);
+    m_pRenderer->AddProcessor(pic.vaapi, index);
 #endif
 #ifdef HAS_LIBSTAGEFRIGHT
   else if(pic.format == RENDER_FMT_EGLIMG)
