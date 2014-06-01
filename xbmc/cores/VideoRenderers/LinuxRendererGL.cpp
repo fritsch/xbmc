@@ -149,9 +149,6 @@ CLinuxRendererGL::YUVBUFFER::YUVBUFFER()
 
 CLinuxRendererGL::YUVBUFFER::~YUVBUFFER()
 {
-#ifdef HAVE_LIBVA
-  delete &vaapi;
-#endif
 #ifdef TARGET_DARWIN_OSX
   if (cvBufferRef)
     CVBufferRelease(cvBufferRef);

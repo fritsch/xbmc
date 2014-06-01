@@ -21,6 +21,7 @@
 #pragma once
 
 #include "system_gl.h"
+#include <GL/glx.h>
 
 #include "DVDVideoCodec.h"
 #include "DVDVideoCodecFFmpeg.h"
@@ -128,6 +129,7 @@ struct CVaapiDecodedPicture
 {
   DVDVideoPicture DVDPic;
   VASurfaceID videoSurface;
+  int index;
 };
 
 /**
@@ -137,7 +139,11 @@ struct CVaapiProcessedPicture
 {
   DVDVideoPicture DVDPic;
   VASurfaceID videoSurface;
-  VASurfaceID outputSurface;
+  enum
+  {
+    VPP_SRC,
+    SKIP_SRC
+  }source;
   bool crop;
 };
 
@@ -227,12 +233,20 @@ public:
   };
 };
 
+struct SDiMethods
+{
+  EINTERLACEMETHOD diMethods[8];
+  int numDiMethods;
+};
+
 /**
  * COutput is embedded in CDecoder and embeds vpp
  * The class has its own OpenGl context which is shared with render thread
  * COuput generated ready to render textures and passes them back to
  * CDecoder
  */
+class CPostproc;
+
 class COutput : private CThread
 {
 public:
@@ -249,11 +263,12 @@ protected:
   void StateMachine(int signal, Protocol *port, Message *msg);
   bool HasWork();
   void InitCycle();
-  CVaapiRenderPicture* ProcessPicture();
-  void FiniCycle();
+  CVaapiRenderPicture* ProcessPicture(CVaapiProcessedPicture &pic);
   void QueueReturnPicture(CVaapiRenderPicture *pic);
   void ProcessReturnPicture(CVaapiRenderPicture *pic);
   bool ProcessSyncPicture();
+  void ReleaseProcessedPicture(CVaapiProcessedPicture &pic);
+  void DropVppProcessedPictures();
   bool Init();
   bool Uninit();
   void Flush();
@@ -280,8 +295,12 @@ protected:
   GLXWindow m_glWindow;
   Pixmap    m_pixmap;
   GLXPixmap m_glPixmap;
-  CVaapiDecodedPicture m_processPicture;
+  CVaapiDecodedPicture m_currentPicture;
   GLenum m_textureTarget;
+  CPostproc *m_pp;
+  int m_steps;
+  SDiMethods m_diMethods;
+  EINTERLACEMETHOD m_currentDiMethod;
 };
 
 //-----------------------------------------------------------------------------
@@ -301,6 +320,7 @@ public:
   VASurfaceID RemoveNext(bool skiprender = false);
   void Reset();
   int Size();
+  bool HasFree();
 protected:
   std::map<VASurfaceID, int> m_state;
   std::list<VASurfaceID> m_freeSurfaces;
@@ -314,12 +334,13 @@ protected:
 class CVAAPIContext
 {
 public:
-  static bool EnsureContext(CVAAPIContext **ctx);
-  void Release();
+  static bool EnsureContext(CVAAPIContext **ctx, CDecoder *decoder);
+  void Release(CDecoder *decoder);
   VADisplay GetDisplay();
   bool SupportsProfile(VAProfile profile);
   VAConfigAttrib GetAttrib(VAProfile profile);
   VAConfigID CreateConfig(VAProfile profile, VAConfigAttrib attrib);
+  static void FFReleaseBuffer(void *opaque, uint8_t *data);
 private:
   CVAAPIContext();
   void Close();
@@ -327,6 +348,7 @@ private:
   void DestroyContext();
   void QueryCaps();
   bool CheckSuccess(VAStatus status);
+  bool IsValidDecoder(CDecoder *decoder);
   static CVAAPIContext *m_context;
   static CCriticalSection m_section;
   static Display *m_X11dpy;
@@ -336,6 +358,7 @@ private:
   VADisplayAttribute *m_attributes;
   int m_profileCount;
   VAProfile *m_profiles;
+  std::vector<CDecoder*> m_decoders;
 };
 
 /**
@@ -366,7 +389,7 @@ public:
   bool Supports(EINTERLACEMETHOD method);
   EINTERLACEMETHOD AutoInterlaceMethod();
 
-  static void FFReleaseBuffer(void *opaque, uint8_t *data);
+  void FFReleaseBuffer(uint8_t *data);
   static int FFGetBuffer(AVCodecContext *avctx, AVFrame *pic, int flags);
 
 protected:
@@ -400,6 +423,70 @@ protected:
   CVaapiRenderPicture *m_presentPicture;
 
   int m_codecControl;
+  std::vector<EINTERLACEMETHOD> m_diMethods;
+};
+
+//-----------------------------------------------------------------------------
+// Postprocessing
+//-----------------------------------------------------------------------------
+
+/**
+ *  Base class
+ */
+class CPostproc
+{
+public:
+  virtual ~CPostproc() {};
+  virtual bool PreInit(CVaapiConfig &config, SDiMethods *methods = NULL) = 0;
+  virtual bool Init(EINTERLACEMETHOD method) = 0;
+  virtual bool AddPicture(CVaapiDecodedPicture &inPic) = 0;
+  virtual bool Filter(CVaapiProcessedPicture &outPic) = 0;
+  virtual void ClearRef(VASurfaceID surf) = 0;
+protected:
+  CVaapiConfig m_config;
+  int m_step;
+};
+
+/**
+ *  skip post processing
+ */
+class CSkipPostproc : public CPostproc
+{
+public:
+  bool PreInit(CVaapiConfig &config, SDiMethods *methods = NULL);
+  bool Init(EINTERLACEMETHOD method);
+  bool AddPicture(CVaapiDecodedPicture &inPic);
+  bool Filter(CVaapiProcessedPicture &outPic);
+  void ClearRef(VASurfaceID surf);
+protected:
+  CVaapiDecodedPicture m_pic;
+};
+
+/**
+ *  VAAPI post processing
+ */
+class CVppPostproc : public CPostproc
+{
+public:
+  CVppPostproc();
+  virtual ~CVppPostproc();
+  bool PreInit(CVaapiConfig &config, SDiMethods *methods = NULL);
+  bool Init(EINTERLACEMETHOD method);
+  bool AddPicture(CVaapiDecodedPicture &inPic);
+  bool Filter(CVaapiProcessedPicture &outPic);
+  void ClearRef(VASurfaceID surf);
+protected:
+  bool CheckSuccess(VAStatus status);
+  void Dispose();
+  void Advance();
+  VAConfigID m_configId;
+  VAContextID m_contextId;
+  CVideoSurfaces m_videoSurfaces;
+  std::deque<CVaapiDecodedPicture> m_decodedPics;
+  VABufferID m_filter;
+  int m_forwardRefs, m_backwardRefs;
+  int m_currentIdx;
+  int m_frameCount;
 };
 
 }
