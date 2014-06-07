@@ -402,9 +402,6 @@
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Audio\DVDAudioCodecFFmpeg.cpp">
       <Filter>cores\dvdplayer\DVDCodecs\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Audio\DVDAudioCodecLPcm.cpp">
-      <Filter>cores\dvdplayer\DVDCodecs\Audio</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Audio\DVDAudioCodecPcm.cpp">
       <Filter>cores\dvdplayer\DVDCodecs\Audio</Filter>
     </ClCompile>

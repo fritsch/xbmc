@@ -1461,7 +1461,6 @@
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\DVDCodecUtils.cpp" />
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\DVDFactoryCodec.cpp" />
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Audio\DVDAudioCodecFFmpeg.cpp" />
-    <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Audio\DVDAudioCodecLPcm.cpp" />
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Audio\DVDAudioCodecPcm.cpp" />
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Video\DVDVideoCodecCrystalHD.cpp" />
     <ClCompile Include="..\..\xbmc\cores\dvdplayer\DVDCodecs\Video\DVDVideoCodecFFmpeg.cpp" />
