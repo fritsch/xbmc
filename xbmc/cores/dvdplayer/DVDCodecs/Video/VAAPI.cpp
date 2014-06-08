@@ -449,6 +449,8 @@ bool CDecoder::Open(AVCodecContext* avctx, const enum PixelFormat fmt, unsigned 
   m_vaapiConfig.outHeight = avctx->height;
   m_vaapiConfig.surfaceWidth = avctx->width;
   m_vaapiConfig.surfaceHeight = avctx->height;
+  m_vaapiConfig.aspectNum = avctx->sample_aspect_ratio.num;
+  m_vaapiConfig.aspectNum = avctx->sample_aspect_ratio.den;
   m_vaapiConfig.numRenderBuffers = surfaces;
   m_vaapiConfig.dpy = m_vaapiConfig.context->GetDisplay();
   m_decoderThread = CThread::GetCurrentThreadId();
@@ -2565,6 +2567,140 @@ bool CVppPostproc::CheckSuccess(VAStatus status)
     CLog::Log(LOGERROR, "VAAPI - Error: %s(%d)", vaErrorStr(status), status);
     return false;
   }
+  return true;
+}
+
+//-----------------------------------------------------------------------------
+// FFmpeg Postprocessing
+//-----------------------------------------------------------------------------
+
+#define CACHED_BUFFER_SIZE 4096
+
+CFFmpegPostproc::CFFmpegPostproc()
+{
+  m_cache = NULL;
+}
+
+CFFmpegPostproc::~CFFmpegPostproc()
+{
+  _aligned_free(m_cache);
+  m_dllSSE4.Unload();
+}
+
+bool CFFmpegPostproc::PreInit(CVaapiConfig &config, SDiMethods *methods)
+{
+  m_config = config;
+  bool use_filter = true;
+  if (!m_dllSSE4.Load())
+  {
+    CLog::Log(LOGNOTICE,"VAAPI::SupportsFilter failed loading sse4 lib");
+    return false;
+  }
+  VAImage image;
+  VASurfaceID surface = config.videoSurfaces->GetAtIndex(0);
+  VAStatus status = vaDeriveImage(config.dpy, surface, &image);
+  if (status != VA_STATUS_SUCCESS)
+  {
+    CLog::Log(LOGNOTICE,"VAAPI::SupportsFilter vaDeriveImage not supported");
+    use_filter = false;
+  }
+  if (image.format.fourcc != VA_FOURCC_NV12)
+  {
+    CLog::Log(LOGNOTICE,"VAAPI::SupportsFilter image format not NV12");
+    use_filter = false;
+  }
+  if ((image.pitches[0] % 64) || (image.pitches[1] % 64))
+  {
+    CLog::Log(LOGNOTICE,"VAAPI::SupportsFilter patches no multiple of 64");
+    use_filter = false;
+  }
+  vaDestroyImage(config.dpy,image.image_id);
+
+  if (use_filter)
+  {
+    m_cache = (uint8_t*)_aligned_malloc(CACHED_BUFFER_SIZE, 64);
+    methods->diMethods[methods->numDiMethods++] = VS_INTERLACEMETHOD_DEINTERLACE;
+  }
+  return use_filter;
+}
+
+bool CFFmpegPostproc::Init(EINTERLACEMETHOD method)
+{
+  if (!(m_pFilterGraph = avfilter_graph_alloc()))
+  {
+    CLog::Log(LOGERROR, "CFFmpegPostproc::Init - unable to alloc filter graph");
+    return false;
+  }
+
+  AVFilter* srcFilter = avfilter_get_by_name("buffer");
+  AVFilter* outFilter = avfilter_get_by_name("buffersink");
+
+  CStdString args = StringUtils::Format("%d:%d:%d:%d:%d:%d:%d",
+                                        m_config.vidWidth,
+                                        m_config.vidHeight,
+                                        AV_PIX_FMT_NV12,
+                                        1, 1,
+                                        m_config.aspectNum,
+                                        m_config.aspectDen);
+
+  if (avfilter_graph_create_filter(&m_pFilterIn, srcFilter, "src", args, NULL, m_pFilterGraph) < 0)
+  {
+    CLog::Log(LOGERROR, "CFFmpegPostproc::Init - avfilter_graph_create_filter: src");
+    return false;
+  }
+
+  if (avfilter_graph_create_filter(&m_pFilterOut, outFilter, "out", NULL, NULL, m_pFilterGraph) < 0)
+  {
+    CLog::Log(LOGERROR, "CDVDVideoCodecFFmpeg::FilterOpen - avfilter_graph_create_filter: out");
+    return false;
+  }
+
+  enum AVPixelFormat pix_fmts[] = { PIX_FMT_YUVJ420P, AV_PIX_FMT_NONE };
+  if (av_opt_set_int_list(m_pFilterOut, "pix_fmts", pix_fmts,  AV_PIX_FMT_NONE, AV_OPT_SEARCH_CHILDREN) < 0)
+  {
+    CLog::Log(LOGERROR, "CDVDVideoCodecFFmpeg::FilterOpen - failed settings pix formats");
+    return false;
+  }
+
+  if (!filters.empty())
+  {
+    AVFilterInOut* outputs = avfilter_inout_alloc();
+    AVFilterInOut* inputs  = avfilter_inout_alloc();
+
+    outputs->name    = av_strdup("in");
+    outputs->filter_ctx = m_pFilterIn;
+    outputs->pad_idx = 0;
+    outputs->next    = NULL;
+
+    inputs->name    = av_strdup("out");
+    inputs->filter_ctx = m_pFilterOut;
+    inputs->pad_idx = 0;
+    inputs->next    = NULL;
+
+    if ((result = avfilter_graph_parse_ptr(m_pFilterGraph, (const char*)m_filters.c_str(), &inputs, &outputs, NULL)) < 0)
+    {
+      CLog::Log(LOGERROR, "CDVDVideoCodecFFmpeg::FilterOpen - avfilter_graph_parse");
+      return result;
+    }
+
+    avfilter_inout_free(&outputs);
+    avfilter_inout_free(&inputs);
+  }
+  else
+  {
+    if ((result = avfilter_link(m_pFilterIn, 0, m_pFilterOut, 0)) < 0)
+    {
+      CLog::Log(LOGERROR, "CDVDVideoCodecFFmpeg::FilterOpen - avfilter_link");
+      return result;
+    }
+  }
+
+  if ((result = avfilter_graph_config(m_pFilterGraph, NULL)) < 0)
+  {
+    CLog::Log(LOGERROR, "CDVDVideoCodecFFmpeg::FilterOpen - avfilter_graph_config");
+    return result;
+  }
+
   return true;
 }
 

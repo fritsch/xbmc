@@ -36,6 +36,7 @@
 #include <list>
 #include <map>
 #include <va/va.h>
+#include "linux/sse4/DllLibSSE4.h"
 
 extern "C" {
 #include "libavutil/avutil.h"
@@ -106,6 +107,8 @@ struct CVaapiConfig
   int vidHeight;
   int outWidth;
   int outHeight;
+  int aspectNum;
+  int aspectDen;
   VAConfigID configId;
   VAContextID contextId;
   CVaapiBufferStats *stats;
@@ -167,6 +170,7 @@ public:
   GLuint texture;
   bool valid;
   CDecoder *vaapi;
+  AVFrame *avFrame;
   CVaapiRenderPicture* Acquire();
   long Release();
 private:
@@ -487,6 +491,27 @@ protected:
   int m_forwardRefs, m_backwardRefs;
   int m_currentIdx;
   int m_frameCount;
+};
+
+/**
+ *  ffmpeg filter
+ */
+class CFFmpegPostproc : public CPostproc
+{
+public:
+  CFFmpegPostproc();
+  virtual ~CFFmpegPostproc();
+  bool PreInit(CVaapiConfig &config, SDiMethods *methods = NULL);
+  bool Init(EINTERLACEMETHOD method);
+  bool AddPicture(CVaapiDecodedPicture &inPic);
+  bool Filter(CVaapiProcessedPicture &outPic);
+  void ClearRef(VASurfaceID surf);
+protected:
+  DllLibSSE4 m_dllSSE4;
+  uint8_t *m_cache;
+  AVFilterGraph* m_pFilterGraph;
+  AVFilterContext* m_pFilterIn;
+  AVFilterContext* m_pFilterOut;
 };
 
 }
