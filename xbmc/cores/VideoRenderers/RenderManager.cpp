@@ -55,6 +55,7 @@
 #include "../dvdplayer/DVDClock.h"
 #include "../dvdplayer/DVDCodecs/Video/DVDVideoCodec.h"
 #include "../dvdplayer/DVDCodecs/DVDCodecUtils.h"
+#include "../dvdplayer/DVDCodecs/Video/VAAPI.h"
 
 #define MAXPRESENTDELAY 0.500
 
@@ -926,6 +927,11 @@ int CXBMCRenderManager::AddVideoPicture(DVDVideoPicture& pic)
 #ifdef HAVE_LIBVA
   else if(pic.format == RENDER_FMT_VAAPI)
     m_pRenderer->AddProcessor(pic.vaapi, index);
+  else if(pic.format == RENDER_FMT_VAAPINV12)
+  {
+    m_pRenderer->AddProcessor(pic.vaapi, index);
+    CDVDCodecUtils::CopyNV12Picture(&image, &pic.vaapi->DVDPic);
+  }
 #endif
 #ifdef HAS_LIBSTAGEFRIGHT
   else if(pic.format == RENDER_FMT_EGLIMG)
