@@ -107,8 +107,7 @@ struct CVaapiConfig
   int vidHeight;
   int outWidth;
   int outHeight;
-  int aspectNum;
-  int aspectDen;
+  AVRational aspect;
   VAConfigID configId;
   VAContextID contextId;
   CVaapiBufferStats *stats;
@@ -142,9 +141,11 @@ struct CVaapiProcessedPicture
 {
   DVDVideoPicture DVDPic;
   VASurfaceID videoSurface;
+  AVFrame *frame;
   enum
   {
     VPP_SRC,
+    FFMPEG_SRC,
     SKIP_SRC
   }source;
   bool crop;
@@ -162,7 +163,7 @@ class CVaapiRenderPicture
   friend class COutput;
 public:
   CVaapiRenderPicture(CCriticalSection &section)
-    : texture(None), refCount(0), surface(NULL), renderPicSection(section) { fence = None; }
+    : texture(None), avFrame(NULL), refCount(0), surface(NULL), renderPicSection(section) { fence = None; }
   void Sync();
   DVDVideoPicture DVDPic;
   int texWidth, texHeight;
@@ -446,6 +447,8 @@ public:
   virtual bool AddPicture(CVaapiDecodedPicture &inPic) = 0;
   virtual bool Filter(CVaapiProcessedPicture &outPic) = 0;
   virtual void ClearRef(VASurfaceID surf) = 0;
+  virtual void Flush() = 0;
+  virtual bool Compatible(EINTERLACEMETHOD method) = 0;
 protected:
   CVaapiConfig m_config;
   int m_step;
@@ -462,6 +465,8 @@ public:
   bool AddPicture(CVaapiDecodedPicture &inPic);
   bool Filter(CVaapiProcessedPicture &outPic);
   void ClearRef(VASurfaceID surf);
+  void Flush();
+  bool Compatible(EINTERLACEMETHOD method);
 protected:
   CVaapiDecodedPicture m_pic;
 };
@@ -479,6 +484,8 @@ public:
   bool AddPicture(CVaapiDecodedPicture &inPic);
   bool Filter(CVaapiProcessedPicture &outPic);
   void ClearRef(VASurfaceID surf);
+  void Flush();
+  bool Compatible(EINTERLACEMETHOD method);
 protected:
   bool CheckSuccess(VAStatus status);
   void Dispose();
@@ -506,12 +513,22 @@ public:
   bool AddPicture(CVaapiDecodedPicture &inPic);
   bool Filter(CVaapiProcessedPicture &outPic);
   void ClearRef(VASurfaceID surf);
+  void Flush();
+  bool Compatible(EINTERLACEMETHOD method);
 protected:
+  bool CheckSuccess(VAStatus status);
+  void Close();
   DllLibSSE4 m_dllSSE4;
   uint8_t *m_cache;
   AVFilterGraph* m_pFilterGraph;
   AVFilterContext* m_pFilterIn;
   AVFilterContext* m_pFilterOut;
+  AVFrame *m_pFilterFrameIn;
+  AVFrame *m_pFilterFrameOut;
+  EINTERLACEMETHOD m_diMethod;
+  DVDVideoPicture m_DVDPic;
+  double m_frametime;
+  double m_lastOutPts;
 };
 
 }

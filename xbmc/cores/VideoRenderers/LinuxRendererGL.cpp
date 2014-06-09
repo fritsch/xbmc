@@ -1057,7 +1057,8 @@ void CLinuxRendererGL::LoadShaders(int field)
     m_pboUsed = false;
 
   // Now that we now the render method, setup texture function handlers
-  if (m_format == RENDER_FMT_NV12)
+  if (m_format == RENDER_FMT_NV12 ||
+      m_format == RENDER_FMT_VAAPINV12)
   {
     m_textureUpload = &CLinuxRendererGL::UploadNV12Texture;
     m_textureCreate = &CLinuxRendererGL::CreateNV12Texture;
@@ -3399,7 +3400,8 @@ bool CLinuxRendererGL::Supports(EINTERLACEMETHOD method)
     return false;
   }
 
-  if(m_renderMethod & RENDER_VAAPI)
+  if(m_format == RENDER_FMT_VAAPI ||
+      m_format == RENDER_FMT_VAAPINV12)
   {
 #ifdef HAVE_LIBVA
     VAAPI::CVaapiRenderPicture *vaapiPic = m_buffers[m_iYV12RenderBuffer].vaapi;
@@ -3525,6 +3527,7 @@ unsigned int CLinuxRendererGL::GetProcessorSize()
   if(m_format == RENDER_FMT_VDPAU
   || m_format == RENDER_FMT_VDPAU_420
   || m_format == RENDER_FMT_VAAPI
+  || m_format == RENDER_FMT_VAAPINV12
   || m_format == RENDER_FMT_CVBREF)
     return 1;
   else
