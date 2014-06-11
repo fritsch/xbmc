@@ -1346,12 +1346,14 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
             m_extTimeout = 0;
             return;
           }
-          else
+          else if (!m_bufferPool.freeRenderPics.empty() &&
+                   !m_bufferPool.processedPics.empty())
           {
             m_state = O_TOP_CONFIGURED_OUTPUT;
-            m_extTimeout = 0;
-            return;
           }
+          else
+            m_state = O_TOP_CONFIGURED_IDLE;
+          m_extTimeout = 0;
           return;
         default:
           break;
@@ -1617,8 +1619,8 @@ void COutput::Flush()
 
 bool COutput::HasWork()
 {
-  if (!m_bufferPool.freeRenderPics.empty() &&
-      (!m_bufferPool.decodedPics.empty() || !m_bufferPool.processedPics.empty()))
+  if ((!m_bufferPool.freeRenderPics.empty() && !m_bufferPool.processedPics.empty()) ||
+       !m_bufferPool.decodedPics.empty())
     return true;
 
   return false;
@@ -2486,6 +2488,7 @@ bool CVppPostproc::Filter(CVaapiProcessedPicture &outPic)
   pipelineParams->num_filters = 1;
 
   // references
+  double pts, ptsLast = DVD_NOPTS_VALUE;
   pipelineParams->surface = VA_INVALID_SURFACE;
   for (it=m_decodedPics.begin(); it!=m_decodedPics.end(); ++it)
   {
@@ -2499,14 +2502,21 @@ bool CVppPostproc::Filter(CVaapiProcessedPicture &outPic)
       else if (it->index == curPic)
       {
         pipelineParams->surface = it->videoSurface;
+        pts = it->DVDPic.pts;
       }
       if (it->index < curPic)
       {
         forwardRefs[(curPic - it->index) - 1] = it->videoSurface;
         pipelineParams->num_forward_references++;
+        if (it->index == curPic - 1)
+          ptsLast = it->DVDPic.pts;
       }
     }
   }
+
+  // set pts for 2nd frame
+  if (m_step && pts != DVD_NOPTS_VALUE && ptsLast != DVD_NOPTS_VALUE)
+    outPic.DVDPic.pts += (pts-ptsLast)/2;
 
   if (pipelineParams->surface == VA_INVALID_SURFACE)
     return false;
