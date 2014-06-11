@@ -2715,7 +2715,7 @@ bool CFFmpegPostproc::Init(EINTERLACEMETHOD method)
 
   std::string filter;
   if (method == VS_INTERLACEMETHOD_DEINTERLACE)
-    filter = "yadif=1:-1:1";
+    filter = "yadif=1:-1";
   else
   {
     avfilter_inout_free(&outputs);
@@ -2771,7 +2771,8 @@ bool CFFmpegPostproc::AddPicture(CVaapiDecodedPicture &inPic)
   m_pFilterFrameIn->format = AV_PIX_FMT_NV12;
   m_pFilterFrameIn->width = m_config.vidWidth;
   m_pFilterFrameIn->height = m_config.vidHeight;
-  m_pFilterFrameIn->interlaced_frame = 1;
+  m_pFilterFrameIn->interlaced_frame = (inPic.DVDPic.iFlags & DVP_FLAG_INTERLACED) ? 1 : 0;
+  m_pFilterFrameIn->top_field_first = (inPic.DVDPic.iFlags & DVP_FLAG_TOP_FIELD_FIRST) ? 1 : 0;
 
   if (inPic.DVDPic.pts == DVD_NOPTS_VALUE)
     m_pFilterFrameIn->pkt_pts = AV_NOPTS_VALUE;
