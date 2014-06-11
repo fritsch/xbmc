@@ -63,13 +63,6 @@ extern "C" {
 #include <va/va_glx.h>
 #include "cores/dvdplayer/DVDCodecs/Video/VAAPI.h"
 
-#define USE_VAAPI_GLX_BIND                                \
-    (VA_MAJOR_VERSION == 0 &&                             \
-     ((VA_MINOR_VERSION == 30 &&                          \
-       VA_MICRO_VERSION == 4 && VA_SDS_VERSION >= 5) ||   \
-      (VA_MINOR_VERSION == 31 &&                          \
-       VA_MICRO_VERSION == 0 && VA_SDS_VERSION < 5)))
-
 #endif
 
 #ifdef TARGET_DARWIN

@@ -313,7 +313,6 @@ void CVideoSurfaces::ClearRender(VASurfaceID surf)
   m_state[surf] &= ~SURFACE_USED_FOR_RENDER;
   if (m_state[surf] == 0)
   {
-    CLog::Log(LOGNOTICE,"------------- clear render: %d", surf);
     m_freeSurfaces.push_back(surf);
   }
 }
@@ -822,12 +821,6 @@ bool CDecoder::GetPicture(AVCodecContext* avctx, AVFrame* frame, DVDVideoPicture
   *picture = m_presentPicture->DVDPic;
   picture->vaapi = m_presentPicture;
 
-  if (picture->format == RENDER_FMT_VAAPINV12)
-  {
-    int i;
-    i++;
-  }
-
   return true;
 }
 
@@ -1180,9 +1173,8 @@ enum OUTPUT_STATES
   O_TOP_CONFIGURED_IDLE,          // 4
   O_TOP_CONFIGURED_WORK,          // 5
   O_TOP_CONFIGURED_STEP1,         // 6
-  O_TOP_CONFIGURED_WAIT2,         // 7
-  O_TOP_CONFIGURED_STEP2,         // 8
-  O_TOP_CONFIGURED_OUTPUT,        // 9
+  O_TOP_CONFIGURED_STEP2,         // 7
+  O_TOP_CONFIGURED_OUTPUT,        // 8
 };
 
 int VAAPI_OUTPUT_parentStates[] = {
@@ -1193,7 +1185,6 @@ int VAAPI_OUTPUT_parentStates[] = {
     3, //TOP_CONFIGURED_IDLE
     3, //TOP_CONFIGURED_WORK
     3, //TOP_CONFIGURED_STEP1
-    3, //TOP_CONFIGURED_WAIT2
     3, //TOP_CONFIGURED_STEP2
     3, //TOP_CONFIGURED_OUTPUT
 };
@@ -1382,7 +1373,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
             m_bufferPool.processedPics.push_back(outPic);
             if (m_steps > 1)
             {
-              m_state = O_TOP_CONFIGURED_WAIT2;
+              m_state = O_TOP_CONFIGURED_STEP2;
             }
             else
             {
@@ -1402,28 +1393,6 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
       }
       break;
 
-    case O_TOP_CONFIGURED_WAIT2:
-      if (port == NULL) // timeout
-      {
-        switch (signal)
-        {
-        case COutputControlProtocol::TIMEOUT:
-          if (ProcessSyncPicture())
-            m_extTimeout = 10;
-          else
-            m_extTimeout = 100;
-          if (!m_bufferPool.freeRenderPics.empty())
-          {
-            m_state = O_TOP_CONFIGURED_STEP2;
-            m_extTimeout = 0;
-          }
-          return;
-        default:
-          break;
-        }
-      }
-      break;
-
     case O_TOP_CONFIGURED_STEP2:
       if (port == NULL) // timeout
       {
@@ -1435,7 +1404,6 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
           {
             m_bufferPool.processedPics.push_back(outPic);
             m_config.stats->IncProcessed();
-            m_state = O_TOP_CONFIGURED_WAIT2;
             m_extTimeout = 0;
             return;
           }
@@ -1757,8 +1725,8 @@ CVaapiRenderPicture* COutput::ProcessPicture(CVaapiProcessedPicture &pic)
 
   retPic->DVDPic.dts = DVD_NOPTS_VALUE;
   retPic->DVDPic.iFlags &= ~(DVP_FLAG_TOP_FIELD_FIRST |
-                                      DVP_FLAG_REPEAT_TOP_FIELD |
-                                      DVP_FLAG_INTERLACED);
+                             DVP_FLAG_REPEAT_TOP_FIELD |
+                             DVP_FLAG_INTERLACED);
 
   retPic->DVDPic.iWidth = m_config.vidWidth;
   retPic->DVDPic.iHeight = m_config.vidHeight;
@@ -1771,7 +1739,6 @@ CVaapiRenderPicture* COutput::ProcessPicture(CVaapiProcessedPicture &pic)
   retPic->crop.x2 = m_config.outWidth;
   retPic->crop.y2 = m_config.outHeight;
 
-//  CLog::Log(LOGNOTICE,"------------- pts: %f", retPic->DVDPic.pts);
   return retPic;
 }
 
@@ -2748,7 +2715,7 @@ bool CFFmpegPostproc::Init(EINTERLACEMETHOD method)
 
   std::string filter;
   if (method == VS_INTERLACEMETHOD_DEINTERLACE)
-    filter = "yadif=1:-1";
+    filter = "yadif=1:-1:1";
   else
   {
     avfilter_inout_free(&outputs);
@@ -2804,6 +2771,7 @@ bool CFFmpegPostproc::AddPicture(CVaapiDecodedPicture &inPic)
   m_pFilterFrameIn->format = AV_PIX_FMT_NV12;
   m_pFilterFrameIn->width = m_config.vidWidth;
   m_pFilterFrameIn->height = m_config.vidHeight;
+  m_pFilterFrameIn->interlaced_frame = 1;
 
   if (inPic.DVDPic.pts == DVD_NOPTS_VALUE)
     m_pFilterFrameIn->pkt_pts = AV_NOPTS_VALUE;
