@@ -138,7 +138,6 @@ protected:
   CDVDMessageQueue m_messageQueue;
   CDVDMessageQueue& m_messageParent;
 
-  double m_iCurrentPts; // last pts displayed
   double m_iVideoDelay;
   double m_iSubtitleDelay;
   double m_FlipTimeStamp; // time stamp of last flippage. used to play at a forced framerate

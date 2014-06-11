@@ -148,7 +148,6 @@ CDVDPlayerVideo::CDVDPlayerVideo( CDVDClock* pClock
   m_messageQueue.SetMaxDataSize(40 * 1024 * 1024);
   m_messageQueue.SetMaxTimeSize(8.0);
 
-  m_iCurrentPts = DVD_NOPTS_VALUE;
   m_iDroppedFrames = 0;
   m_fFrameRate = 25;
   m_bCalcFrameRate = false;
@@ -298,7 +297,6 @@ void CDVDPlayerVideo::OnStartup()
   m_crop.x1 = m_crop.x2 = 0.0f;
   m_crop.y1 = m_crop.y2 = 0.0f;
 
-  m_iCurrentPts = DVD_NOPTS_VALUE;
   m_FlipTimeStamp = m_pClock->GetAbsoluteClock();
   m_FlipTimePts   = 0.0;
 }
@@ -1190,13 +1188,6 @@ int CDVDPlayerVideo::OutputPicture(const DVDVideoPicture* src, double pts)
                     , "CDVDPlayerVideo::OutputPicture");
   }
 
-  // present the current pts of this frame to user, and include the actual
-  // presentation delay, to allow him to adjust for it
-  if( m_stalled )
-    m_iCurrentPts = DVD_NOPTS_VALUE;
-  else
-    m_iCurrentPts = pts - max(0.0, iSleepTime);
-
   // timestamp when we think next picture should be displayed based on current duration
   m_FlipTimeStamp  = iCurrentClock;
   m_FlipTimeStamp += max(0.0, iSleepTime);
@@ -1573,13 +1564,6 @@ int CDVDPlayerVideo::CalcDropRequirement(double pts)
   bNewFrame = iDecoderPts != m_droppingStats.m_lastDecoderPts;
 
   iInterval = 1/m_fFrameRate*(double)DVD_TIME_BASE;
-
-  m_FlipTimeStamp = m_pClock->GetAbsoluteClock() + max(0.0, iSleepTime) + iInterval;
-
-  if (m_stalled)
-    m_iCurrentPts = DVD_NOPTS_VALUE;
-  else
-    m_iCurrentPts = iRenderPts - max(0.0, iSleepTime);
 
   if (m_droppingStats.m_lastDecoderPts > 0
       && bNewFrame
