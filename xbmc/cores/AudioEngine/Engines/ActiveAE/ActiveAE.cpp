@@ -1243,6 +1243,8 @@ CActiveAEStream* CActiveAE::CreateStream(MsgStreamNew *streamMsg)
 
   if (streamMsg->options & AESTREAM_PAUSED)
     stream->m_paused = true;
+  else
+    stream->m_streamIsBuffering = false;
 
   if (streamMsg->options & AESTREAM_FORCE_RESAMPLE)
     stream->m_forceResampler = true;
