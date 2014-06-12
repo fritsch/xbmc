@@ -1704,10 +1704,30 @@ CVaapiRenderPicture* COutput::ProcessPicture(CVaapiProcessedPicture &pic)
   if (pic.source == CVaapiProcessedPicture::SKIP_SRC ||
       pic.source == CVaapiProcessedPicture::VPP_SRC)
   {
+    unsigned int colorStandard;
+    switch(pic.DVDPic.color_matrix)
+    {
+      case AVCOL_SPC_BT709:
+        colorStandard = VA_SRC_BT709;
+        break;
+      case AVCOL_SPC_BT470BG:
+      case AVCOL_SPC_SMPTE170M:
+        colorStandard = VA_SRC_BT601;
+        break;
+      case AVCOL_SPC_SMPTE240M:
+      case AVCOL_SPC_FCC:
+      case AVCOL_SPC_UNSPECIFIED:
+      case AVCOL_SPC_RGB:
+      default:
+        if(m_config.surfaceWidth > 1000)
+          colorStandard = VA_SRC_BT709;
+        else
+          colorStandard = VA_SRC_BT601;
+    }
     if (!CheckSuccess(vaCopySurfaceGLX(m_config.dpy,
         retPic->surface,
         pic.videoSurface,
-        VA_FRAME_PICTURE | VA_SRC_BT709)))
+        VA_FRAME_PICTURE | colorStandard)))
     {
       return NULL;
     }
