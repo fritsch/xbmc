@@ -1137,8 +1137,13 @@ int CDVDPlayerVideo::OutputPicture(const DVDVideoPicture* src, double pts)
   double interval;
   int refreshrate = m_pClock->UpdateFramerate(m_fFrameRate, &interval);
   if (refreshrate > 0) //refreshrate of -1 means the videoreferenceclock is not running
-  {//when using the videoreferenceclock, a frame is always presented half a vblank interval too late
-    pts -= DVD_TIME_BASE * interval;
+  {
+    // | pts-1 |  pts  | pts+1 | pts+2 |
+    //     ^ video reference clock moves timestap in the middle of an interval
+    //         ^ when vblank occurs we have time pts, so we are half an interval early
+    //           but with double buffering we are half an interval late
+    // correct 0.5*interval
+    pts -= 0.5 * DVD_TIME_BASE * interval;
   }
 
   if (m_output.color_format != RENDER_FMT_BYPASS)
