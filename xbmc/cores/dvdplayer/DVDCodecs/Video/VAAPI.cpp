@@ -734,6 +734,8 @@ int CDecoder::Decode(AVCodecContext* avctx, AVFrame* pFrame)
     pic.DVDPic.color_matrix = avctx->colorspace;
     m_bufferStats.IncDecoded();
     m_vaapiOutput.m_dataPort.SendOutMessage(COutputDataProtocol::NEWFRAME, &pic, sizeof(pic));
+
+    m_codecControl = pic.DVDPic.iFlags & (DVD_CODEC_CTRL_DRAIN | DVD_CODEC_CTRL_NO_POSTPROC);
   }
 
   int retval = 0;
@@ -1703,8 +1705,8 @@ bool COutput::PreferPP()
 void COutput::InitCycle()
 {
   uint64_t latency;
-  int speed;
-  m_config.stats->GetParams(latency, speed);
+  int flags;
+  m_config.stats->GetParams(latency, flags);
 
   m_config.stats->SetCanSkipDeint(false);
 
@@ -1712,7 +1714,8 @@ void COutput::InitCycle()
   EINTERLACEMETHOD method = CMediaSettings::Get().GetCurrentVideoSettings().m_InterlaceMethod;
   bool interlaced = m_currentPicture.DVDPic.iFlags & DVP_FLAG_INTERLACED;
 
-  if ((mode == VS_DEINTERLACEMODE_FORCE ||
+  if (!(flags & DVD_CODEC_CTRL_NO_POSTPROC) &&
+      (mode == VS_DEINTERLACEMODE_FORCE ||
       (mode == VS_DEINTERLACEMODE_AUTO && interlaced)))
   {
     if((method == VS_INTERLACEMETHOD_AUTO && interlaced)
@@ -2543,6 +2546,7 @@ bool CVppPostproc::AddPicture(CVaapiDecodedPicture &pic)
   m_decodedPics.push_front(pic);
   m_frameCount++;
   m_step = 0;
+  m_config.stats->SetCanSkipDeint(true);
   return true;
 }
 
@@ -2586,6 +2590,13 @@ bool CVppPostproc::Filter(CVaapiProcessedPicture &outPic)
     return false;
   }
   outPic.DVDPic = it->DVDPic;
+
+  // skip deinterlacing cycle if requested
+  if (m_step == 1 && (outPic.DVDPic.iFlags & DVD_CODEC_CTRL_SKIPDEINT))
+  {
+    Advance();
+    return false;
+  }
 
   // vpp deinterlacing
   VAProcFilterParameterBufferDeinterlacing *filterParams;
