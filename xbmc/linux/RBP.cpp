@@ -86,6 +86,9 @@ bool CRBP::Initialize()
   if (g_advancedSettings.m_cacheMemBufferSize == ~0U)
     g_advancedSettings.m_cacheMemBufferSize = m_arm_mem < 256 ? 1024 * 1024 * 2 : 1024 * 1024 * 20;
 
+  // in case xbcm was restarted when suspended
+  ResumeVideoOutput();
+
   g_OMXImage.Initialize();
   m_omx_image_init = true;
   return true;
