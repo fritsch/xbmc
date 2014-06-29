@@ -1689,12 +1689,18 @@ void COutput::InitCycle()
         m_pp->Init(method);
         m_currentDiMethod = method;
       }
+      else
+      {
+        delete m_pp;
+        m_pp = NULL;
+      }
     }
   }
   // progressive
   else
   {
-    if (m_pp && !m_pp->Compatible(VS_INTERLACEMETHOD_NONE))
+    method = VS_INTERLACEMETHOD_NONE;
+    if (m_pp && !m_pp->Compatible(method))
     {
       delete m_pp;
       m_pp = NULL;
@@ -1702,15 +1708,26 @@ void COutput::InitCycle()
     }
     if (!m_pp)
     {
-      if (CSettings::Get().GetBool("videoplayer.prefervaapirender"))
-        m_pp = new CSkipPostproc();
-      else
+      if (!CSettings::Get().GetBool("videoplayer.prefervaapirender"))
         m_pp = new CFFmpegPostproc();
+      else
+        m_pp = new CSkipPostproc();
       if (m_pp->PreInit(m_config))
       {
-        m_pp->Init(VS_INTERLACEMETHOD_NONE);
+        m_pp->Init(method);
+      }
+      else
+      {
+        delete m_pp;
+        m_pp = NULL;
       }
     }
+  }
+  if (!m_pp) // fallback
+  {
+    m_pp = new CSkipPostproc();
+    if (m_pp->PreInit(m_config))
+      m_pp->Init(method);
   }
 }
 
@@ -2727,6 +2744,13 @@ bool CFFmpegPostproc::PreInit(CVaapiConfig &config, SDiMethods *methods)
     CLog::Log(LOGNOTICE,"VAAPI::SupportsFilter failed loading sse4 lib");
     return false;
   }
+
+  // copying large surfaces via sse4 is a bit slow
+  // we just return false here as the primary use case the
+  // sse4 copy method is deinterlacing of max 1080i content
+  if (m_config.vidWidth > 1920 || m_config.vidHeight > 1088)
+    return false;
+
   VAImage image;
   VASurfaceID surface = config.videoSurfaces->GetAtIndex(0);
   VAStatus status = vaDeriveImage(config.dpy, surface, &image);
