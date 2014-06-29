@@ -2264,8 +2264,7 @@ void CSkipPostproc::Flush()
 
 bool CSkipPostproc::Compatible(EINTERLACEMETHOD method)
 {
-  if (method == VS_INTERLACEMETHOD_NONE &&
-      CSettings::Get().GetBool("videoplayer.prefervaapirender"))
+  if (method == VS_INTERLACEMETHOD_NONE)
     return true;
 
   return false;
