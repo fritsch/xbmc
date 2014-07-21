@@ -1296,6 +1296,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
           Flush();
           ReleaseBufferPool(true);
           msg->Reply(COutputControlProtocol::ACC);
+          m_state = O_TOP_UNCONFIGURED;
           return;
         default:
           break;
