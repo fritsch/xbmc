@@ -411,7 +411,7 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput, bool streaminfo)
   bool isMpegts = false;
   if (iformat && (strcmp(iformat->name, "mpegts") == 0))
   {
-    m_pFormatContext->max_analyze_duration = 500000;
+    av_opt_set_int(m_pFormatContext, "analyzeduration", 500000, 0);
     m_checkvideo = true;
     isMpegts = true;
   }
