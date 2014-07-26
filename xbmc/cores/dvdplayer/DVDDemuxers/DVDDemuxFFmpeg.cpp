@@ -52,6 +52,10 @@
 #include "URL.h"
 #include "cores/FFmpeg.h"
 
+extern "C" {
+#include "libavutil/opt.h"
+}
+
 struct StereoModeConversionMap
 {
   const char*          name;
@@ -402,11 +406,11 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput, bool streaminfo)
   
   // analyse very short to speed up mjpeg playback start
   if (iformat && (strcmp(iformat->name, "mjpeg") == 0) && m_ioContext->seekable == 0)
-    m_pFormatContext->max_analyze_duration = 500000;
+    av_opt_set_int(m_pFormatContext, "analyzeduration", 500000, 0);
 
   if (iformat && (strcmp(iformat->name, "mpegts") == 0))
   {
-    m_pFormatContext->max_analyze_duration = 500000;
+    av_opt_set_int(m_pFormatContext, "analyzeduration", 500000, 0);
     m_checkvideo = true;
   }
 
@@ -418,7 +422,7 @@ bool CDVDDemuxFFmpeg::Open(CDVDInputStream* pInput, bool streaminfo)
   {
     /* to speed up dvd switches, only analyse very short */
     if(m_pInput->IsStreamType(DVDSTREAM_TYPE_DVD))
-      m_pFormatContext->max_analyze_duration = 500000;
+      av_opt_set_int(m_pFormatContext, "analyzeduration", 500000, 0);
 
     CLog::Log(LOGDEBUG, "%s - avformat_find_stream_info starting", __FUNCTION__);
     int iErr = avformat_find_stream_info(m_pFormatContext, NULL);
