@@ -304,6 +304,11 @@
           <default>false</default>
           <control type="toggle" />
         </setting>
+        <setting id="filelists.browsearchives" type="boolean" label="38020" help="38021">
+          <level>1</level>
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
       </group>
     </category>
     <category id="screensaver" label="360" help="36128">

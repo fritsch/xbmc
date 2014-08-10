@@ -16504,6 +16504,15 @@ msgstr ""
 #: system/settings/rbp.xml
 msgctxt "#38010"
 msgid "GPU accelerated"
+
+#: system/settings/settings.xml
+msgctxt "#38020"
+msgid "Support browsing into archives"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#38021"
+msgid "Allow viewing and playing files in archives (e.g. zip, rar)"
 msgstr ""
 
 #. Setting #38011 "Videos -> Library -> Show All Items entry"
