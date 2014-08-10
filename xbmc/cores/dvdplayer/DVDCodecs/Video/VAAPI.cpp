@@ -464,6 +464,13 @@ bool CDecoder::Open(AVCodecContext* avctx, const enum PixelFormat fmt, unsigned 
   if (!CVAAPIContext::EnsureContext(&m_vaapiConfig.context, this))
     return false;
 
+  if(avctx->coded_width  == 0
+  || avctx->coded_height == 0)
+  {
+    CLog::Log(LOGWARNING,"VAAPI::Open: no width/height available, can't init");
+    return false;
+  }
+
   m_vaapiConfig.vidWidth = avctx->width;
   m_vaapiConfig.vidHeight = avctx->height;
   m_vaapiConfig.outWidth = avctx->width;
