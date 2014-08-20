@@ -1303,6 +1303,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
           ReleaseBufferPool(true);
           msg->Reply(COutputControlProtocol::ACC);
           m_state = O_TOP_UNCONFIGURED;
+          m_extTimeout = 10000;
           return;
         default:
           break;
@@ -2872,7 +2873,9 @@ bool CFFmpegPostproc::Init(EINTERLACEMETHOD method)
   else if (method == VS_INTERLACEMETHOD_RENDER_BOB ||
            method == VS_INTERLACEMETHOD_NONE)
   {
-    CLog::Log(LOGDEBUG, "CFFmpegPostproc::Init  - no skip deinterlacing");
+    CLog::Log(LOGDEBUG, "CFFmpegPostproc::Init  - skip deinterlacing");
+    avfilter_inout_free(&outputs);
+    avfilter_inout_free(&inputs);
   }
   else
   {
