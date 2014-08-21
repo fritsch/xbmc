@@ -320,16 +320,24 @@ static pa_channel_map AEChannelMapToPAChannel(CAEChannelInfo info)
 {
   pa_channel_map map;
   pa_channel_map_init(&map);
-  pa_channel_position_t pos;
-  for (unsigned int i = 0; i < info.Count(); ++i)
+  // This workarounds a pulse bug concerning mapping. Send everything that has an
+  // LFE channel out as 5.1 to be sure to get an lfe channel in the mapping.
+  // 7.1 is opened correctly
+  // 3.0 and 4.0 return a wrong alsa mapping with AUX channels. Workaround that, too.
+  int channels = info.Count();
+  if (info.HasChannel(AE_CH_LFE) && channels < 8)
+    channels = 6;
+  else if (channels == 3 || channels == 7) // output 3.0 and 7.0 as 4.0 respectively 7.1
+   channels++;
+
+  if (!pa_channel_map_init_auto(&map, channels, PA_CHANNEL_MAP_ALSA)) 
   {
-    pos = AEChannelToPAChannel(info[i]);
-    if(pos != PA_CHANNEL_POSITION_INVALID)
-    {
-      // remember channel name and increase channel count
-      map.map[map.channels++] = pos;
-    }
+    // fallback to stereo
+    CLog::Log(LOGNOTICE, "Could not open the specified number of channels - Fallback to Stereo");
+    pa_channel_map_init_stereo(&map);
   }
+    
+
   return map;
 }
 
