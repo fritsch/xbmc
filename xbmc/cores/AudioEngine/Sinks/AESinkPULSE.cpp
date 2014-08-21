@@ -500,9 +500,8 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   else
   {
     map = AEChannelMapToPAChannel(format.m_channelLayout);
-    // if count has changed we need to fit the AE Map
-    if(map.channels != format.m_channelLayout.Count())
-      format.m_channelLayout = PAChannelToAEChannelMap(map);
+    // channel map might have been changed - update it
+    format.m_channelLayout = PAChannelToAEChannelMap(map);
   }
   m_Channels = format.m_channelLayout.Count();
 
