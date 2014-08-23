@@ -665,7 +665,7 @@ bool CDVDVideoCodecFFmpeg::GetPictureCommon(DVDVideoPicture* pDvdVideoPicture)
 
   if (m_requestSkipDeint)
   {
-    pDvdVideoPicture->iFlags |= DVP_FLAG_DROPDEINT;
+    pDvdVideoPicture->iFlags |= DVD_CODEC_CTRL_SKIPDEINT;
     m_skippedDeint = 1;
   }
   else
