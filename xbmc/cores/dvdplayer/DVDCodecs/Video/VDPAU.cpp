@@ -1085,7 +1085,7 @@ int CDecoder::Decode(AVCodecContext *avctx, AVFrame *pFrame)
     m_bufferStats.IncDecoded();
     m_vdpauOutput.m_dataPort.SendOutMessage(COutputDataProtocol::NEWFRAME, &pic, sizeof(pic));
 
-    m_codecControl = pic.DVDPic.iFlags & (DVP_FLAG_DRAIN | DVP_FLAG_NO_POSTPROC);
+    m_codecControl = pic.DVDPic.iFlags & (DVD_CODEC_CTRL_DRAIN | DVD_CODEC_CTRL_NO_POSTPROC);
   }
 
   int retval = 0;
@@ -2281,7 +2281,7 @@ void CMixer::InitCycle()
   int flags;
   uint64_t latency;
   m_config.stats->GetParams(latency, flags);
-  if (flags & DVP_FLAG_NO_POSTPROC)
+  if (flags & DVD_CODEC_CTRL_NO_POSTPROC)
     SetPostProcFeatures(false);
   else
     SetPostProcFeatures(true);
@@ -2293,7 +2293,7 @@ void CMixer::InitCycle()
   bool interlaced = m_mixerInput[1].DVDPic.iFlags & DVP_FLAG_INTERLACED;
   m_SeenInterlaceFlag |= interlaced;
 
-  if (!(flags & DVP_FLAG_NO_POSTPROC) &&
+  if (!(flags & DVD_CODEC_CTRL_NO_POSTPROC) &&
       (mode == VS_DEINTERLACEMODE_FORCE ||
       (mode == VS_DEINTERLACEMODE_AUTO && interlaced)))
   {
@@ -2315,7 +2315,7 @@ void CMixer::InitCycle()
         m_config.stats->SetCanSkipDeint(true);
       }
 
-      if (m_mixerInput[1].DVDPic.iFlags & DVP_FLAG_DROPDEINT)
+      if (m_mixerInput[1].DVDPic.iFlags & DVD_CODEC_CTRL_SKIPDEINT)
       {
         m_mixersteps = 1;
       }

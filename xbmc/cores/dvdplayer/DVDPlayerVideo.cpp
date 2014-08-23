@@ -526,9 +526,9 @@ void CDVDPlayerVideo::Process()
       }
       int codecControl = 0;
       if (iDropDirective & EOS_BUFFER_LEVEL)
-        codecControl |= DVP_FLAG_DRAIN;
+        codecControl |= DVD_CODEC_CTRL_DRAIN;
       if (m_speed > DVD_PLAYSPEED_NORMAL)
-        codecControl |= DVP_FLAG_NO_POSTPROC;
+        codecControl |= DVD_CODEC_CTRL_NO_POSTPROC;
       m_pVideoCodec->SetCodecControl(codecControl);
       if (iDropDirective & EOS_DROPPED)
       {
