@@ -1609,7 +1609,7 @@ int CDVDPlayerVideo::CalcDropRequirement(double pts)
       m_droppingStats.m_dropRequests = 0;
       CLog::Log(LOGDEBUG,"CDVDPlayerVideo::CalcDropRequirement - dropped pictures, Sleeptime: %f, Bufferlevel: %d, Gain: %f", iSleepTime, iBufferLevel, iGain);
     }
-    else if (iDroppedPics < 0 && iGain > 1/m_fFrameRate)
+    else if (iDroppedPics < 0 && iGain > (1/m_fFrameRate + 0.001))
     {
       CDroppingStats::CGain gain;
       gain.gain = iGain;
