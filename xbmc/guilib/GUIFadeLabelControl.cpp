@@ -20,6 +20,8 @@
 
 #include "GUIFadeLabelControl.h"
 
+#include "Application.h"
+
 using namespace std;
 
 CGUIFadeLabelControl::CGUIFadeLabelControl(int parentID, int controlID, float posX, float posY, float width, float height, const CLabelInfo& labelInfo, bool scrollOut, unsigned int timeToDelayAtEnd, bool resetOnLabelChange)
@@ -102,7 +104,7 @@ void CGUIFadeLabelControl::Process(unsigned int currentTime, CDirtyRegionList &d
     m_lastLabel = m_currentLabel;
   }
 
-  if (m_infoLabels.size() > 1 || !m_shortText)
+  if ((m_infoLabels.size() > 1 || !m_shortText) && !g_application.ScreenSaverDisablesAutoScrolling())
   { // have scrolling text
     MarkDirtyRegion();
 

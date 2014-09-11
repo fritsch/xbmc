@@ -23,6 +23,7 @@
 #include "utils/XBMCTinyXML.h"
 #include "utils/MathUtils.h"
 #include "utils/StringUtils.h"
+#include "Application.h"
 
 #include <algorithm>
 
@@ -134,7 +135,7 @@ void CGUITextBox::Process(unsigned int currentTime, CDirtyRegionList &dirtyregio
   // update our auto-scrolling as necessary
   if (m_autoScrollTime && m_lines.size() > m_itemsPerPage)
   {
-    if (!m_autoScrollCondition || m_autoScrollCondition->Get())
+    if ((!m_autoScrollCondition || m_autoScrollCondition->Get()) && !g_application.ScreenSaverDisablesAutoScrolling())
     {
       if (m_lastRenderTime)
         m_autoScrollDelayTime += currentTime - m_lastRenderTime;
