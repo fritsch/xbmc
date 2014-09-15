@@ -1365,6 +1365,12 @@ void CDVDPlayer::Process()
         m_pDemuxer->SetSpeed(DVD_PLAYSPEED_PAUSE);
       }
 
+      if ((m_CurrentAudio.id >= 0 && m_dvdPlayerAudio->IsStalled()) ||
+          (m_CurrentVideo.id >= 0 && m_dvdPlayerVideo->IsStalled()))
+      {
+        CLog::Log(LOGWARNING, "%s - one queue is stalled while other does not accept data");
+      }
+
       Sleep(10);
       continue;
     }
