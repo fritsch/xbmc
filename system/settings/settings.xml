@@ -572,6 +572,20 @@
           <default>false</default>
           <control type="toggle" />
         </setting>
+        <setting id="videoplayer.synctype" type="integer" parent="videoplayer.usedisplayasclock" label="13500" help="38006">
+          <level>2</level>
+          <default>2</default> <!-- SYNC_RESAMPLE -->
+          <constraints>
+            <options>
+              <option label="13503">2</option> <!-- SYNC_RESAMPLE -->
+              <option label="13504">3</option> <!-- SYNC_PLLADJUST -->
+            </options>
+          </constraints>
+          <dependencies>
+            <dependency type="enable" setting="videoplayer.usedisplayasclock" operator="is">true</dependency>
+          </dependencies>
+          <control type="spinner" format="string" />
+        </setting>
         <setting id="videoplayer.errorinaspect" type="integer" label="22021" help="36170">
           <level>2</level>
           <default>0</default>

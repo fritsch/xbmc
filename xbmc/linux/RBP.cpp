@@ -220,4 +220,18 @@ void CRBP::Deinitialize()
   m_initialized     = false;
   m_omx_initialized = false;
 }
+
+double CRBP::AdjustHDMIClock(double adjust)
+{
+  char response[80];
+  vc_gencmd(response, sizeof response, "hdmi_adjust_clock %f", adjust);
+  float new_adjust = 1.0f;
+  char *p = strchr(response, '=');
+  if (p)
+    new_adjust = atof(p+1);
+  CLog::Log(LOGDEBUG, "CRBP::%s(%.4f) = %.4f", __func__, adjust, new_adjust);
+  return new_adjust;
+}
+
+
 #endif

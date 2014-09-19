@@ -24,6 +24,7 @@
 #include "DVDCodecs/Audio/DVDAudioCodec.h"
 #include "DVDCodecs/DVDFactoryCodec.h"
 #include "settings/Settings.h"
+#include "settings/AdvancedSettings.h"
 #include "video/VideoReferenceClock.h"
 #include "utils/log.h"
 #include "utils/MathUtils.h"
@@ -111,6 +112,9 @@ CDVDPlayerAudio::CDVDPlayerAudio(CDVDClock* pClock, CDVDMessageQueue& parent)
   m_started = false;
   m_silence = false;
   m_resampleratio = 1.0;
+  m_plladjust = 1.0;
+  m_last_plladjust = 1.0;
+  m_last_error = 0.0;
   m_synctype = SYNC_DISCON;
   m_setsynctype = SYNC_DISCON;
   m_prevsynctype = -1;
@@ -184,11 +188,13 @@ void CDVDPlayerAudio::OpenStream( CDVDStreamInfo &hints, CDVDAudioCodec* codec )
   m_synctype = SYNC_DISCON;
   m_setsynctype = SYNC_DISCON;
   if (CSettings::Get().GetBool("videoplayer.usedisplayasclock"))
-    m_setsynctype = SYNC_RESAMPLE;
+    m_setsynctype = CSettings::Get().GetInt("videoplayer.synctype");
   m_prevsynctype = -1;
 
   m_error = 0;
   m_errors.Flush();
+  m_plladjust = 1.0;
+  m_last_plladjust = 1.0;
   m_integral = 0;
   m_prevskipped = false;
   m_syncclock = true;
@@ -231,7 +237,6 @@ void CDVDPlayerAudio::CloseStream(bool bWaitForBuffers)
 
   // uninit queue
   m_messageQueue.End();
-
   CLog::Log(LOGNOTICE, "Deleting audio codec");
   if (m_pAudioCodec)
   {
@@ -484,7 +489,11 @@ void CDVDPlayerAudio::UpdatePlayerInfo()
   //print the inverse of the resample ratio, since that makes more sense
   //if the resample ratio is 0.5, then we're playing twice as fast
   if (m_synctype == SYNC_RESAMPLE)
-    s << ", rr:" << fixed << setprecision(5) << 1.0 / m_resampleratio;
+    s << ", rr:" << fixed << setprecision(5) << 1.0 / m_resampleratio << ", err:" << fixed << setprecision(1) << m_last_error * 1e-3 << "ms";
+  if (m_synctype == SYNC_SKIPDUP)
+    s << ", err:" << fixed << setprecision(1) << m_last_error * 1e-3 << "ms";
+  if (m_synctype == SYNC_PLLADJUST)
+    s << ", pll:" << fixed << setprecision(5) << m_last_plladjust << ", err:" << fixed << setprecision(1) << m_last_error * 1e-3 << "ms";
 
   s << ", att:" << fixed << setprecision(1) << log(GetCurrentAttenuation()) * 20.0f << " dB";
 
@@ -639,8 +648,8 @@ void CDVDPlayerAudio::SetSyncType(bool passthrough)
 
   if (m_synctype != m_prevsynctype)
   {
-    const char *synctypes[] = {"clock feedback", "skip/duplicate", "resample", "invalid"};
-    int synctype = (m_synctype >= 0 && m_synctype <= 2) ? m_synctype : 3;
+    const char *synctypes[] = {"clock feedback", "skip/duplicate", "resample", "pll adjust", "invalid"};
+    int synctype = (m_synctype >= 0 && m_synctype <= 3) ? m_synctype : 4;
     CLog::Log(LOGDEBUG, "CDVDPlayerAudio:: synctype set to %i: %s", m_synctype, synctypes[synctype]);
     m_prevsynctype = m_synctype;
   }
@@ -750,7 +759,19 @@ void CDVDPlayerAudio::HandleSyncError(double duration)
       proportional = m_error / DVD_TIME_BASE / proportionaldiv;
     }
     m_resampleratio = 1.0 / m_pClock->GetClockSpeed() + proportional + m_integral;
+    CLog::Log(LOGDEBUG, "CDVDPlayerAudio::%s rr:%.5f error:%.3fms", __FUNCTION__, m_resampleratio, m_error * 1e-3);
   }
+  else if (m_synctype == SYNC_PLLADJUST)
+  {
+#if defined(TARGET_RASPBERRY_PI)
+    double e = std::max(std::min(m_error / DVD_MSEC_TO_TIME(50), 1.0), -1.0);
+    double adjust = g_advancedSettings.m_maxPllAdjust * 1e-6;
+    m_plladjust = 1.0 + e * adjust;
+    m_last_plladjust = g_RBP.AdjustHDMIClock(m_plladjust);
+    CLog::Log(LOGDEBUG, "CDVDPlayerAudio::%s pll:%.5f (%.5f) error:%.6f e:%.6f a:%f", __FUNCTION__, m_plladjust, m_last_plladjust, m_error, e * adjust, adjust );
+#endif
+  }
+  m_last_error = m_error;
 }
 
 bool CDVDPlayerAudio::OutputPacket(DVDAudioFrame &audioframe)
@@ -803,6 +824,7 @@ bool CDVDPlayerAudio::OutputPacket(DVDAudioFrame &audioframe)
     {
       m_dvdAudio.AddPackets(audioframe);
     }
+    m_plladjust = 1.0;
   }
   else if (m_synctype == SYNC_DISCON)
   {
@@ -835,6 +857,10 @@ bool CDVDPlayerAudio::OutputPacket(DVDAudioFrame &audioframe)
   else if (m_synctype == SYNC_RESAMPLE)
   {
     m_dvdAudio.SetResampleRatio(m_resampleratio);
+    m_dvdAudio.AddPackets(audioframe);
+  }
+  else if (m_synctype == SYNC_PLLADJUST)
+  {
     m_dvdAudio.AddPackets(audioframe);
   }
 

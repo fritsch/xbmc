@@ -6318,7 +6318,22 @@ msgctxt "#13459"
 msgid "Use OMXPlayer for decoding of video files."
 msgstr ""
 
-#empty strings from id 13460 to 13504
+#empty strings from id 13460 to 13499
+
+#: system/settings/settings.xml
+msgctxt "#13500"
+msgid "A/V sync method"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#13503"
+msgid "Resample audio"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#13504"
+msgid "Adjust PLL"
+msgstr ""
 
 #: system/settings/settings.xml
 msgctxt "#13505"
@@ -16550,3 +16565,10 @@ msgstr ""
 msgctxt "#38016"
 msgid "%d fps"
 msgstr ""
+
+#. Description of setting "Videos -> Playback -> A/V sync method" with label #13500
+#: system/settings/settings.xml
+msgctxt "#38006"
+msgid "Audio has to stay in sync, this can either be done by resampling, or adjusting the PLL"
+msgstr ""
+
