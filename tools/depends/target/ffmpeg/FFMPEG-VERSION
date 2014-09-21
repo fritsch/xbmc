@@ -1,5 +1,5 @@
 LIBNAME=ffmpeg
-BASE_URL=https://github.com/xbmc/FFmpeg/archive
-VERSION=2.4-Helix-alpha4
+BASE_URL=https://github.com/fritsch/FFmpeg/archive
+VERSION=dolby_atmos
 ARCHIVE=$(LIBNAME)-$(VERSION).tar.gz
 
