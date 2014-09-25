@@ -2271,6 +2271,7 @@ bool COutput::DestroyGlxContext()
 {
   if (m_glContext)
   {
+    glFinish();
     glXMakeCurrent(m_Display, None, NULL);
     glXDestroyContext(m_Display, m_glContext);
   }
