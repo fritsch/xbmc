@@ -16616,3 +16616,18 @@ msgstr ""
 msgctxt "#38052"
 msgid "Remote button press release time (ms)"
 msgstr ""
+
+#: system/settings/rbp.xml
+msgctxt "#38100"
+msgid "Audio output latency"
+msgstr ""
+
+#: system/settings/rbp.xml
+msgctxt "#38101"
+msgid "Increase this to protect against underruns, reduce to have lower latency gui sounds"
+msgstr ""
+
+#: system/settings/rbp.xml
+msgctxt "#38102"
+msgid "%i ms"
+msgstr ""
