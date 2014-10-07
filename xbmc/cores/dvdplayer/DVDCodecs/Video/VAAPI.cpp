@@ -1964,7 +1964,7 @@ bool COutput::ProcessSyncPicture()
 #ifdef GL_ARB_sync
     if (pic->usefence)
     {
-      if (glIsSync(pic->fence))
+      if (pic->fence)
       {
         GLint state;
         GLsizei length;
@@ -2118,7 +2118,7 @@ void COutput::ReleaseBufferPool(bool precleanup)
       if (pic->usefence)
       {
 #ifdef GL_ARB_sync
-        while (glIsSync(pic->fence))
+        while (pic->fence)
         {
           GLint state;
           GLsizei length;
@@ -2126,6 +2126,7 @@ void COutput::ReleaseBufferPool(bool precleanup)
           if(state == GL_SIGNALED || timeout.IsTimePast())
           {
             glDeleteSync(pic->fence);
+            pic->fence = None;
           }
           else
           {
@@ -2151,7 +2152,8 @@ void COutput::ReleaseBufferPool(bool precleanup)
     if (precleanup && pic->valid)
       continue;
 
-    if (glIsTexture(pic->texture))
+
+    if (pic->texture)
     {
       glDeleteTextures(1, &pic->texture);
       glXDestroyPixmap(m_Display, pic->glPixmap);
