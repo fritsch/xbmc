@@ -19,47 +19,12 @@
  *
  */
 
-#include "system.h" // for HAS_XRANDR, and Win32 types
 #include "threads/Thread.h"
 #include "threads/CriticalSection.h"
 
-//TODO: get rid of #ifdef hell, abstract implementations in separate classes
-
-#if defined(HAS_GLX) && defined(HAS_XRANDR)
-  #include "system_gl.h"
-  #include <X11/X.h>
-  #include <X11/Xlib.h>
-  #include <GL/glx.h>
-  #include "guilib/DispResource.h"
-#elif defined(TARGET_WINDOWS) && defined(HAS_DX)
-  #include <d3d9.h>
-  #include "guilib/D3DResource.h"
-
-class CD3DCallback : public ID3DResource
-{
-  public:
-    void Reset();
-    void OnDestroyDevice();
-    void OnCreateDevice();
-    void Aquire();
-    void Release();
-    bool IsValid();
-
-  private:
-    bool m_devicevalid;
-    bool m_deviceused;
-
-    CCriticalSection m_critsection;
-    CEvent           m_createevent;
-    CEvent           m_releaseevent;
-};
-
-#endif
+class CVideoSync;
 
 class CVideoReferenceClock : public CThread
-#if defined(HAS_GLX) && defined(HAS_XRANDR)
-                            ,public IDispResource
-#endif
 {
   public:
     CVideoReferenceClock();
@@ -76,15 +41,6 @@ class CVideoReferenceClock : public CThread
     void    SetFineAdjust(double fineadjust);
     void    RefreshChanged() { m_RefreshChanged = 1; }
 
-#if defined(TARGET_DARWIN)
-    void VblankHandler(int64_t nowtime, double fps);
-#endif
-
-#if defined(HAS_GLX) && defined(HAS_XRANDR)
-    virtual void OnLostDevice();
-    virtual void OnResetDevice();
-#endif
-
   private:
     void    Process();
     bool    UpdateRefreshrate(bool Forced = false);
@@ -92,6 +48,7 @@ class CVideoReferenceClock : public CThread
     void    UpdateClock(int NrVBlanks, bool CheckMissed);
     double  UpdateInterval();
     int64_t TimeOfNextVblank();
+    static void CBUpdateClock(int NrVBlanks, uint64_t time);
 
     int64_t m_CurrTime;          //the current time of the clock when using vblank as clock source
     int64_t m_LastIntTime;       //last interpolated clock value, to make sure the clock doesn't go backwards
@@ -115,42 +72,7 @@ class CVideoReferenceClock : public CThread
 
     CCriticalSection m_CritSection;
 
-#if defined(HAS_GLX) && defined(HAS_XRANDR)
-    bool SetupGLX();
-    void RunGLX();
-    void CleanupGLX();
-
-    int  (*m_glXWaitVideoSyncSGI) (int, int, unsigned int*);
-    int  (*m_glXGetVideoSyncSGI)  (unsigned int*);
-
-    Display*     m_Dpy;
-    XVisualInfo *m_vInfo;
-    Window       m_Window;
-    GLXContext   m_Context;
-    bool         m_xrrEvent;
-    CEvent       m_releaseEvent, m_resetEvent;
-
-#elif defined(TARGET_WINDOWS) && defined(HAS_DX)
-    bool   SetupD3D();
-    double MeasureRefreshrate(int MSecs);
-    void   RunD3D();
-    void   CleanupD3D();
-
-    LPDIRECT3DDEVICE9 m_D3dDev;
-    CD3DCallback      m_D3dCallback;
-
-    unsigned int  m_Width;
-    unsigned int  m_Height;
-    bool          m_Interlaced;
-
-#elif defined(TARGET_DARWIN)
-    bool SetupCocoa();
-    void RunCocoa();
-    void CleanupCocoa();
-
-    int64_t m_LastVBlankTime;  //timestamp of the last vblank, used for calculating how many vblanks happened
-                               //not the same as m_VblankTime
-#endif
+    CVideoSync *m_pVideoSync;
 };
 
 extern CVideoReferenceClock g_VideoReferenceClock;
