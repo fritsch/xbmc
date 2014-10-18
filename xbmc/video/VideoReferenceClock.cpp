@@ -29,8 +29,8 @@
 #include "guilib/GraphicContext.h"
 #include "video/videosync/VideoSync.h"
 
-#if defined(HAS_GLX)
-#include "video/videosync/VideoSyncGLX.h"
+#if defined(HAVE_X11)
+#include "video/videosync/VideoSyncDRM.h"
 #endif
 
 using namespace std;
@@ -82,8 +82,8 @@ void CVideoReferenceClock::Process()
   while(!m_bStop)
   {
     //set up the vblank clock
-#if defined(HAS_GLX)
-    m_pVideoSync = new CVideoSyncGLX();
+#if defined(HAVE_X11)
+    m_pVideoSync = new CVideoSyncDRM();
 #elif defined(TARGET_WINDOWS)
     m_pVideoSync = new CVideoSyncD3D();
 #elif defined(TARGET_DARWIN)
