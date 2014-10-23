@@ -49,7 +49,10 @@ CFDEventMonitor::~CFDEventMonitor()
     eventfd_write(m_wakeupfd, 1);
 
     /* Wait for the thread to stop */
-    StopThread(true);
+    {
+      CSingleExit exit(m_mutex);
+      StopThread(true);
+    }
 
     close(m_wakeupfd);
   }
