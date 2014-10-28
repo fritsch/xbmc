@@ -16586,3 +16586,18 @@ msgstr ""
 msgctxt "#38009"
 msgid "%i dB"
 msgstr ""
+
+#: system/peripherals.xml
+msgctxt "#38050"
+msgid "Remote button press delay before repeating (ms)"
+msgstr ""
+
+#: system/peripherals.xml
+msgctxt "#38051"
+msgid "Remote button press repeat rate (ms)"
+msgstr ""
+
+#: system/peripherals.xml
+msgctxt "#38052"
+msgid "Remote button press release time (ms)"
+msgstr ""
