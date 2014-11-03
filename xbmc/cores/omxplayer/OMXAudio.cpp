@@ -56,49 +56,6 @@ using namespace std;
 #define AUDIO_DECODE_OUTPUT_BUFFER (32*1024)
 static const char rounded_up_channels_shift[] = {0,0,1,2,2,3,3,3,3};
 
-//#define DEBUG_PLAYBACK
-static void dump_omx_buffer(OMX_BUFFERHEADERTYPE *omx_buffer)
-{
-  if (!(g_advancedSettings.CanLogComponent(LOGDUMPAUDIO)))
-    return;
-  static FILE *fp;
-  if (!omx_buffer)
-  {
-    if (fp)
-    {
-      fclose(fp);
-      fp = NULL;
-    }
-    return;
-  }
-  if (!fp)
-  {
-    char filename[1024];
-    strcpy(filename, g_advancedSettings.m_logFolder.c_str());
-    strcat(filename, "audio.dat");
-#ifdef DEBUG_PLAYBACK
-    fp = fopen(filename, "rb");
-#else
-    fp = fopen(filename, "wb");
-#endif
-    }
-  if (fp)
-  {
-#ifdef DEBUG_PLAYBACK
-    OMX_BUFFERHEADERTYPE omx = {0};
-    int s = fread(&omx, sizeof omx, 1, fp);
-    omx_buffer->nFilledLen = omx.nFilledLen;
-    omx_buffer->nFlags = omx.nFlags;
-    omx_buffer->nTimeStamp = omx.nTimeStamp;
-    if (s==1)
-      fread(omx_buffer->pBuffer, omx_buffer->nFilledLen, 1, fp);
-#else
-    if (fwrite(omx_buffer, sizeof *omx_buffer, 1, fp) == 1)
-      fwrite(omx_buffer->pBuffer, omx_buffer->nFilledLen, 1, fp);
-#endif
-  }
-}
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -914,7 +871,6 @@ bool COMXAudio::Initialize(AEAudioFormat format, OMXClock *clock, CDVDStreamInfo
     memcpy((unsigned char *)omx_buffer->pBuffer, &m_wave_header, omx_buffer->nFilledLen);
     omx_buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG | OMX_BUFFERFLAG_ENDOFFRAME;
 
-    dump_omx_buffer(omx_buffer);
     omx_err = m_omx_decoder.EmptyThisBuffer(omx_buffer);
     if (omx_err != OMX_ErrorNone)
     {
@@ -943,7 +899,6 @@ bool COMXAudio::Initialize(AEAudioFormat format, OMXClock *clock, CDVDStreamInfo
       memcpy((unsigned char *)omx_buffer->pBuffer, m_extradata, omx_buffer->nFilledLen);
       omx_buffer->nFlags = OMX_BUFFERFLAG_CODECCONFIG | OMX_BUFFERFLAG_ENDOFFRAME;
   
-      dump_omx_buffer(omx_buffer);
       omx_err = m_omx_decoder.EmptyThisBuffer(omx_buffer);
       if (omx_err != OMX_ErrorNone)
       {
@@ -980,8 +935,6 @@ bool COMXAudio::Initialize(AEAudioFormat format, OMXClock *clock, CDVDStreamInfo
 bool COMXAudio::Deinitialize()
 {
   CSingleLock lock (m_critSection);
-
-  dump_omx_buffer(NULL);
 
   if ( m_omx_tunnel_clock_analog.IsInitialized() )
     m_omx_tunnel_clock_analog.Deestablish();
@@ -1270,7 +1223,6 @@ unsigned int COMXAudio::AddPackets(const void* data, unsigned int len, double dt
     if(demuxer_samples_sent == demuxer_samples)
       omx_buffer->nFlags |= OMX_BUFFERFLAG_ENDOFFRAME;
 
-    dump_omx_buffer(omx_buffer);
     omx_err = m_omx_decoder.EmptyThisBuffer(omx_buffer);
     if (omx_err != OMX_ErrorNone)
     {
@@ -1509,7 +1461,6 @@ void COMXAudio::SubmitEOS()
 
   omx_buffer->nFlags = OMX_BUFFERFLAG_ENDOFFRAME | OMX_BUFFERFLAG_EOS | OMX_BUFFERFLAG_TIME_UNKNOWN;
 
-  dump_omx_buffer(omx_buffer);
   omx_err = m_omx_decoder.EmptyThisBuffer(omx_buffer);
   if (omx_err != OMX_ErrorNone)
   {
