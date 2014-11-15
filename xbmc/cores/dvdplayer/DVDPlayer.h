@@ -558,4 +558,5 @@ protected:
   // omxplayer variables
   struct SOmxPlayerState m_OmxPlayerState;
   bool m_omxplayer_mode;            // using omxplayer acceleration
+  CCriticalSection m_players_lock;
 };
