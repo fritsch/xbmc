@@ -122,7 +122,7 @@ struct CVaapiConfig
    , useInteropYuv(false)
    , context(NULL)
    , dpy(0)
-   , profile(0)
+   , profile(VAProfileNone)
    //, attrib
    , x11dsp(NULL)
   {

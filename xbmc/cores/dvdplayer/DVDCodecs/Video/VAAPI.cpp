@@ -1273,9 +1273,6 @@ COutput::COutput(CEvent *inMsgEvent) :
   m_dataPort("OutputDataPort", inMsgEvent, &m_outMsgEvent),
   glXBindTexImageEXT(NULL),
   glXReleaseTexImageEXT(NULL),
-  m_state(0),
-  m_bStateMachineSelfTrigger(false),
-  m_extTimeout(0),
   m_vaError(false),
   m_Display(NULL),
   m_Window(None),
@@ -1284,16 +1281,23 @@ COutput::COutput(CEvent *inMsgEvent) :
   m_pixmap(None),
   m_glPixmap(None),
   m_textureTarget(0),
-  m_pp(NULL),
-  m_diMethods(0),
-  m_currentDiMethod(0)
+  m_pp(NULL)
 {
   m_inMsgEvent = inMsgEvent;
+  m_currentDiMethod = VS_INTERLACEMETHOD_NONE;
 
   for (unsigned int i = 0; i < m_bufferPool.allRenderPics.size(); ++i)
   {
     m_bufferPool.freeRenderPics.push_back(i);
   }
+
+  // initialize vars of state machine
+  // this is logically wrong but
+  // helps us of false positives
+  // by coverity checks
+  m_state = 0;
+  m_bStateMachineSelfTrigger = false;
+  m_extTimeout = 0;
 }
 
 void COutput::Start()
@@ -1547,6 +1551,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
         switch (signal)
         {
         case COutputControlProtocol::TIMEOUT:
+        {
           if (!m_pp->AddPicture(m_currentPicture))
           {
             m_state = O_TOP_ERROR;
@@ -1567,6 +1572,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
           m_controlPort.SendInMessage(COutputControlProtocol::STATS);
           m_extTimeout = 0;
           return;
+        }
         default:
           break;
         }
@@ -1579,6 +1585,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
         switch (signal)
         {
         case COutputControlProtocol::TIMEOUT:
+        {
           CVaapiProcessedPicture outPic;
           if (m_pp->Filter(outPic))
           {
@@ -1590,6 +1597,7 @@ void COutput::StateMachine(int signal, Protocol *port, Message *msg)
           m_state = O_TOP_CONFIGURED_IDLE;
           m_extTimeout = 0;
           return;
+        }
         default:
           break;
         }
@@ -2473,8 +2481,8 @@ CVppPostproc::CVppPostproc()
   , m_backwardRefs(0)
   , m_currentIdx(0)
   , m_frameCount(0)
-  , m_vppMethod(0)
 {
+  m_vppMethod = VS_INTERLACEMETHOD_NONE;
 }
 
 CVppPostproc::~CVppPostproc()
@@ -2943,8 +2951,8 @@ bool CVppPostproc::CheckSuccess(VAStatus status)
 CFFmpegPostproc::CFFmpegPostproc()
  : m_pFilterIn(NULL)
  , m_pFilterOut(NULL)
- , m_diMethod(0)
 {
+  m_diMethod = VS_INTERLACEMETHOD_NONE;
   m_cache = NULL;
   m_pFilterFrameIn = NULL;
   m_pFilterFrameOut = NULL;
