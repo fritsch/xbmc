@@ -321,6 +321,11 @@ struct SDiMethods
 {
   EINTERLACEMETHOD diMethods[8];
   int numDiMethods;
+  SDiMethods()
+  {
+    memset(diMethods, 0, sizeof(diMethods));
+    numDiMethods = 0;
+  }
 };
 
 /**
