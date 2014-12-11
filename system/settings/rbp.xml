@@ -33,10 +33,6 @@
         <setting id="myvideos.extractchapterthumbs">
           <default>false</default>
         </setting>
-      </group>
-    </category>
-    <category id="myvideos">
-      <group id="1">
         <setting id="myvideos.extractflags">
           <default>false</default>
         </setting>
