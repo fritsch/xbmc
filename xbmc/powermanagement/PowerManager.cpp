@@ -40,6 +40,8 @@
 #include "osx/CocoaPowerSyscall.h"
 #elif defined(TARGET_ANDROID)
 #include "android/AndroidPowerSyscall.h"
+#elif defined(HAS_IMXVPU)
+#include "linux/CIMXPowerSyscall.h"
 #elif defined(TARGET_POSIX)
 #include "linux/FallbackPowerSyscall.h"
 #if defined(HAS_DBUS)
@@ -73,6 +75,8 @@ void CPowerManager::Initialize()
   m_instance = new CCocoaPowerSyscall();
 #elif defined(TARGET_ANDROID)
   m_instance = new CAndroidPowerSyscall();
+#elif defined(HAS_IMXVPU)
+  m_instance = new CIMXPowerSyscall();
 #elif defined(TARGET_POSIX)
 #if defined(HAS_DBUS)
   if (CConsoleUPowerSyscall::HasConsoleKitAndUPower())
