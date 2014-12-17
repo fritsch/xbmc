@@ -31,6 +31,7 @@
 #include "input/XBMC_vkeys.h"
 #include "peripherals/Peripherals.h"
 #include "peripherals/devices/PeripheralHID.h"
+#include "settings/AdvancedSettings.h"
 
 using namespace std;
 using namespace PERIPHERALS;
@@ -86,7 +87,8 @@ const CKey CKeyboardStat::ProcessKeyDown(XBMC_keysym& keysym)
   if (keysym.mod & XBMCKMOD_META)
     modifiers |= CKey::MODIFIER_META;
 
-  CLog::Log(LOGDEBUG, "Keyboard: scancode: 0x%02x, sym: 0x%04x, unicode: 0x%04x, modifier: 0x%x", keysym.scancode, keysym.sym, keysym.unicode, keysym.mod);
+  if (g_advancedSettings.CanLogComponent(LOGKEYINPUT))
+    CLog::Log(LOGDEBUG, "Keyboard: scancode: 0x%02x, sym: 0x%04x, unicode: 0x%04x, modifier: 0x%x", keysym.scancode, keysym.sym, keysym.unicode, keysym.mod);
 
   // The keysym.unicode is usually valid, even if it is zero. A zero
   // unicode just means this is a non-printing keypress. The ascii and
@@ -99,7 +101,8 @@ const CKey CKeyboardStat::ProcessKeyDown(XBMC_keysym& keysym)
   // Start by check whether any of the HID peripherals wants to translate this keypress
   if (LookupSymAndUnicodePeripherals(keysym, &vkey, &ascii))
   {
-    CLog::Log(LOGDEBUG, "%s - keypress translated by a HID peripheral", __FUNCTION__);
+    if (g_advancedSettings.CanLogComponent(LOGKEYINPUT))
+      CLog::Log(LOGDEBUG, "%s - keypress translated by a HID peripheral", __FUNCTION__);
   }
 
   // Continue by trying to match both the sym and unicode. This will identify
