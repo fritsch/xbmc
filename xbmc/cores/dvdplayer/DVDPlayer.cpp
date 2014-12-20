@@ -2136,7 +2136,7 @@ void CDVDPlayer::OnExit()
     if (!m_bAbortRequest) CLog::Log(LOGNOTICE, "DVDPlayer: eof, waiting for queues to empty");
     CloseStream(m_CurrentAudio,    !m_bAbortRequest);
     CloseStream(m_CurrentVideo,    !m_bAbortRequest);
-    CloseStream(m_CurrentSubtitle, !m_bAbortRequest);
+    CloseStream(m_CurrentSubtitle, false);  // clear overlay container
     CloseStream(m_CurrentTeletext, !m_bAbortRequest);
 
     // destroy objects
