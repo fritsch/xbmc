@@ -279,6 +279,7 @@ bool CXBMCRenderManager::Configure(unsigned int width, unsigned int height, unsi
     m_pRenderer->SetBufferSize(m_QueueSize);
     m_pRenderer->Update();
 
+    m_overlays.Flush();
     m_queued.clear();
     m_discard.clear();
     m_free.clear();
