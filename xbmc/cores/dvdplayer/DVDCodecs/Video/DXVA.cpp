@@ -312,7 +312,7 @@ bool CDXVAContext::CreateContext()
       renderer.find("Radeon HD 4") != std::string::npos ||
       renderer.find("Radeon HD 5") != std::string::npos)
   {
-    m_atiWorkaround = true;
+    m_atiWorkaround = g_advancedSettings.m_myAMDGPUsucks;
   }
 
   return true;

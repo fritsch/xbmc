@@ -337,6 +337,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_iSkipLoopFilter;
     float m_ForcedSwapTime; /* if nonzero, set's the explicit time in ms to allocate for buffer swap */
 
+    bool m_myAMDGPUsucks;
     bool m_AllowD3D9Ex;
     bool m_ForceD3D9Ex;
     bool m_AllowDynamicTextures;
