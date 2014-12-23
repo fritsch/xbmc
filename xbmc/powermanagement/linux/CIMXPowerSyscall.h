@@ -42,7 +42,13 @@ public:
   {
     delete m_instance;
   }
-  virtual bool Powerdown() {return false; }
+  virtual bool Powerdown()
+  {
+    if (m_instance)
+      return m_instance->Powerdown();
+    else
+      return false;
+  }
   virtual bool Suspend() {return false; }
   virtual bool Hibernate() {return false; }
   virtual bool Reboot()
@@ -53,7 +59,13 @@ public:
       return false;
   }
 
-  virtual bool CanPowerdown() {return false; }
+  virtual bool CanPowerdown()
+  {
+    if (m_instance)
+      return m_instance->CanPowerdown();
+    else
+      return false;
+  }
   virtual bool CanSuspend() {return false; }
   virtual bool CanHibernate() {return false;}
   virtual bool CanReboot()
