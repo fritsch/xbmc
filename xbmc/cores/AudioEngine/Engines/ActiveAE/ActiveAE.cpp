@@ -2174,12 +2174,14 @@ bool CActiveAE::Initialize()
 {
   Create();
   Message *reply;
+  CLog::Log(LOGNOTICE, "ActiveAE::Initialize (start)");
   if (m_controlPort.SendOutMessageSync(CActiveAEControlProtocol::INIT,
                                                  &reply,
                                                  60000))
   {
     bool success = reply->signal == CActiveAEControlProtocol::ACC;
     reply->Release();
+    CLog::Log(LOGNOTICE, "ActiveAE::Initialize (end) %d", success ? 1 : 0);
     if (!success)
     {
       CLog::Log(LOGERROR, "ActiveAE::%s - returned error", __FUNCTION__);
@@ -2749,11 +2751,13 @@ IAEStream *CActiveAE::MakeStream(enum AEDataFormat dataFormat, unsigned int samp
   msg.options = options;
 
   Message *reply;
+  CLog::Log(LOGNOTICE, "ActiveAE::MakeStream (start)");
   if (m_dataPort.SendOutMessageSync(CActiveAEDataProtocol::NEWSTREAM,
                                     &reply,20000,
                                     &msg, sizeof(MsgStreamNew)))
   {
     bool success = reply->signal == CActiveAEControlProtocol::ACC;
+    CLog::Log(LOGNOTICE, "ActiveAE::MakeStream (end) %d", success ? 1 : 0);
     if (success)
     {
       CActiveAEStream *stream = *(CActiveAEStream**)reply->data;
