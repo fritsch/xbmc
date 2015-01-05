@@ -2605,9 +2605,19 @@ bool CVppPostproc::Init(EINTERLACEMETHOD method)
   {
     return false;
   }
-
-  m_forwardRefs = pplCaps.num_forward_references;
-  m_backwardRefs = pplCaps.num_backward_references;
+  
+  if (vppMethod == VAProcDeinterlacingBob)
+  {
+    // workaround driver that also returns forwardrefs for bobbing
+    // should be fixed in libva-driver-intel 1.5.1
+    m_forwardRefs = 0;
+    m_backwardRefs = 0;
+  }
+  else
+  {
+    m_forwardRefs = pplCaps.num_forward_references;
+    m_backwardRefs = pplCaps.num_backward_references;
+  }
   m_currentIdx = 0;
   m_frameCount = 0;
 
