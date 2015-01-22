@@ -89,7 +89,12 @@ static PFNEGLCLIENTWAITSYNCKHRPROC eglClientWaitSyncKHR;
 #include "windowing/egl/EGLWrapper.h"
 #include "DVDCodecs/Video/DVDVideoCodecIMX.h"
 
+#define GL_VIV_YV12 0x8FC0
 #define GL_VIV_NV12 0x8FC1
+#define GL_VIV_YUY2 0x8FC2
+#define GL_VIV_UYVY 0x8FC3
+#define GL_VIV_NV21 0x8FC4
+#define GL_VIV_I420 0x8FC5
 typedef void (GL_APIENTRYP PFNGLTEXDIRECTVIVMAPPROC) (GLenum Target, GLsizei Width, GLsizei Height, GLenum Format, GLvoid ** Logical, const GLuint * Physical);
 typedef void (GL_APIENTRYP PFNGLTEXDIRECTINVALIDATEVIVPROC) (GLenum Target);
 static PFNGLTEXDIRECTVIVMAPPROC glTexDirectVIVMap;
@@ -608,6 +613,69 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
 
     return;
   }
+#ifdef HAS_IMXVPU
+  else if (m_renderMethod & RENDER_IMXMAP)
+  {
+    ManageDisplay();
+
+    CDVDVideoCodecIMXBuffer *buffer = m_buffers[m_iYV12RenderBuffer].IMXBuffer;
+    if (buffer != NULL && buffer->IsValid())
+    {
+      g_IMXContext.SetBlitRects(m_sourceRect, m_destRect);
+
+      bool topFieldFirst = true;
+      bool done = true;
+
+      // Deinterlacing requested
+      if (flags & RENDER_FLAG_FIELDMASK)
+      {
+        if (flags & RENDER_FLAG_FIELD0)
+        {
+          // Double rate first frame
+          topFieldFirst = flags & RENDER_FLAG_TOP;
+          g_IMXContext.SetDeInterlacing(true);
+          g_IMXContext.SetDoubleRate(true);
+          g_IMXContext.SetInterpolatedFrame(true);
+          done = false;
+        }
+        else if (flags & RENDER_FLAG_FIELD1)
+        {
+          // Double rate second frame
+          // FIELD1 swaps the render field order, we need to
+          // swap it back for the IPU
+          topFieldFirst = flags & RENDER_FLAG_BOT;
+          g_IMXContext.SetDeInterlacing(true);
+          g_IMXContext.SetDoubleRate(true);
+          g_IMXContext.SetInterpolatedFrame(false);
+        }
+        else
+        {
+          // Fast motion
+          topFieldFirst = flags & RENDER_FLAG_TOP;
+          g_IMXContext.SetDeInterlacing(true);
+          g_IMXContext.SetDoubleRate(false);
+        }
+      }
+      // Progressive
+      else
+        g_IMXContext.SetDeInterlacing(false);
+
+#if 0
+      int page = g_IMXContext.GetCurrentPage();
+      page = 1-page;
+
+      g_IMXContext.Blit(page, NULL, buffer, topFieldFirst);
+      g_IMXContext.ShowPage(page);
+#else
+      g_IMXContext.BlitAsync(NULL, buffer, topFieldFirst);
+#endif
+
+      // Prevent rendering again
+      if (done)
+        SAFE_RELEASE(m_buffers[m_iYV12RenderBuffer].IMXBuffer);
+    }
+  }
+#endif
 }
 
 void CLinuxRendererGLES::FlipPage(int source)
@@ -618,7 +686,6 @@ void CLinuxRendererGLES::FlipPage(int source)
     m_iYV12RenderBuffer = NextYV12Texture();
 
   m_buffers[m_iYV12RenderBuffer].flipindex = ++m_flipindex;
-
   return;
 }
 
@@ -963,13 +1030,7 @@ void CLinuxRendererGLES::ReleaseBuffer(int idx)
 #endif
 #ifdef HAS_IMXVPU
   if (m_renderMethod & RENDER_IMXMAP)
-  {
-    if (buf.IMXBuffer)
-    {
-      SAFE_RELEASE(buf.IMXBuffer);
-      buf.IMXBuffer = NULL;
-    }
-  }
+    SAFE_RELEASE(buf.IMXBuffer);
 #endif
 }
 
@@ -1241,7 +1302,7 @@ void CLinuxRendererGLES::RenderMultiPass(int index, int field)
 //    imgwidth  *= planes[0].pixpertex_x;
 //    imgheight *= planes[0].pixpertex_y;
 //  }
-//  
+//
 //  glBegin(GL_QUADS);
 //
 //  glMultiTexCoord2fARB(GL_TEXTURE0, planes[0].rect.x1, planes[0].rect.y1);
@@ -1679,6 +1740,7 @@ void CLinuxRendererGLES::RenderCoreVideoRef(int index, int field)
 
 void CLinuxRendererGLES::RenderIMXMAPTexture(int index, int field)
 {
+#if 0
 #if defined(HAS_IMXVPU)
 #ifdef DEBUG_VERBOSE
   unsigned int time = XbmcThreads::SystemClockMillis();
@@ -1752,6 +1814,7 @@ void CLinuxRendererGLES::RenderIMXMAPTexture(int index, int field)
 
 #ifdef DEBUG_VERBOSE
   CLog::Log(LOGDEBUG, "RenderIMXMAPTexture %d: tm:%d\n", index, XbmcThreads::SystemClockMillis() - time);
+#endif
 #endif
 #endif
 }
@@ -2717,42 +2780,6 @@ void CLinuxRendererGLES::SetTextureFilter(GLenum method)
 //********************************************************************************************************
 void CLinuxRendererGLES::UploadIMXMAPTexture(int index)
 {
-#ifdef HAS_IMXVPU
-  YUVBUFFER& buf =  m_buffers[index];
-  CDVDVideoCodecIMXBuffer* IMXBuffer = buf.IMXBuffer;
-
-  if(IMXBuffer)
-  {
-    CDVDVideoCodecIMX::Enter();
-
-    if(!IMXBuffer->IsValid())
-    {
-      CDVDVideoCodecIMX::Leave();
-      return;
-    }
-
-    YUVPLANE &plane = m_buffers[index].fields[0][0];
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(m_textureTarget, plane.id);
-
-    GLuint physical = ~0U;
-    GLvoid *virt = (GLvoid*)IMXBuffer->m_VirtAddr;
-    glTexDirectVIVMap(m_textureTarget, IMXBuffer->m_iWidth, IMXBuffer->m_iHeight, GL_VIV_NV12,
-                      (GLvoid **)&virt, &physical);
-    glTexDirectInvalidateVIV(m_textureTarget);
-
-    glBindTexture(m_textureTarget, 0);
-
-    plane.flipindex = m_buffers[index].flipindex;
-    plane.texwidth  = IMXBuffer->m_iWidth;
-    plane.texheight = IMXBuffer->m_iHeight;
-
-    CalculateTextureSourceRects(index, 1);
-
-    CDVDVideoCodecIMX::Leave();
-  }
-#endif
 }
 
 void CLinuxRendererGLES::DeleteIMXMAPTexture(int index)
@@ -2868,9 +2895,6 @@ bool CLinuxRendererGLES::Supports(EDEINTERLACEMODE mode)
   if(m_renderMethod & RENDER_CVREF)
     return false;
 
-  if(m_renderMethod & RENDER_IMXMAP)
-    return false;
-
   if(mode == VS_DEINTERLACEMODE_AUTO
   || mode == VS_DEINTERLACEMODE_FORCE)
     return true;
@@ -2899,13 +2923,19 @@ bool CLinuxRendererGLES::Supports(EINTERLACEMETHOD method)
   if(m_renderMethod & RENDER_CVREF)
     return false;
 
-  if(m_renderMethod & RENDER_IMXMAP)
-    return false;
-
   if(method == VS_INTERLACEMETHOD_AUTO)
     return true;
 
-#if defined(__i386__) || defined(__x86_64__)
+  if(m_renderMethod & RENDER_IMXMAP)
+  {
+    if(method == VS_INTERLACEMETHOD_IMX_FASTMOTION
+    || method == VS_INTERLACEMETHOD_IMX_FASTMOTION_DOUBLE)
+      return true;
+    else
+      return false;
+  }
+
+#if !defined(TARGET_ANDROID) && (defined(__i386__) || defined(__x86_64__))
   if(method == VS_INTERLACEMETHOD_DEINTERLACE
   || method == VS_INTERLACEMETHOD_DEINTERLACE_HALF
   || method == VS_INTERLACEMETHOD_SW_BLEND)
@@ -2925,6 +2955,9 @@ bool CLinuxRendererGLES::Supports(ESCALINGMETHOD method)
     Features::iterator itr = std::find(m_scalingMethods.begin(),m_scalingMethods.end(), method);
     return itr != m_scalingMethods.end();
   }
+
+  if(m_renderMethod & RENDER_IMXMAP)
+    return false;
 
   if(method == VS_SCALINGMETHOD_NEAREST
   || method == VS_SCALINGMETHOD_LINEAR)
@@ -2954,7 +2987,7 @@ EINTERLACEMETHOD CLinuxRendererGLES::AutoInterlaceMethod()
     return VS_INTERLACEMETHOD_NONE;
 
   if(m_renderMethod & RENDER_IMXMAP)
-    return VS_INTERLACEMETHOD_NONE;
+    return VS_INTERLACEMETHOD_IMX_FASTMOTION;
 
 #if defined(__i386__) || defined(__x86_64__)
   return VS_INTERLACEMETHOD_DEINTERLACE_HALF;
@@ -2970,6 +3003,9 @@ unsigned int CLinuxRendererGLES::GetOptimalBufferSize()
      m_format == RENDER_FMT_EGLIMG ||
      m_format == RENDER_FMT_MEDIACODEC)
     return 2;
+  else if(m_format == RENDER_FMT_IMXMAP)
+    // Let the codec control the buffer size
+    return GetMaxBufferSize();
   else
     return 3;
 }
@@ -3061,7 +3097,7 @@ void CLinuxRendererGLES::AddProcessor(CDVDVideoCodecIMXBuffer *buffer, int index
 
 bool CLinuxRendererGLES::IsGuiLayer()
 {
-  if (m_format == RENDER_FMT_BYPASS)
+  if (m_format == RENDER_FMT_BYPASS || m_format == RENDER_FMT_IMXMAP)
     return false;
   else
     return true;

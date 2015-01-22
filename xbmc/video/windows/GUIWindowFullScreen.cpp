@@ -284,7 +284,7 @@ bool CGUIWindowFullScreen::OnAction(const CAction &action)
           CStdString strChannel = StringUtils::Format("%i", action.GetID() - REMOTE_0);
           if (CGUIDialogNumeric::ShowAndGetNumber(strChannel, g_localizeStrings.Get(19000)))
             iChannelNumber = atoi(strChannel.c_str());
-            
+
           if (iChannelNumber > 0)
             g_application.OnAction(CAction(ACTION_CHANNEL_SWITCH, (float)iChannelNumber));
         }
@@ -356,7 +356,11 @@ bool CGUIWindowFullScreen::OnAction(const CAction &action)
 void CGUIWindowFullScreen::ClearBackground()
 {
   if (g_renderManager.IsVideoLayer())
+#ifdef HAS_IMXVPU
+    g_graphicsContext.Clear((16 << 16)|(8 << 8)|16);
+#else
     g_graphicsContext.Clear(0);
+#endif
 }
 
 void CGUIWindowFullScreen::OnWindowLoaded()

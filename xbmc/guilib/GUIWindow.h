@@ -101,7 +101,7 @@ public:
   /*! \brief Do any post render activities.
     Check if window closing animation is finished and finalize window closing.
    */
-  void AfterRender();
+  virtual void AfterRender();
   
   /*! \brief Main update function, called every frame prior to rendering
    Any window that requires updating on a frame by frame basis (such as to maintain
