@@ -624,7 +624,6 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
       g_IMXContext.SetBlitRects(m_sourceRect, m_destRect);
 
       bool topFieldFirst = true;
-      bool done = true;
 
       // Deinterlacing requested
       if (flags & RENDER_FLAG_FIELDMASK)
@@ -636,7 +635,6 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
           g_IMXContext.SetDeInterlacing(true);
           g_IMXContext.SetDoubleRate(true);
           g_IMXContext.SetInterpolatedFrame(true);
-          done = false;
         }
         else if (flags & RENDER_FLAG_FIELD1)
         {
@@ -670,9 +668,6 @@ void CLinuxRendererGLES::RenderUpdateVideo(bool clear, DWORD flags, DWORD alpha)
       g_IMXContext.BlitAsync(NULL, buffer, topFieldFirst);
 #endif
 
-      // Prevent rendering again
-      if (done)
-        SAFE_RELEASE(m_buffers[m_iYV12RenderBuffer].IMXBuffer);
     }
   }
 #endif
