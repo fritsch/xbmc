@@ -25,6 +25,7 @@ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
 	cd $(PLATFORM); ./bootstrap
 	cd $(PLATFORM); patch -p0 < ../utils.patch
 	cd $(PLATFORM); patch -p1 < ../readahead.patch
+	cd $(PLATFORM); patch -p1 < ../0001-Sequential-Readahead-Mode.patch
 	cd $(PLATFORM); $(CONFIGURE)
 
 $(LIBDYLIB): $(PLATFORM)
