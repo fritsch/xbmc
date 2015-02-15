@@ -50,6 +50,9 @@
 #include "Video/DVDVideoCodecAndroidMediaCodec.h"
 #include "android/activity/AndroidFeatures.h"
 #endif
+#if defined(HAS_MMAL)
+#include "linux/RBP.h"
+#endif
 #include "Audio/DVDAudioCodecFFmpeg.h"
 #include "Audio/DVDAudioCodecPassthrough.h"
 #include "Overlay/DVDOverlayCodecSSA.h"
@@ -199,6 +202,10 @@ CDVDVideoCodec* CDVDFactoryCodec::CreateVideoCodec(CDVDStreamInfo &hint, unsigne
 #endif
   CLog::Log(LOGDEBUG, "CDVDFactoryCodec: compiled in hardware support: %s", hwSupport.c_str());
 
+#if defined(HAS_MMAL)
+  // mmal can handle dvd playback including stills
+  if (!CSettings::Get().GetBool("videoplayer.usemmal") || !g_RBP.GetCodecMpg2())
+#endif
   if (hint.stills && (hint.codec == AV_CODEC_ID_MPEG2VIDEO || hint.codec == AV_CODEC_ID_MPEG1VIDEO))
   {
      // If dvd is an mpeg2 and hint.stills
