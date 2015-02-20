@@ -275,14 +275,14 @@ bool CEGLNativeTypeIMX::ModeToResolution(std::string mode, RESOLUTION_INFO *res)
   StringUtils::Trim(fromMode);
 
   CRegExp split(true);
-  split.RegComp("([0-9]+)x([0-9]+)([pi])-([0-9]+)");
+  split.RegComp("([0-9]+)x([0-9]+)([pi])-([-+]?[0-9]*\.?[0-9]*)");
   if (split.RegFind(fromMode) < 0)
     return false;
 
   int w = atoi(split.GetMatch(1).c_str());
   int h = atoi(split.GetMatch(2).c_str());
   std::string p = split.GetMatch(3);
-  int r = atoi(split.GetMatch(4).c_str());
+  float r = atof(split.GetMatch(4).c_str());
 
   res->iWidth = w;
   res->iHeight= h;
@@ -295,7 +295,7 @@ bool CEGLNativeTypeIMX::ModeToResolution(std::string mode, RESOLUTION_INFO *res)
   res->bFullScreen   = true;
   res->iSubtitles    = (int)(0.965 * res->iHeight);
   res->fPixelRatio   = 1.0f;
-  res->strMode       = StringUtils::Format("%dx%d @ %.2f%s - Full Screen", res->iScreenWidth, res->iScreenHeight, res->fRefreshRate,
+  res->strMode       = StringUtils::Format("%dx%d @ %.3f%s - Full Screen", res->iScreenWidth, res->iScreenHeight, res->fRefreshRate,
                                            res->dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
   res->strId         = mode;
 
