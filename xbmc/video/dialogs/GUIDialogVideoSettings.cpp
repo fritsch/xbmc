@@ -64,7 +64,9 @@ using namespace std;
 CGUIDialogVideoSettings::CGUIDialogVideoSettings()
     : CGUIDialogSettingsManualBase(WINDOW_DIALOG_VIDEO_OSD_SETTINGS, "VideoOSDSettings.xml"),
       m_viewModeChanged(false)
-{ }
+{
+  m_loadType = LOAD_ON_GUI_INIT;
+}
 
 CGUIDialogVideoSettings::~CGUIDialogVideoSettings()
 { }
