@@ -372,7 +372,7 @@ void CAdvancedSettings::Initialize()
   m_networkBufferMode = 0; // Default (buffer all internet streams/filesystems)
   // the following setting determines the readRate of a player data
   // as multiply of the default data read rate
-  m_readBufferFactor = 1.0f;
+  m_readBufferFactor = 1.1f;
   m_addonPackageFolderSize = 200;
 
   m_jsonOutputCompact = true;
