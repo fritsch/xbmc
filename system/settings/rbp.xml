@@ -41,6 +41,11 @@
           <default>true</default>
           <control type="toggle" />
         </setting>
+        <setting id="videoplayer.supportdtshd" type="boolean" label="38120" help="38121">
+          <level>2</level>
+          <default>false</default>
+          <control type="toggle" />
+        </setting>
       </group>
     </category>
     <category id="myvideos">

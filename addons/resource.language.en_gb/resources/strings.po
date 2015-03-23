@@ -16668,3 +16668,13 @@ msgstr ""
 msgctxt "#38103"
 msgid "Extract thumbnails from video files"
 msgstr ""
+
+#: system/settings/rbp.xml
+msgctxt "#38120"
+msgid "Support 8 channel DTS HD audio"
+msgstr ""
+
+#: system/settings/rbp.xml
+msgctxt "#38121"
+msgid "This option supports 8 channel DTS HD but may use more CPU "
+msgstr ""
