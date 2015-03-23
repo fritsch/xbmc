@@ -2,7 +2,8 @@ include ../../Makefile.include
 include FFMPEG-VERSION
 DEPS= ../../Makefile.include FFMPEG-VERSION Makefile ffmpeg_Speed_up_wtv_index_creation.patch 0001-libavformat-add-mvcC-handling-in-.mov-.mp4.patch \
   hevcdsp_ARM_NEON_optimized_epel_functions.patch \
-  0001-Discard-data-before-VO-VOL-in-mpeg-4-over-mpegts.patch
+  0001-Discard-data-before-VO-VOL-in-mpeg-4-over-mpegts.patch \
+  0001-avcodec-add-libdcadec-decoder.patch  0002-avcodec-Fix-libdcadec-include-dir.patch 0003-avcodec-add-profile-define-for-DTS-Express.patch
 
 # set to "yes" to enable patching
 # we don't apply patches until we move to a vanilla ffmpeg tarball
@@ -57,6 +58,7 @@ endif
 ifeq ($(Configuration), Release)
   ffmpg_config += --disable-debug
 endif
+ffmpg_config += --enable-libdcadec --disable-decoder=dca
 
 
 CLEAN_FILES=$(ARCHIVE) $(PLATFORM)
@@ -74,6 +76,9 @@ $(PLATFORM): $(TARBALLS_LOCATION)/$(ARCHIVE) $(DEPS)
 	cd $(PLATFORM); patch -p1 < ../0001-libavformat-add-mvcC-handling-in-.mov-.mp4.patch
 	cd $(PLATFORM); patch -p1 < ../hevcdsp_ARM_NEON_optimized_epel_functions.patch
 	cd $(PLATFORM); patch -p1 < ../0001-Discard-data-before-VO-VOL-in-mpeg-4-over-mpegts.patch
+	cd $(PLATFORM); patch -p1 < ../0001-avcodec-add-libdcadec-decoder.patch
+	cd $(PLATFORM); patch -p1 < ../0002-avcodec-Fix-libdcadec-include-dir.patch
+	cd $(PLATFORM); patch -p1 < ../0003-avcodec-add-profile-define-for-DTS-Express.patch
 
 	cd $(PLATFORM);\
 	CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS)" CPPFLAGS="$(CPPFLAGS)" LDFLAGS="$(LDFLAGS)" \
