@@ -89,6 +89,7 @@ public:
   virtual void SetDropState(bool bDrop);
   virtual const char* GetName(void) { return (const char*)m_pFormatName; }
   virtual bool GetCodecStats(double &pts, int &droppedPics);
+  virtual void SetCodecControl(int flags);
   virtual void SetSpeed(int iSpeed);
 
   // MMAL decoder callback routines.
@@ -140,6 +141,7 @@ protected:
   unsigned int      m_droppedPics;
   int               m_speed;
   bool              m_preroll;
+  int               m_codecControlFlags;
 
   MMAL_COMPONENT_T *m_dec;
   MMAL_PORT_T *m_dec_input;

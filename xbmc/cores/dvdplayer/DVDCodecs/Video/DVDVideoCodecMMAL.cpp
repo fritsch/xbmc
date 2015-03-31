@@ -96,6 +96,11 @@ bool CDVDVideoCodecMMAL::GetCodecStats(double &pts, int &droppedPics)
   return m_decoder->GetCodecStats(pts, droppedPics);
 }
 
+void CDVDVideoCodecMMAL::SetCodecControl(int flags)
+{
+  m_decoder->SetCodecControl(flags);
+}
+
 void CDVDVideoCodecMMAL::SetSpeed(int iSpeed)
 {
   m_decoder->SetSpeed(iSpeed);
