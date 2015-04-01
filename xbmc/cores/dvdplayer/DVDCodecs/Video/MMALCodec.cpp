@@ -928,7 +928,8 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
       break;
   }
   int ret = 0;
-  if (mmal_queue_length(m_dec_input_pool->queue) > 0 && !m_demux_queue_length)
+  int fps = m_hints.fpsrate && m_hints.fpsscale ? (float)m_hints.fpsrate / (float)m_hints.fpsscale : 25;
+  if (mmal_queue_length(m_dec_input_pool->queue) > 0 && !m_demux_queue_length && m_dts_queue.size() <= fps/2)
   {
     if (g_advancedSettings.CanLogComponent(LOGVIDEO))
       CLog::Log(LOGDEBUG, "%s::%s - got space for output: demux_queue(%d) space(%d)", CLASSNAME, __func__, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size);
