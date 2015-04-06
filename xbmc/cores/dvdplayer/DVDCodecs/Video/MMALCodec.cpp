@@ -129,6 +129,7 @@ CMMALVideo::CMMALVideo()
   m_preroll = true;
   m_speed = DVD_PLAYSPEED_NORMAL;
   m_codecControlFlags = 0;
+  m_history_valid_pts = 0;
 }
 
 CMMALVideo::~CMMALVideo()
@@ -258,27 +259,7 @@ void CMMALVideo::dec_output_port_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
     {
       assert(!(buffer->flags & MMAL_BUFFER_HEADER_FLAG_DECODEONLY));
       double dts = DVD_NOPTS_VALUE;
-      if (buffer->flags & MMAL_BUFFER_HEADER_FLAG_USER0)
-      {
-        pthread_mutex_lock(&m_output_mutex);
-        if (!m_dts_queue.empty())
-        {
-          dts = m_dts_queue.front();
-          m_dts_queue.pop();
-        }
-        else assert(0);
-        pthread_mutex_unlock(&m_output_mutex);
-      }
-
-      if (m_drop_state)
-      {
-        pthread_mutex_lock(&m_output_mutex);
-        m_droppedPics++;
-        pthread_mutex_unlock(&m_output_mutex);
-        if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-          CLog::Log(LOGDEBUG, "%s::%s - dropping %p (drop:%d)", CLASSNAME, __func__, buffer, m_drop_state);
-      }
-      else
+      if (!m_drop_state) // && !(g_advancedSettings.m_omxDecodeStartWithValidFrame && (buffer->flags & MMAL_BUFFER_HEADER_FLAG_CORRUPTED)))
       {
         CMMALVideoBuffer *omvb = new CMMALVideoBuffer(this);
         if (g_advancedSettings.CanLogComponent(LOGVIDEO))
@@ -296,6 +277,14 @@ void CMMALVideo::dec_output_port_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
         m_output_ready.push(omvb);
         pthread_mutex_unlock(&m_output_mutex);
         kept = true;
+      }
+      else
+      {
+        pthread_mutex_lock(&m_output_mutex);
+        m_droppedPics++;
+        pthread_mutex_unlock(&m_output_mutex);
+        if (g_advancedSettings.CanLogComponent(LOGVIDEO))
+          CLog::Log(LOGDEBUG, "%s::%s - dropping %p dts:%.3f pts:%.3f (drop:%d len:%d flags:%x)", CLASSNAME, __func__, buffer, dts*1e-6, buffer->pts*1e-6, m_drop_state, buffer->length, buffer->flags);
       }
     }
   }
@@ -653,6 +642,10 @@ bool CMMALVideo::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options, MMALVide
   if (status != MMAL_SUCCESS)
     CLog::Log(LOGERROR, "%s::%s Failed to enable extra buffers on %s (status=%x %s)", CLASSNAME, __func__, m_dec_input->name, status, mmal_status_to_string(status));
 
+  status = mmal_port_parameter_set_uint32(m_dec_input, MMAL_PARAMETER_VIDEO_TIMESTAMP_FIFO, 1);
+  if (status != MMAL_SUCCESS)
+    CLog::Log(LOGERROR, "%s::%s Failed to enable timestamp fifo mode on %s (status=%x %s)", CLASSNAME, __func__, m_dec_input->name, status, mmal_status_to_string(status));
+
   status = mmal_port_format_commit(m_dec_input);
   if (status != MMAL_SUCCESS)
   {
@@ -721,6 +714,8 @@ bool CMMALVideo::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options, MMALVide
   m_startframe = false;
   m_preroll = !m_hints.stills;
   m_speed = DVD_PLAYSPEED_NORMAL;
+  // start from assuming all recent frames had valid pts
+  m_history_valid_pts = ~0;
 
   return true;
 }
@@ -736,10 +731,9 @@ void CMMALVideo::Dispose()
     done = true;
   pthread_mutex_unlock(&m_output_mutex);
   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-    CLog::Log(LOGDEBUG, "%s::%s dts_queue(%d) ready_queue(%d) busy_queue(%d) done:%d", CLASSNAME, __func__, m_dts_queue.size(), m_output_ready.size(), m_output_busy, done);
+    CLog::Log(LOGDEBUG, "%s::%s ready_queue(%d) busy_queue(%d) done:%d", CLASSNAME, __func__, m_output_ready.size(), m_output_busy, done);
   if (done)
   {
-    assert(m_dts_queue.empty());
     m_myself.reset();
   }
 }
@@ -772,11 +766,19 @@ void CMMALVideo::SetDropState(bool bDrop)
   }
 }
 
+static unsigned count_bits(int32_t value)
+{
+  unsigned bits = 0;
+  for(;value;++bits)
+    value &= value - 1;
+  return bits;
+}
+
 int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
 {
   //if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-  //  CLog::Log(LOGDEBUG, "%s::%s - %-8p %-6d dts:%.3f pts:%.3f dts_queue(%d) ready_queue(%d) busy_queue(%d)",
-  //    CLASSNAME, __func__, pData, iSize, dts == DVD_NOPTS_VALUE ? 0.0 : dts*1e-6, pts == DVD_NOPTS_VALUE ? 0.0 : pts*1e-6, m_dts_queue.size(), m_output_ready.size(), m_output_busy);
+  //  CLog::Log(LOGDEBUG, "%s::%s - %-8p %-6d dts:%.3f pts:%.3f ready_queue(%d) busy_queue(%d)",
+  //    CLASSNAME, __func__, pData, iSize, dts == DVD_NOPTS_VALUE ? 0.0 : dts*1e-6, pts == DVD_NOPTS_VALUE ? 0.0 : pts*1e-6, m_output_ready.size(), m_output_busy);
 
   unsigned int demuxer_bytes = 0;
   uint8_t *demuxer_content = NULL;
@@ -840,6 +842,13 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
          return VC_ERROR;
        }
 
+       // some packed bitstream AVI files set almost all pts values to DVD_NOPTS_VALUE, but have a scattering of real pts values.
+       // the valid pts values match the dts values.
+       // if a stream has had more than 4 valid pts values in the last 16, the use UNKNOWN, otherwise use dts
+       m_history_valid_pts = (m_history_valid_pts << 1) | (pts != DVD_NOPTS_VALUE);
+       if (count_bits(m_history_valid_pts & 0xffff) < 4)
+         pts = dts;
+
        mmal_buffer_header_reset(buffer);
        buffer->cmd = 0;
        if (!m_startframe && pts == DVD_NOPTS_VALUE)
@@ -862,8 +871,8 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
          buffer->flags |= MMAL_BUFFER_HEADER_FLAG_FRAME_END;
 
        if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-         CLog::Log(LOGDEBUG, "%s::%s - %-8p %-6d/%-6d dts:%.3f pts:%.3f flags:%x dts_queue(%d) ready_queue(%d) busy_queue(%d) demux_queue(%d) space(%d)",
-            CLASSNAME, __func__, buffer, buffer->length, demuxer_bytes, dts == DVD_NOPTS_VALUE ? 0.0 : dts*1e-6, pts == DVD_NOPTS_VALUE ? 0.0 : pts*1e-6, buffer->flags, m_dts_queue.size(), m_output_ready.size(), m_output_busy, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size);
+         CLog::Log(LOGDEBUG, "%s::%s - %-8p %-6d/%-6d dts:%.3f pts:%.3f flags:%x ready_queue(%d) busy_queue(%d) demux_queue(%d) space(%d)",
+            CLASSNAME, __func__, buffer, buffer->length, demuxer_bytes, dts == DVD_NOPTS_VALUE ? 0.0 : dts*1e-6, pts == DVD_NOPTS_VALUE ? 0.0 : pts*1e-6, buffer->flags, m_output_ready.size(), m_output_busy, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size);
        assert((int)buffer->length > 0);
        status = mmal_port_send_buffer(m_dec_input, buffer);
        if (status != MMAL_SUCCESS)
@@ -879,12 +888,6 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
          if (m_drop_state)
          {
            m_droppedPics += m_deint ? 2:1;
-         }
-         else
-         {
-           // only push if we are successful with feeding mmal
-           m_dts_queue.push(dts);
-           assert(m_dts_queue.size() < 5000);
          }
          pthread_mutex_unlock(&m_output_mutex);
          if (m_changed_count_dec != m_changed_count)
@@ -928,11 +931,11 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
       break;
   }
   int ret = 0;
-  int fps = m_hints.fpsrate && m_hints.fpsscale ? (float)m_hints.fpsrate / (float)m_hints.fpsscale : 25;
-  if (mmal_queue_length(m_dec_input_pool->queue) > 0 && !m_demux_queue_length && m_dts_queue.size() <= fps/2)
+  double queued = m_decoderPts != DVD_NOPTS_VALUE && pts != DVD_NOPTS_VALUE ? pts - m_decoderPts : 0.0;
+  if (mmal_queue_length(m_dec_input_pool->queue) > 0 && !m_demux_queue_length && queued <= DVD_MSEC_TO_TIME(500))
   {
     if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-      CLog::Log(LOGDEBUG, "%s::%s - got space for output: demux_queue(%d) space(%d)", CLASSNAME, __func__, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size);
+      CLog::Log(LOGDEBUG, "%s::%s - got space for output: demux_queue(%d) space(%d) queued(%.2f)", CLASSNAME, __func__, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size, queued*1e-6);
     ret |= VC_BUFFER;
   }
   else
@@ -953,8 +956,8 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
   if (!ret)
   {
     if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-      CLog::Log(LOGDEBUG, "%s::%s - Nothing to do: dts_queue(%d) ready_queue(%d) busy_queue(%d) demux_queue(%d) space(%d) preroll(%d)",
-        CLASSNAME, __func__, m_dts_queue.size(), m_output_ready.size(), m_output_busy, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size, m_preroll);
+      CLog::Log(LOGDEBUG, "%s::%s - Nothing to do: ready_queue(%d) busy_queue(%d) demux_queue(%d) space(%d) preroll(%d)",
+        CLASSNAME, __func__, m_output_ready.size(), m_output_busy, m_demux_queue_length, mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size, m_preroll);
     Sleep(10); // otherwise we busy spin
   }
   return ret;
@@ -984,8 +987,6 @@ void CMMALVideo::Reset(void)
   bool old_drop_state = m_drop_state;
   SetDropState(true);
   pthread_mutex_lock(&m_output_mutex);
-  while(!m_dts_queue.empty())
-    m_dts_queue.pop();
   while (!m_demux_queue.empty())
     m_demux_queue.pop();
   m_demux_queue_length = 0;
@@ -1001,6 +1002,7 @@ void CMMALVideo::Reset(void)
   m_decoderPts = DVD_NOPTS_VALUE;
   m_preroll = !m_hints.stills && (m_speed == DVD_PLAYSPEED_NORMAL || m_speed == DVD_PLAYSPEED_PAUSE);
   m_codecControlFlags = 0;
+  m_history_valid_pts = ~0;
 }
 
 void CMMALVideo::SetSpeed(int iSpeed)
@@ -1020,8 +1022,8 @@ void CMMALVideo::Recycle(MMAL_BUFFER_HEADER_T *buffer)
   mmal_buffer_header_reset(buffer);
   buffer->cmd = 0;
   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-    CLog::Log(LOGDEBUG, "%s::%s Send buffer %p from pool to decoder output port %p dts_queue(%d) ready_queue(%d) busy_queue(%d)", CLASSNAME, __func__, buffer, m_dec_output,
-      m_dts_queue.size(), m_output_ready.size(), m_output_busy);
+    CLog::Log(LOGDEBUG, "%s::%s Send buffer %p from pool to decoder output port %p ready_queue(%d) busy_queue(%d)", CLASSNAME, __func__, buffer, m_dec_output,
+      m_output_ready.size(), m_output_busy);
   status = mmal_port_send_buffer(m_dec_output, buffer);
   if (status != MMAL_SUCCESS)
   {
@@ -1048,7 +1050,7 @@ void CMMALVideo::ReleaseBuffer(CMMALVideoBuffer *buffer)
   if (done)
     m_myself.reset();
   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-    CLog::Log(LOGDEBUG, "%s::%s %p (%p) dts_queue(%d) ready_queue(%d) busy_queue(%d) done:%d", CLASSNAME, __func__, buffer, buffer->mmal_buffer, m_dts_queue.size(), m_output_ready.size(), m_output_busy, done);
+    CLog::Log(LOGDEBUG, "%s::%s %p (%p) ready_queue(%d) busy_queue(%d) done:%d", CLASSNAME, __func__, buffer, buffer->mmal_buffer, m_output_ready.size(), m_output_busy, done);
   delete buffer;
 }
 
