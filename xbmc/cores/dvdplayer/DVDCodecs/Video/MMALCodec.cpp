@@ -57,7 +57,6 @@ CMMALVideoBuffer::CMMALVideoBuffer(CMMALVideo *omv)
   height = 0;
   m_aspect_ratio = 0.0f;
   m_changed_count = 0;
-  dts = DVD_NOPTS_VALUE;
 }
 
 CMMALVideoBuffer::~CMMALVideoBuffer()
@@ -127,7 +126,6 @@ CMMALVideo::CMMALVideo()
   m_preroll = true;
   m_speed = DVD_PLAYSPEED_NORMAL;
   m_codecControlFlags = 0;
-  m_history_valid_pts = 0;
 }
 
 CMMALVideo::~CMMALVideo()
@@ -256,17 +254,15 @@ void CMMALVideo::dec_output_port_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
     if (buffer->length > 0)
     {
       assert(!(buffer->flags & MMAL_BUFFER_HEADER_FLAG_DECODEONLY));
-      double dts = DVD_NOPTS_VALUE;
       if (1)//(!(g_advancedSettings.m_omxDecodeStartWithValidFrame && (buffer->flags & MMAL_BUFFER_HEADER_FLAG_CORRUPTED)))
       {
         CMMALVideoBuffer *omvb = new CMMALVideoBuffer(this);
         if (g_advancedSettings.CanLogComponent(LOGVIDEO))
           CLog::Log(LOGDEBUG, "%s::%s - %p (%p) buffer_size(%u) dts:%.3f pts:%.3f flags:%x:%x frame:%d",
-            CLASSNAME, __func__, buffer, omvb, buffer->length, dts*1e-6, buffer->pts*1e-6, buffer->flags, buffer->type->video.flags, omvb->m_changed_count);
+            CLASSNAME, __func__, buffer, omvb, buffer->length, buffer->dts*1e-6, buffer->pts*1e-6, buffer->flags, buffer->type->video.flags, omvb->m_changed_count);
         omvb->mmal_buffer = buffer;
         buffer->user_data = (void *)omvb;
         omvb->m_changed_count = m_changed_count;
-        omvb->dts = dts;
         omvb->width = m_decoded_width;
         omvb->height = m_decoded_height;
         omvb->m_aspect_ratio = m_aspect_ratio;
@@ -279,7 +275,7 @@ void CMMALVideo::dec_output_port_cb(MMAL_PORT_T *port, MMAL_BUFFER_HEADER_T *buf
       else
       {
         if (g_advancedSettings.CanLogComponent(LOGVIDEO))
-          CLog::Log(LOGDEBUG, "%s::%s - discarding %p dts:%.3f pts:%.3f (len:%d flags:%x)", CLASSNAME, __func__, buffer, dts*1e-6, buffer->pts*1e-6, buffer->length, buffer->flags);
+          CLog::Log(LOGDEBUG, "%s::%s - dropping %p dts:%.3f pts:%.3f (len:%d flags:%x)", CLASSNAME, __func__, buffer, buffer->dts*1e-6, buffer->pts*1e-6, buffer->length, buffer->flags);
       }
     }
   }
@@ -637,7 +633,11 @@ bool CMMALVideo::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options, MMALVide
   if (status != MMAL_SUCCESS)
     CLog::Log(LOGERROR, "%s::%s Failed to enable extra buffers on %s (status=%x %s)", CLASSNAME, __func__, m_dec_input->name, status, mmal_status_to_string(status));
 
-  status = mmal_port_parameter_set_uint32(m_dec_input, MMAL_PARAMETER_VIDEO_TIMESTAMP_FIFO, 1);
+  status = mmal_port_parameter_set_uint32(m_dec_input, MMAL_PARAMETER_VIDEO_TIMESTAMP_FIFO, 0);
+  if (status != MMAL_SUCCESS)
+    CLog::Log(LOGERROR, "%s::%s Failed to enable timestamp fifo mode on %s (status=%x %s)", CLASSNAME, __func__, m_dec_input->name, status, mmal_status_to_string(status));
+
+  status = mmal_port_parameter_set_uint32(m_dec_input, MMAL_PARAMETER_VIDEO_INTERPOLATE_TIMESTAMPS, 0);
   if (status != MMAL_SUCCESS)
     CLog::Log(LOGERROR, "%s::%s Failed to enable timestamp fifo mode on %s (status=%x %s)", CLASSNAME, __func__, m_dec_input->name, status, mmal_status_to_string(status));
 
@@ -708,8 +708,6 @@ bool CMMALVideo::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options, MMALVide
   m_startframe = false;
   m_preroll = !m_hints.stills;
   m_speed = DVD_PLAYSPEED_NORMAL;
-  // start from assuming all recent frames had valid pts
-  m_history_valid_pts = ~0;
 
   return true;
 }
@@ -736,14 +734,6 @@ void CMMALVideo::SetDropState(bool bDrop)
 {
   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
     CLog::Log(LOGDEBUG, "%s::%s - bDrop(%d)", CLASSNAME, __func__, bDrop);
-}
-
-static unsigned count_bits(int32_t value)
-{
-  unsigned bits = 0;
-  for(;value;++bits)
-    value &= value - 1;
-  return bits;
 }
 
 int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
@@ -813,14 +803,6 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
          CLog::Log(LOGERROR, "%s::%s - mmal_queue_get failed", CLASSNAME, __func__);
          return VC_ERROR;
        }
-
-       // some packed bitstream AVI files set almost all pts values to DVD_NOPTS_VALUE, but have a scattering of real pts values.
-       // the valid pts values match the dts values.
-       // if a stream has had more than 4 valid pts values in the last 16, the use UNKNOWN, otherwise use dts
-       m_history_valid_pts = (m_history_valid_pts << 1) | (pts != DVD_NOPTS_VALUE);
-       if (count_bits(m_history_valid_pts & 0xffff) < 4)
-         pts = dts;
-
        mmal_buffer_header_reset(buffer);
        buffer->cmd = 0;
        if (!m_startframe && pts == DVD_NOPTS_VALUE)
@@ -978,7 +960,6 @@ void CMMALVideo::Reset(void)
   m_decoderPts = DVD_NOPTS_VALUE;
   m_preroll = !m_hints.stills && (m_speed == DVD_PLAYSPEED_NORMAL || m_speed == DVD_PLAYSPEED_PAUSE);
   m_codecControlFlags = 0;
-  m_history_valid_pts = ~0;
 }
 
 void CMMALVideo::SetSpeed(int iSpeed)
@@ -1064,7 +1045,7 @@ bool CMMALVideo::GetPicture(DVDVideoPicture* pDvdVideoPicture)
     }
 
     // timestamp is in microseconds
-    pDvdVideoPicture->dts = buffer->dts;
+    pDvdVideoPicture->dts = buffer->mmal_buffer->dts == MMAL_TIME_UNKNOWN || buffer->mmal_buffer->dts == 0 ? DVD_NOPTS_VALUE : buffer->mmal_buffer->dts;
     pDvdVideoPicture->pts = buffer->mmal_buffer->pts == MMAL_TIME_UNKNOWN || buffer->mmal_buffer->pts == 0 ? DVD_NOPTS_VALUE : buffer->mmal_buffer->pts;
 
     pDvdVideoPicture->MMALBuffer->Acquire();
