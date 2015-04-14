@@ -1123,18 +1123,23 @@ bool CDVDVideoCodecIMX::GetPicture(DVDVideoPicture* pDvdVideoPicture)
 
 void CDVDVideoCodecIMX::SetDropState(bool bDrop)
 {
+  // If player requests dropping we try to only drop
+  // non P and B frames
+  m_dropState = drop;
 
-  // We are fast enough to continue to really decode every frames
-  // and avoid artefacts...
-  // (Of course these frames won't be rendered but only decoded)
-
-  if (m_dropState != bDrop)
+  VpuDecConfig config = VPU_DEC_CONF_SKIPMODE;
+  int param = VPU_DEC_SKIPNONE;
+  if (m_dropState)
   {
-    m_dropState = bDrop;
-#ifdef TRACE_FRAMES
-    CLog::Log(LOGDEBUG, "%s : %d\n", __FUNCTION__, bDrop);
-#endif
+      param = VPU_DEC_SKIPPB;
+      ret = VPU_DecConfig(m_vpuHandle, config, &param);
   }
+  else
+  {
+    ret = VPU_DecConfig(m_vpuHandle, config, &param);
+  }
+  if (ret != VPU_DEC_RET_SUCCESS)
+    CLog::Log(LOGERROR, "Could not set SKIP MODE");
 }
 
 void CDVDVideoCodecIMX::Enter()
