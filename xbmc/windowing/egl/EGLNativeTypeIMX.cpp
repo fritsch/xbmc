@@ -274,6 +274,9 @@ bool CEGLNativeTypeIMX::ProbeResolutions(std::vector<RESOLUTION_INFO> &resolutio
   std::string valstr;
   SysfsUtils::GetString("/sys/class/graphics/fb0/modes", valstr);
   std::vector<std::string> probe_str;
+  // Some Monitors don't have S: modes - they only give us
+  // D: and U:
+  std::vector<std::string> backup_str;
   probe_str = StringUtils::Split(valstr, "\n");
 
   resolutions.clear();
@@ -281,9 +284,25 @@ bool CEGLNativeTypeIMX::ProbeResolutions(std::vector<RESOLUTION_INFO> &resolutio
   for (size_t i = 0; i < probe_str.size(); i++)
   {
     if(!StringUtils::StartsWith(probe_str[i], "S:"))
+    {
+      CLog::Log(LOGNOTICE, "Will backup %s (just in case)", probe_str[i].c_str());
+      backup_str.push_back(probe_str[i]);
       continue;
+    }
+
     if(ModeToResolution(probe_str[i], &res))
       resolutions.push_back(res);
+  }
+  // if we found backup modes and don't have other modes at all
+  // add those backup modes
+  if (resolutions.empty() && !backup_str.empty())
+  {
+    // let's add the D: U: modes if nothing else was found before
+    for (size_t i = 0; i < backup_str.size(); i++)
+    {
+      if(ModeToResolution(backup_str[i], &res))
+       resolutions.push_back(res);
+    }
   }
   return resolutions.size() > 0;
 }
