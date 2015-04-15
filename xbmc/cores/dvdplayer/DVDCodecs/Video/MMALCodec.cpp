@@ -133,7 +133,6 @@ CMMALVideo::~CMMALVideo()
   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
     CLog::Log(LOGDEBUG, "%s::%s %p", CLASSNAME, __func__, this);
   assert(m_finished);
-  Reset();
 
   pthread_mutex_destroy(&m_output_mutex);
 
@@ -413,7 +412,7 @@ bool CMMALVideo::CreateDeinterlace(EINTERLACEMETHOD interlace_method)
 
   m_dec_output = m_deint->output[0];
   m_interlace_method = interlace_method;
-
+  Prime();
   return true;
 }
 
@@ -469,6 +468,7 @@ bool CMMALVideo::DestroyDeinterlace()
 
   m_dec_output = m_dec->output[0];
   m_interlace_method = VS_INTERLACEMETHOD_NONE;
+  Prime();
   return true;
 }
 
@@ -705,6 +705,7 @@ bool CMMALVideo::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options, MMALVide
   if (!SendCodecConfigData())
     return false;
 
+  Prime();
   m_startframe = false;
   m_preroll = !m_hints.stills;
   m_speed = DVD_PLAYSPEED_NORMAL;
@@ -747,8 +748,6 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
   MMAL_BUFFER_HEADER_T *buffer;
   MMAL_STATUS_T status;
 
-  while (buffer = mmal_queue_get(m_dec_output_pool->queue), buffer)
-    Recycle(buffer);
   // we need to queue then de-queue the demux packet, seems silly but
   // mmal might not have an input buffer available when we are called
   // and we must store the demuxer packet and try again later.
@@ -775,9 +774,6 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
 
   while (1)
   {
-     while (buffer = mmal_queue_get(m_dec_output_pool->queue), buffer)
-       Recycle(buffer);
-
      space = mmal_queue_length(m_dec_input_pool->queue) * m_dec_input->buffer_size;
      if (!demuxer_bytes && !m_demux_queue.empty())
      {
@@ -869,8 +865,6 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
            demuxer_content = NULL;
            continue;
          }
-         while (buffer = mmal_queue_get(m_dec_output_pool->queue), buffer)
-           Recycle(buffer);
        }
     }
     if (!demuxer_bytes)
@@ -907,6 +901,13 @@ int CMMALVideo::Decode(uint8_t* pData, int iSize, double dts, double pts)
     Sleep(10); // otherwise we busy spin
   }
   return ret;
+}
+
+void CMMALVideo::Prime()
+{
+  MMAL_BUFFER_HEADER_T *buffer;
+  while (buffer = mmal_queue_get(m_dec_output_pool->queue), buffer)
+    Recycle(buffer);
 }
 
 void CMMALVideo::Reset(void)
@@ -954,8 +955,10 @@ void CMMALVideo::Reset(void)
   pthread_mutex_unlock(&m_output_mutex);
 
   if (!m_finished)
+  {
     SendCodecConfigData();
-
+    Prime();
+  }
   m_startframe = false;
   m_decoderPts = DVD_NOPTS_VALUE;
   m_preroll = !m_hints.stills && (m_speed == DVD_PLAYSPEED_NORMAL || m_speed == DVD_PLAYSPEED_PAUSE);
@@ -974,6 +977,12 @@ void CMMALVideo::Recycle(MMAL_BUFFER_HEADER_T *buffer)
 {
   if (g_advancedSettings.CanLogComponent(LOGVIDEO))
     CLog::Log(LOGDEBUG, "%s::%s %p", CLASSNAME, __func__, buffer);
+
+  if (m_finished)
+  {
+    mmal_buffer_header_release(buffer);
+    return;
+  }
 
   MMAL_STATUS_T status;
   mmal_buffer_header_reset(buffer);
