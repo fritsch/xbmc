@@ -99,10 +99,10 @@ bool CMMALRenderer::init_vout(ERenderFormat format)
 
   CLog::Log(LOGDEBUG, "%s::%s configured:%d format:%d->%d", CLASSNAME, __func__, m_bConfigured, m_format, format);
 
-  if (m_bConfigured && formatChanged)
+  if (m_bMMALConfigured && formatChanged)
     UnInitMMAL();
 
-  if (m_bConfigured)
+  if (m_bMMALConfigured)
     return true;
 
   m_format = format;
@@ -217,6 +217,8 @@ CMMALRenderer::CMMALRenderer()
   m_release_queue = mmal_queue_create();
   m_iFlags = 0;
   m_format = RENDER_FMT_NONE;
+  m_bConfigured = false;
+  m_bMMALConfigured = false;
   m_iYV12RenderBuffer = 0;
   Create();
 }
@@ -267,8 +269,9 @@ bool CMMALRenderer::Configure(unsigned int width, unsigned int height, unsigned 
   SetViewMode(CMediaSettings::Get().GetCurrentVideoSettings().m_ViewMode);
   ManageDisplay();
 
-  m_bConfigured = init_vout(format);
-
+  m_bMMALConfigured = init_vout(format);
+  m_bConfigured = m_bMMALConfigured;
+  assert(m_bConfigured);
   return m_bConfigured;
 }
 
@@ -331,7 +334,8 @@ int CMMALRenderer::GetImage(YV12Image *image, int source, bool readonly)
 
 void CMMALRenderer::ReleaseBuffer(int idx)
 {
-  if (!m_bConfigured || m_format == RENDER_FMT_BYPASS)
+  CSingleLock lock(m_sharedSection);
+  if (!m_bMMALConfigured || m_format == RENDER_FMT_BYPASS)
     return;
 
 #if defined(MMAL_DEBUG_VERBOSE)
@@ -510,6 +514,7 @@ void CMMALRenderer::UnInitMMAL()
   m_format = RENDER_FMT_NONE;
 
   m_bConfigured = false;
+  m_bMMALConfigured = false;
 }
 
 void CMMALRenderer::UnInit()
