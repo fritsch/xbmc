@@ -133,6 +133,7 @@ protected:
   bool              m_preroll;
   int               m_codecControlFlags;
 
+  CCriticalSection m_sharedSection;
   MMAL_COMPONENT_T *m_dec;
   MMAL_PORT_T *m_dec_input;
   MMAL_PORT_T *m_dec_output;
