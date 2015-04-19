@@ -1125,9 +1125,10 @@ void CDVDVideoCodecIMX::SetDropState(bool bDrop)
 {
   // If player requests dropping we try to only drop
   // non P and B frames
-  m_dropState = drop;
+  m_dropState = bDrop;
 
   VpuDecConfig config = VPU_DEC_CONF_SKIPMODE;
+  VpuDecRetCode ret;
   int param = VPU_DEC_SKIPNONE;
   if (m_dropState)
   {
