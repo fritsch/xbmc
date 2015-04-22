@@ -1,0 +1,6 @@
+SRCS=triangle2.cpp
+
+LIB=gleshelpers.a
+
+include @abs_top_srcdir@/Makefile.include
+-include $(patsubst %.cpp,%.P,$(patsubst %.c,%.P,$(SRCS)))

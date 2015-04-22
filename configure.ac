@@ -180,6 +180,8 @@ alsa_disabled="== ALSA support disabled. =="
 dbus_disabled="== DBUS support disabled. =="
 rsxs_enabled="== RSXS enabled. =="
 rsxs_disabled="== RSXS disabled. =="
+glesscreensavers_enabled="== GLES screensavers enabled. =="
+glesscreensavers_disabled="== GLES screensavers disabled. =="
 fishbmc_enabled="== FishBMC enabled. =="
 fishbmc_disabled="== FishBMC disabled. =="
 projectm_enabled="== ProjectM enabled. =="
@@ -345,6 +347,12 @@ AC_ARG_ENABLE([rsxs],
   [enable really slick X screensavers (default is yes)])],
   [use_rsxs=$enableval],
   [use_rsxs=yes])
+
+AC_ARG_ENABLE([glesscreensavers],
+  [AS_HELP_STRING([--enable-glesscreensavers],
+  [enable GLES screensavers (default is yes)])],
+  [use_glesscreensavers=$enableval],
+  [use_glesscreensavers=yes])
 
 AC_ARG_ENABLE([fishbmc],
   [AS_HELP_STRING([--enable-fishbmc],
@@ -1482,6 +1490,15 @@ else
   fi
 fi
 
+# GLES Screensavers
+if test "$use_glesscreensavers" = "no" || test "$use_gles" = "no"; then
+  AC_MSG_NOTICE($glesscreensavers_disabled)
+  DISABLE_GLESSCREENSAVERS=1
+else
+  AC_MSG_NOTICE($glesscreensavers_enabled)
+  DISABLE_GLESSCREENSAVERS=0
+fi
+
 # FISHBMC
 if test "$use_fishbmc" = "no" || test "$use_gl" = "no"; then
   AC_MSG_NOTICE($fishbmc_disabled)   
@@ -2178,6 +2195,12 @@ else
   final_message="$final_message\n  RSXS:\t\tNo"
 fi
 
+if test "$use_glesscreensavers" = "yes"; then
+  final_message="$final_message\n  GLES Screensavers:\t\tYes"
+else
+  final_message="$final_message\n  GLES Screensavers:\t\tNo"
+fi
+
 if test "$use_fishbmc" = "yes"; then
   final_message="$final_message\n  FishBMC:\tYes"
 else
@@ -2535,6 +2558,15 @@ OUTPUT_FILES="Makefile \
     xbmc/linux/Makefile \
     xbmc/filesystem/Makefile \
     xbmc/screensavers/rsxs-0.9/xbmc/Makefile \
+    xbmc/screensavers/gles/Makefile \
+    xbmc/screensavers/gles/solarwinds/Makefile \
+    xbmc/screensavers/gles/plasma/Makefile \
+    xbmc/screensavers/gles/plasma2/Makefile \
+    xbmc/screensavers/gles/noise/Makefile \
+    xbmc/screensavers/gles/warp/Makefile \
+    xbmc/screensavers/gles/stellar/Makefile \
+    xbmc/screensavers/gles/spiral/Makefile \
+    xbmc/screensavers/gles/ball/Makefile \
     xbmc/visualizations/XBMCProjectM/Makefile \
     xbmc/visualizations/Goom/Makefile \
     xbmc/visualizations/OpenGLSpectrum/Makefile \
@@ -2635,6 +2667,7 @@ AC_SUBST(DISABLE_WAVEFORM)
 AC_SUBST(DISABLE_SPECTRUM)
 AC_SUBST(DISABLE_GOOM)
 AC_SUBST(DISABLE_RSXS)
+AC_SUBST(DISABLE_GLESSCREENSAVERS)
 AC_SUBST(DISABLE_FISHBMC)
 AC_SUBST(DISABLE_PROJECTM)
 AC_SUBST(FFMPEG_LIBDIR)
