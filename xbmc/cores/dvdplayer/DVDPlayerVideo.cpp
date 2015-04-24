@@ -33,6 +33,7 @@
 #include "DVDCodecs/Video/DVDVideoPPFFmpeg.h"
 #include "DVDCodecs/Video/DVDVideoCodecFFmpeg.h"
 #include "DVDDemuxers/DVDDemux.h"
+#include "DVDDemuxers/DVDDemuxUtils.h"
 #include "DVDOverlayRenderer.h"
 #include "guilib/GraphicContext.h"
 #include <sstream>
