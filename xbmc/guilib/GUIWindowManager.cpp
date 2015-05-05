@@ -792,7 +792,16 @@ void CGUIWindowManager::ActivateWindow_Internal(int iWindowID, const vector<stri
   int currentWindow = GetActiveWindow();
   CGUIWindow *pWindow = GetWindow(currentWindow);
   if (pWindow)
-    CloseWindowSync(pWindow, iWindowID);
+  {
+    if (iWindowID == WINDOW_SCREENSAVER)
+    {
+      pWindow->Close(true, iWindowID);
+    }
+    else
+    {
+      CloseWindowSync(pWindow, iWindowID);
+    }
+  }
   g_infoManager.SetNextWindow(WINDOW_INVALID);
 
   // Add window to the history list (we must do this before we activate it,
