@@ -496,7 +496,7 @@ void OMXPlayerVideo::Process()
         if (pts != DVD_NOPTS_VALUE)
           pts += m_iVideoDelay;
 
-        m_omxVideo.Decode(pPacket->pData, pPacket->iSize, dts, pts);
+        m_omxVideo.Decode(pPacket->pData, pPacket->iSize, dts, dts == DVD_NOPTS_VALUE ? pts : DVD_NOPTS_VALUE);
 
         if (pts == DVD_NOPTS_VALUE)
           pts = dts;
