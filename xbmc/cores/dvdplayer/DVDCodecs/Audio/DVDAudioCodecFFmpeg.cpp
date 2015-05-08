@@ -55,13 +55,17 @@ CDVDAudioCodecFFmpeg::~CDVDAudioCodecFFmpeg()
 
 bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
 {
-  AVCodec* pCodec;
+  AVCodec* pCodec = NULL;
   m_bOpenedCodec = false;
 
-  if (hints.codec == AV_CODEC_ID_DTS && CSettings::Get().GetBool("videoplayer.supportdtshd"))
+#if defined(TARGET_RASPBERRY_PI) || defined(HAS_IMXVPU)
+  if (hints.codec == AV_CODEC_ID_DTS && CSettings::Get().GetBool("audiooutput.supportdtshdcpudecoding"))
     pCodec = avcodec_find_decoder_by_name("libdcadec");
-  else
+#endif
+
+  if (!pCodec)
     pCodec = avcodec_find_decoder(hints.codec);
+
   if (!pCodec)
   {
     CLog::Log(LOGDEBUG,"CDVDAudioCodecFFmpeg::Open() Unable to find codec %d", hints.codec);

@@ -66,7 +66,7 @@ bool COMXAudioCodecOMX::Open(CDVDStreamInfo &hints)
   AVCodec* pCodec;
   m_bOpenedCodec = false;
 
-  if (hints.codec == AV_CODEC_ID_DTS && CSettings::Get().GetBool("videoplayer.supportdtshd"))
+  if (hints.codec == AV_CODEC_ID_DTS && CSettings::Get().GetBool("audiooutput.supportdtshdcpudecoding"))
     pCodec = avcodec_find_decoder_by_name("libdcadec");
   else
     pCodec = avcodec_find_decoder(hints.codec);
