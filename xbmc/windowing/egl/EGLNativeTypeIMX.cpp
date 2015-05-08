@@ -287,11 +287,14 @@ bool CEGLNativeTypeIMX::ProbeResolutions(std::vector<RESOLUTION_INFO> &resolutio
   std::string valstr;
   SysfsUtils::GetString("/sys/class/graphics/fb0/modes", valstr);
   std::vector<std::string> probe_str = StringUtils::Split(valstr, "\n");
+  std::vector<std::string> d_modes;
 
   // lexical order puts the modes list into our preferred
   // order and by later filtering through FindMatchingResolution()
   // we make sure we read _all_ S modes, following U and V modes
   // while list will hold unique resolutions only
+  // d_modes as DVI monitors (without audio) provide are handled
+  // after those and added if they are unique
   std::sort(probe_str.begin(), probe_str.end());
 
   resolutions.clear();
@@ -300,9 +303,23 @@ bool CEGLNativeTypeIMX::ProbeResolutions(std::vector<RESOLUTION_INFO> &resolutio
   {
     if(!StringUtils::StartsWith(probe_str[i], "S:") && !StringUtils::StartsWith(probe_str[i], "U:") &&
        !StringUtils::StartsWith(probe_str[i], "V:"))
+    {
+      // save d_modes and try to insert them later if not yet available
+      if (StringUtils::StartsWith(probe_str[i], "D:"))
+        d_modes.push_back(probe_str[i]);
+
       continue;
+    }
 
     if(ModeToResolution(probe_str[i], &res))
+      if(!FindMatchingResolution(res, resolutions))
+        resolutions.push_back(res);
+  }
+
+  // add unique D: modes also
+  for (size_t i = 0; i < d_modes.size(); i++)
+  {
+    if(ModeToResolution(d_modes[i], &res))
       if(!FindMatchingResolution(res, resolutions))
         resolutions.push_back(res);
   }
