@@ -20,7 +20,7 @@
     </category>
     <category id="audiooutput">
       <group id="1">
-        <setting id="audiooutput.supportdtshdcpudecoding" type="boolean" label="38120" help="38121">
+        <setting id="audiooutput.supportdtshdcpudecoding">
           <default>true</default>
         </setting>
       </group>
