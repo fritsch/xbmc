@@ -426,7 +426,18 @@ bool CEGLNativeTypeIMX::ModeToResolution(std::string mode, RESOLUTION_INFO *res)
   res->bFullScreen   = true;
   res->iSubtitles    = (int)(0.965 * res->iHeight);
 
-  res->fPixelRatio   = !m_sar ? 1.0f : (float)m_sar / res->iScreenWidth * res->iScreenHeight;
+
+  float pixel_ratio  = 1.0f;
+  // workaround minimal off when getting sar in a rounded way
+  // it is better to lie for computed 1918 pixels than rescaling full
+  // screen content with a lossy scaler
+  if (m_sar > 0.0f)
+  {
+    pixel_ratio = ((float)m_sar / res->iScreenWidth * res->iScreenHeight);
+    if (fabs((float) res->iScreenWidth * pixel_ratio - res->iScreenWidth) < 3.0f)
+      pixel_ratio = 1.0f;
+  }
+  res->fPixelRatio   = pixel_ratio;
   res->strMode       = StringUtils::Format("%dx%d @ %.2f%s - Full Screen", res->iScreenWidth, res->iScreenHeight, res->fRefreshRate,
                                            res->dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
   res->strId         = mode;
