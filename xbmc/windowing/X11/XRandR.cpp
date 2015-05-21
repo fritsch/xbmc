@@ -483,6 +483,7 @@ XOutput* CXRandR::GetOutput(const std::string& outputName)
 int CXRandR::GetCrtc(int x, int y, float &hz)
 {
   int crtc = 0;
+  bool success = false;
   for (unsigned int i = 0; i < m_outputs.size(); ++i)
   {
     if (!m_outputs[i].isConnected)
@@ -497,11 +498,17 @@ int CXRandR::GetCrtc(int x, int y, float &hz)
         if (mode.isCurrent)
         {
           hz = mode.hz;
+          success = true;
           break;
         }
       }
       break;
     }
+  }
+  if (!success)
+  {
+    CLog::Log(LOGERROR, "CXRandR::GetCrtc - Could not acquire fps from xrandr - falling back to 60 hz");
+    hz = 60.0f;
   }
   return crtc;
 }
