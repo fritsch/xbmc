@@ -28,6 +28,7 @@
 #include <pulse/pulseaudio.h>
 #include "threads/CriticalSection.h"
 
+struct ManagementObject;
 class CAESinkPULSE : public IAESink
 {
 public:
@@ -51,6 +52,7 @@ public:
   static void EnumerateDevicesEx(AEDeviceInfoList &list, bool force = false);
   bool IsInitialized();
   void UpdateInternalVolume(const pa_cvolume* nVol);
+  void UpdateInternalLatency(pa_usec_t latency, int error);
   pa_stream* GetInternalStream();
   CCriticalSection m_sec;
 private:
@@ -70,7 +72,9 @@ private:
   pa_stream *m_Stream; 
   pa_cvolume m_Volume;
   bool m_volume_needs_update;
+  pa_usec_t m_Latency;
 
   pa_context *m_Context;
   pa_threaded_mainloop *m_MainLoop;
+  ManagementObject* m_obj;
 };

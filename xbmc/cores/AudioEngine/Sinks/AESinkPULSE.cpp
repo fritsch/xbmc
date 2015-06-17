@@ -27,6 +27,17 @@
 
 using namespace std;
 
+struct ManagementObject
+{
+  CAESinkPULSE* pulse;
+  pa_threaded_mainloop *mainloop;
+  ManagementObject()
+  {
+    pulse = NULL;
+    mainloop = NULL;
+  }
+};
+
 static const char *ContextStateToString(pa_context_state s)
 {
   switch (s)
@@ -171,8 +182,19 @@ static void StreamRequestCallback(pa_stream *s, size_t length, void *userdata)
 
 static void StreamLatencyUpdateCallback(pa_stream *s, void *userdata)
 {
-  pa_threaded_mainloop *m = (pa_threaded_mainloop *)userdata;
-  pa_threaded_mainloop_signal(m, 0);
+  ManagementObject* p = (ManagementObject*) userdata;
+  if (!p || !p->pulse || !p->pulse->IsInitialized())
+  {
+    CLog::Log(LOGNOTICE, "Was not initialized");
+    pa_threaded_mainloop_signal(p->mainloop, 0);
+    return;
+  }
+  CSingleLock lock(p->pulse->m_sec);
+  pa_usec_t latency = (pa_usec_t) -1;
+  int error = pa_stream_get_latency(s, &latency, NULL);
+//  CLog::Log(LOGDEBUG, "PulseAudio: latency (1): %d usec, error: %d", (int) latency, error);
+  p->pulse->UpdateInternalLatency(latency, error);
+  pa_threaded_mainloop_signal(p->mainloop, 0);
 }
 
 
@@ -446,12 +468,25 @@ CAESinkPULSE::CAESinkPULSE()
   m_Context = NULL;
   m_IsStreamPaused = false;
   m_volume_needs_update = false;
+  m_Latency = 0;
+  m_obj = NULL;
   pa_cvolume_init(&m_Volume);
 }
 
 CAESinkPULSE::~CAESinkPULSE()
 {
   Deinitialize();
+}
+
+void CAESinkPULSE::UpdateInternalLatency(pa_usec_t latency, int error)
+{
+  if (!m_IsAllocated || error)
+  {
+    m_Latency = 0;
+    CLog::Log(LOGERROR, "Updating latency failed with errorcode: %d", error);
+    return;
+  }
+  m_Latency = latency;
 }
 
 bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
@@ -586,7 +621,6 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
 
   pa_stream_set_state_callback(m_Stream, StreamStateCallback, m_MainLoop);
   pa_stream_set_write_callback(m_Stream, StreamRequestCallback, m_MainLoop);
-  pa_stream_set_latency_update_callback(m_Stream, StreamLatencyUpdateCallback, m_MainLoop);
 
   pa_buffer_attr buffer_attr;
 
@@ -660,6 +694,10 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
     pa_operation* op_sinfo = pa_context_subscribe(m_Context, mask_input, NULL, this);
     if (op_sinfo != NULL)
       pa_operation_unref(op_sinfo);
+    m_obj = new ManagementObject();
+    m_obj->pulse = this;
+    m_obj->mainloop = m_MainLoop;
+    pa_stream_set_latency_update_callback(m_Stream, StreamLatencyUpdateCallback, m_obj);
   }
 
   pa_threaded_mainloop_unlock(m_MainLoop);
@@ -688,6 +726,9 @@ void CAESinkPULSE::Deinitialize()
   CSingleLock lock(m_sec);
   m_IsAllocated = false;
   m_passthrough = false;
+  m_Latency = 0;
+  delete m_obj;
+  m_obj = NULL;
 
   if (m_Stream)
     Drain();
@@ -725,24 +766,11 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
     return;
   }
   int error = 0;
-  pa_usec_t latency = (pa_usec_t) -1;
   pa_threaded_mainloop_lock(m_MainLoop);
-  if ((error = pa_stream_get_latency(m_Stream, &latency, NULL)) < 0)
-  {
-    if (error == -PA_ERR_NODATA)
-    {
-      WaitForOperation(pa_stream_update_timing_info(m_Stream, NULL,NULL), m_MainLoop, "Update Timing Information");
-      if ((error = pa_stream_get_latency(m_Stream, &latency, NULL)) < 0)
-      {
-        CLog::Log(LOGDEBUG, "GetDelay - Failed to get Latency %d", error); 
-      }
-    }
-  }
-  if (error < 0 )
-    latency = (pa_usec_t) 0;
-
+  pa_usec_t latency = m_Latency;
   pa_threaded_mainloop_unlock(m_MainLoop);
   status.SetDelay(latency / 1000000.0);
+//  CLog::Log(LOGDEBUG, "PulseAudio: latency (2): %d usec", (int) latency);
 }
 
 double CAESinkPULSE::GetCacheTotal()
