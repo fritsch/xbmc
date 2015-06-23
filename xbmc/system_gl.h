@@ -32,6 +32,7 @@
     #include <GL/glu.h>
   #elif defined(TARGET_LINUX)
     #include <GL/gl.h>
+    #include <GL/glu.h>
     #include <GL/glext.h>
   #elif defined(TARGET_FREEBSD)
     #include <GL/gl.h>
