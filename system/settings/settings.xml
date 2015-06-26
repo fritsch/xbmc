@@ -2494,6 +2494,12 @@
           </updates>
           <control type="toggle" />
         </setting>
+        <setting id="videoscreen.dither" type="boolean" label="36044" help="36551">
+          <requirement>HAS_GL</requirement>
+          <level>3</level>
+          <default>true</default>
+          <control type="toggle" />
+        </setting>
         <setting id="videoscreen.ditherdepth" type="integer" label="36043" help="36550">
           <requirement>HAS_GL</requirement>
           <level>3</level>
@@ -2503,6 +2509,9 @@
             <step>1</step>
             <maximum>8</maximum>
           </constraints>
+          <dependencies>
+            <dependency type="visible" setting="videoscreen.dither" operator="is">true</dependency>
+          </dependencies>
           <control type="spinner" format="integer" />
         </setting>
       </group>
