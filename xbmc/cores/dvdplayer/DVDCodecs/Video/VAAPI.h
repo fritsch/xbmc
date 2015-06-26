@@ -165,9 +165,11 @@ struct CVaapiGLSurface
   VAImage vaImage;
   VABufferInfo vBufInfo;
   EGLImageKHR eglImage;
+  EGLImageKHR eglImageY, eglImageVU;
   GLenum textureTarget;
   EGLDisplay eglDisplay;
   PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
+  PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
   PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
   bool mapped;
 };
@@ -314,6 +316,7 @@ protected:
   bool GLInit();
   bool CheckSuccess(VAStatus status);
   PFNEGLCREATEIMAGEKHRPROC eglCreateImageKHR;
+  PFNEGLDESTROYIMAGEKHRPROC eglDestroyImageKHR;
   PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES;
   CEvent m_outMsgEvent;
   CEvent *m_inMsgEvent;
