@@ -1208,7 +1208,7 @@ bool CVaapiRenderPicture::GLMapSurface()
     return false;
   }
   memset(&glInterop.vBufInfo, 0, sizeof(glInterop.vBufInfo));
-  glInterop.vBufInfo.mem_type = VA_SURFACE_ATTRIB_MEM_TYPE_KERNEL_DRM; //VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
+  glInterop.vBufInfo.mem_type = VA_SURFACE_ATTRIB_MEM_TYPE_DRM_PRIME;
   status = vaAcquireBufferHandle(glInterop.vadsp, glInterop.vaImage.buf,
                                  &glInterop.vBufInfo);
   if (status != VA_STATUS_SUCCESS)
@@ -1226,9 +1226,9 @@ bool CVaapiRenderPicture::GLMapSurface()
     {
       attrib = attribs;
       *attrib++ = EGL_LINUX_DRM_FOURCC_EXT;
-      *attrib++ = fourcc_code('R','8',' ',' ');
+      *attrib++ = fourcc_code('R', '8', ' ', ' ');
       *attrib++ = EGL_WIDTH;
-      *attrib++ = glInterop.vaImage.width / 4;
+      *attrib++ = glInterop.vaImage.width;
       *attrib++ = EGL_HEIGHT;
       *attrib++ = glInterop.vaImage.height;
       *attrib++ = EGL_DMA_BUF_PLANE0_FD_EXT;
@@ -1238,38 +1238,69 @@ bool CVaapiRenderPicture::GLMapSurface()
       *attrib++ = EGL_DMA_BUF_PLANE0_PITCH_EXT;
       *attrib++ = glInterop.vaImage.pitches[0];
       *attrib++ = EGL_NONE;
-      glInterop.eglImage = glInterop.eglCreateImageKHR(glInterop.eglDisplay,
+      glInterop.eglImageY = glInterop.eglCreateImageKHR(glInterop.eglDisplay,
                                           EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL,
                                           attribs);
-      if (!glInterop.eglImage)
+      if (!glInterop.eglImageY)
       {
         EGLint err = eglGetError();
         CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image");
         return false;
       }
+
+      attrib = attribs;
+      *attrib++ = EGL_LINUX_DRM_FOURCC_EXT;
+      *attrib++ = fourcc_code('G', 'R', '1', '6');
+      *attrib++ = EGL_WIDTH;
+      *attrib++ = glInterop.vaImage.width +1 >> 1;
+      *attrib++ = EGL_HEIGHT;
+      *attrib++ = glInterop.vaImage.height + 1 >> 1;
+      *attrib++ = EGL_DMA_BUF_PLANE0_FD_EXT;
+      *attrib++ = (intptr_t)glInterop.vBufInfo.handle;
+      *attrib++ = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
+      *attrib++ = glInterop.vaImage.offsets[1];
+      *attrib++ = EGL_DMA_BUF_PLANE0_PITCH_EXT;
+      *attrib++ = glInterop.vaImage.pitches[1];
+      *attrib++ = EGL_NONE;
+      glInterop.eglImageVU = glInterop.eglCreateImageKHR(glInterop.eglDisplay,
+                                          EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL,
+                                          attribs);
+      if (!glInterop.eglImageVU)
+      {
+        EGLint err = eglGetError();
+        CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image");
+        return false;
+      }
+
+      GLint format;
+
+      glGenTextures(1, &textureY);
+      glEnable(glInterop.textureTarget);
+      glBindTexture(glInterop.textureTarget, textureY);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glInterop.glEGLImageTargetTexture2DOES(glInterop.textureTarget, glInterop.eglImageY);
+      glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &format);
+
+      glGenTextures(1, &textureVU);
+      glEnable(glInterop.textureTarget);
+      glBindTexture(glInterop.textureTarget, textureVU);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glInterop.glEGLImageTargetTexture2DOES(glInterop.textureTarget, glInterop.eglImageVU);
+      glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &format);
+
+      glBindTexture(glInterop.textureTarget, 0);
+      glDisable(glInterop.textureTarget);
+
       break;
     }
-    case VA_FOURCC('R','G','B','A'):
     case VA_FOURCC('B','G','R','A'):
     {
-//      attrib = attribs;
-//      *attrib++ = EGL_LINUX_DRM_FOURCC_EXT;
-//      *attrib++ = DRM_FORMAT_ABGR8888;
-//      *attrib++ = EGL_WIDTH;
-//      *attrib++ = glInterop.vaImage.width;
-//      *attrib++ = EGL_HEIGHT;
-//      *attrib++ = glInterop.vaImage.height;
-//      *attrib++ = EGL_DMA_BUF_PLANE0_FD_EXT;
-//      *attrib++ = (intptr_t)glInterop.vBufInfo.handle;
-//      *attrib++ = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
-//      *attrib++ = glInterop.vaImage.offsets[0];
-//      *attrib++ = EGL_DMA_BUF_PLANE0_PITCH_EXT;
-//      *attrib++ = glInterop.vaImage.pitches[0];
-//      *attrib++ = EGL_NONE;
-//      glInterop.eglImage = glInterop.eglCreateImageKHR(eglDisplay,
-//                                          EGL_NO_CONTEXT, EGL_LINUX_DMA_BUF_EXT, (EGLClientBuffer)NULL,
-//                                          attribs);
-
       attrib = attribs;
       *attrib++ = EGL_DRM_BUFFER_FORMAT_MESA;
       *attrib++ = EGL_DRM_BUFFER_FORMAT_ARGB32_MESA;
@@ -1290,27 +1321,25 @@ bool CVaapiRenderPicture::GLMapSurface()
         CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image");
         return false;
       }
+
+      glGenTextures(1, &texture);
+      glEnable(glInterop.textureTarget);
+      glBindTexture(glInterop.textureTarget, texture);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+      glInterop.glEGLImageTargetTexture2DOES(glInterop.textureTarget, glInterop.eglImage);
+
+      glBindTexture(glInterop.textureTarget, 0);
+      glDisable(glInterop.textureTarget);
+
       break;
     }
     default:
       return false;
   }
-
-  GLint format;
-
-  glGenTextures(1, &texture);
-  glEnable(glInterop.textureTarget);
-  glBindTexture(glInterop.textureTarget, texture);
-  glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(glInterop.textureTarget, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(glInterop.textureTarget, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-  glInterop.glEGLImageTargetTexture2DOES(glInterop.textureTarget, glInterop.eglImage);
-
-  glGetIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &format);
-  glBindTexture(glInterop.textureTarget, 0);
-  glDisable(glInterop.textureTarget);
 
   return true;
 }
@@ -1319,6 +1348,9 @@ void CVaapiRenderPicture::GLUnMapSurface()
 {
   if (glInterop.vaImage.image_id == VA_INVALID_ID)
     return;
+
+  glInterop.eglDestroyImageKHR(glInterop.eglDisplay, glInterop.eglImageY);
+  glInterop.eglDestroyImageKHR(glInterop.eglDisplay, glInterop.eglImageVU);
 
   VAStatus status;
   status = vaReleaseBufferHandle(glInterop.vadsp, glInterop.vaImage.buf);
@@ -1335,7 +1367,8 @@ void CVaapiRenderPicture::GLUnMapSurface()
   glInterop.mapped = false;
   glInterop.vaImage.image_id = VA_INVALID_ID;
 
-  glDeleteTextures(1, &texture);
+  glDeleteTextures(1, &textureY);
+  glDeleteTextures(1, &textureVU);
 }
 
 //-----------------------------------------------------------------------------
@@ -1994,7 +2027,7 @@ void COutput::InitCycle()
         m_pp = new CFFmpegPostproc();
       else
       {
-        m_pp = new CVppPostproc();
+        m_pp = new CSkipPostproc();
         m_config.stats->SetVpp(true);
       }
       if (m_pp->PreInit(m_config))
@@ -2239,6 +2272,7 @@ bool COutput::EnsureBufferPool()
     pic->glInterop.eglDisplay = m_eglDisplay;
     pic->glInterop.textureTarget = m_textureTarget;
     pic->glInterop.eglCreateImageKHR = eglCreateImageKHR;
+    pic->glInterop.eglDestroyImageKHR = eglDestroyImageKHR;
     pic->glInterop.glEGLImageTargetTexture2DOES = glEGLImageTargetTexture2DOES;
     pic->glInterop.vaImage.image_id = VA_INVALID_ID;
     pic->glInterop.mapped = false;
@@ -2345,6 +2379,7 @@ bool COutput::GLInit()
     m_textureTarget = GL_TEXTURE_2D;
 
   eglCreateImageKHR = (PFNEGLCREATEIMAGEKHRPROC)eglGetProcAddress("eglCreateImageKHR");
+  eglDestroyImageKHR = (PFNEGLDESTROYIMAGEKHRPROC)eglGetProcAddress("eglDestroyImageKHR");
   glEGLImageTargetTexture2DOES = (PFNGLEGLIMAGETARGETTEXTURE2DOESPROC)eglGetProcAddress("glEGLImageTargetTexture2DOES");
   return true;
 }
@@ -2508,22 +2543,18 @@ bool CVppPostproc::PreInit(CVaapiConfig &config, SDiMethods *methods)
     return false;
   }
 
-//  VASurfaceAttrib attr[10];
-//  unsigned int num;
-//  vaQuerySurfaceAttributes(m_config.dpy, m_configId, attr, &num);
-
   VASurfaceAttrib attribs[1], *attrib;
   attrib = attribs;
   attrib->flags = VA_SURFACE_ATTRIB_SETTABLE;
   attrib->type = VASurfaceAttribPixelFormat;
   attrib->value.type = VAGenericValueTypeInteger;
-  attrib->value.value.i = VA_FOURCC_BGRA;
+  attrib->value.value.i = VA_FOURCC_NV12;
 
   // create surfaces
   VASurfaceID surfaces[32];
   int nb_surfaces = NUM_RENDER_PICS;
   if (!CheckSuccess(vaCreateSurfaces(m_config.dpy,
-                                     VA_RT_FORMAT_RGB32,
+                                     VA_RT_FORMAT_YUV420,
                                      m_config.surfaceWidth,
                                      m_config.surfaceHeight,
                                      surfaces,
@@ -2631,7 +2662,7 @@ bool CVppPostproc::Init(EINTERLACEMETHOD method)
     vppMethod = VAProcDeinterlacingMotionCompensated;
     break;
   case VS_INTERLACEMETHOD_NONE:
-    vppMethod = VAProcDeinterlacingNone;
+    // vppMethod = VAProcDeinterlacingNone;
     break;
   default:
     return false;
@@ -2642,8 +2673,8 @@ bool CVppPostproc::Init(EINTERLACEMETHOD method)
   m_currentIdx = 0;
   m_frameCount = 0;
 
-  if (method == VS_INTERLACEMETHOD_NONE)
-    return true;
+//  if (method == VS_INTERLACEMETHOD_NONE)
+//    return true;
 
   VAProcFilterParameterBufferDeinterlacing filterparams;
   filterparams.type = VAProcFilterDeinterlacing;
