@@ -126,9 +126,6 @@ bool CRendererVAAPI::CreateTexture(int index)
   im.cshift_x = 1;
   im.cshift_y = 1;
 
-  plane.texwidth  = im.width;
-  plane.texheight = im.height;
-
   plane.pixpertex_x = 1;
   plane.pixpertex_y = 1;
 
@@ -173,14 +170,10 @@ bool CRendererVAAPI::UploadTexture(int index)
     return false;
   }
 
-  im.height = vaapi->texHeight;
-  im.width  = vaapi->texWidth;
-
-
   YUVPLANES &planes = fields[0];
 
-  planes[0].texwidth  = im.width;
-  planes[0].texheight = im.height;
+  planes[0].texwidth  = vaapi->texWidth;
+  planes[0].texheight = vaapi->texHeight;
 
   planes[1].texwidth  = planes[0].texwidth  >> im.cshift_x;
   planes[1].texheight = planes[0].texheight >> im.cshift_y;
