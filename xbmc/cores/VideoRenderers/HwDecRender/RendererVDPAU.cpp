@@ -36,7 +36,10 @@ CRendererVDPAU::CRendererVDPAU()
 
 CRendererVDPAU::~CRendererVDPAU()
 {
-
+  for (int i = 0; i < NUM_BUFFERS; ++i)
+  {
+    DeleteTexture(i);
+  }
 }
 
 void CRendererVDPAU::AddVideoPictureHW(DVDVideoPicture &picture, int index)

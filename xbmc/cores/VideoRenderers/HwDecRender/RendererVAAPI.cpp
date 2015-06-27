@@ -36,7 +36,10 @@ CRendererVAAPI::CRendererVAAPI()
 
 CRendererVAAPI::~CRendererVAAPI()
 {
-
+  for (int i = 0; i < NUM_BUFFERS; ++i)
+  {
+    DeleteTexture(i);
+  }
 }
 
 void CRendererVAAPI::AddVideoPictureHW(DVDVideoPicture &picture, int index)
