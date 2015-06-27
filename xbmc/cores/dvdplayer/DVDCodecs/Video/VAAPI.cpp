@@ -1217,6 +1217,9 @@ bool CVaapiRenderPicture::GLMapSurface()
     return false;
   }
 
+  texWidth = glInterop.vaImage.width;
+  texHeight = glInterop.vaImage.height;
+
   EGLImageKHR image;
   GLint attribs[23], *attrib;
 
@@ -2084,8 +2087,6 @@ CVaapiRenderPicture* COutput::ProcessPicture(CVaapiProcessedPicture &pic)
   retPic->DVDPic.iHeight = m_config.vidHeight;
 
   retPic->valid = true;
-  retPic->texWidth = m_config.outWidth;
-  retPic->texHeight = m_config.outHeight;
   retPic->crop.x1 = 0;
   retPic->crop.y1 = 0;
   retPic->crop.x2 = m_config.outWidth;
