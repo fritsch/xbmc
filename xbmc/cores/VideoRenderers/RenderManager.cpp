@@ -99,6 +99,33 @@ static void requeue(std::deque<int> &trg, std::deque<int> &src)
   src.pop_front();
 }
 
+static std::string GetRenderFormatName(ERenderFormat format)
+{
+  switch(format)
+  {
+    case RENDER_FMT_YUV420P:   return "YV12";
+    case RENDER_FMT_YUV420P16: return "YV12P16";
+    case RENDER_FMT_YUV420P10: return "YV12P10";
+    case RENDER_FMT_NV12:      return "NV12";
+    case RENDER_FMT_UYVY422:   return "UYVY";
+    case RENDER_FMT_YUYV422:   return "YUY2";
+    case RENDER_FMT_VDPAU:     return "VDPAU";
+    case RENDER_FMT_VDPAU_420: return "VDPAU_420";
+    case RENDER_FMT_DXVA:      return "DXVA";
+    case RENDER_FMT_VAAPI:     return "VAAPI";
+    case RENDER_FMT_VAAPINV12: return "VAAPI_NV12";
+    case RENDER_FMT_OMXEGL:    return "OMXEGL";
+    case RENDER_FMT_CVBREF:    return "BGRA";
+    case RENDER_FMT_EGLIMG:    return "EGLIMG";
+    case RENDER_FMT_BYPASS:    return "BYPASS";
+    case RENDER_FMT_MEDIACODEC:return "MEDIACODEC";
+    case RENDER_FMT_IMXMAP:    return "IMXMAP";
+    case RENDER_FMT_MMAL:      return "MMAL";
+    case RENDER_FMT_NONE:      return "NONE";
+  }
+  return "UNKNOWN";
+}
+
 CXBMCRenderManager::CXBMCRenderManager()
 {
   m_pRenderer = NULL;
@@ -229,8 +256,36 @@ std::string CXBMCRenderManager::GetVSyncState()
   return state;
 }
 
-bool CXBMCRenderManager::Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags, ERenderFormat format, unsigned extended_format, unsigned int orientation, int buffers)
+bool CXBMCRenderManager::Configure(DVDVideoPicture& picture, float fps, unsigned flags, unsigned int orientation, int buffers)
 {
+
+  // check if something has changed
+  {
+    float config_framerate = fps;
+    float render_framerate = g_graphicsContext.GetFPS();
+    if (CSettings::Get().GetInt("videoplayer.adjustrefreshrate") == ADJUST_REFRESHRATE_OFF)
+      render_framerate = config_framerate;
+    bool changerefresh = (fps != 0) &&
+                         (m_fps == 0.0 || fmod(m_fps, fps) != 0.0) &&
+                         (render_framerate != config_framerate);
+
+    CSharedLock lock(m_sharedSection);
+    if (m_width == picture.iWidth &&
+        m_height == picture.iHeight &&
+        m_dwidth == picture.iDisplayWidth &&
+        m_dheight == picture.iDisplayHeight &&
+        !changerefresh &&
+        m_flags == flags &&
+        m_format == picture.format &&
+        m_extended_format == picture.extended_format &&
+        m_orientation == orientation &&
+        m_NumberBuffers == buffers &&
+        m_pRenderer != NULL)
+      return true;
+  }
+
+  std::string formatstr = GetRenderFormatName(picture.format);
+  CLog::Log(LOGDEBUG, "CXBMCRenderManager::Configure - change configuration. %dx%d. display: %dx%d. framerate: %4.2f. format: %s", picture.iWidth, picture.iHeight, picture.iDisplayWidth, picture.iDisplayHeight, fps, formatstr.c_str());
 
   // make sure any queued frame was fully presented
   {
@@ -249,14 +304,14 @@ bool CXBMCRenderManager::Configure(unsigned int width, unsigned int height, unsi
 
   {
     CExclusiveLock lock(m_sharedSection);
-    m_width = width;
-    m_height = height,
-    m_dwidth = d_width;
-    m_dheight = d_height;
+    m_width = picture.iWidth;
+    m_height = picture.iHeight,
+    m_dwidth = picture.iDisplayWidth;
+    m_dheight = picture.iDisplayHeight;
     m_fps = fps;
     m_flags = flags;
-    m_format = format;
-    m_extended_format = extended_format;
+    m_format = picture.format;
+    m_extended_format = picture.extended_format;
     m_orientation = orientation;
     m_NumberBuffers  = buffers;
     m_renderState = STATE_CONFIGURING;

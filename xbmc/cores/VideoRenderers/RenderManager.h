@@ -94,18 +94,13 @@ public:
   // Functions called from mplayer
   /**
    * Called by video player to configure renderer
-   * @param width width of decoded frame
-   * @param height height of decoded frame
-   * @param d_width displayed width of frame (aspect ratio)
-   * @param d_height displayed height of frame
+   * @param picture
    * @param fps frames per second of video
    * @param flags see RenderFlags.h
-   * @param format see RenderFormats.h
-   * @param extended_format used by DXVA
    * @param orientation
    * @param numbers of kept buffer references
    */
-  bool Configure(unsigned int width, unsigned int height, unsigned int d_width, unsigned int d_height, float fps, unsigned flags, ERenderFormat format, unsigned extended_format,  unsigned int orientation, int buffers = 0);
+  bool Configure(DVDVideoPicture& picture, float fps, unsigned flags, unsigned int orientation, int buffers = 0);
 
   int AddVideoPicture(DVDVideoPicture& picture);
 
