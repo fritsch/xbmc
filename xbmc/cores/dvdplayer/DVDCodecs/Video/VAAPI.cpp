@@ -1220,7 +1220,6 @@ bool CVaapiRenderPicture::GLMapSurface()
   texWidth = glInterop.vaImage.width;
   texHeight = glInterop.vaImage.height;
 
-  EGLImageKHR image;
   GLint attribs[23], *attrib;
 
   switch (glInterop.vaImage.format.fourcc)
@@ -1247,7 +1246,7 @@ bool CVaapiRenderPicture::GLMapSurface()
       if (!glInterop.eglImageY)
       {
         EGLint err = eglGetError();
-        CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image");
+        CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image: %d", err);
         return false;
       }
 
@@ -1255,9 +1254,9 @@ bool CVaapiRenderPicture::GLMapSurface()
       *attrib++ = EGL_LINUX_DRM_FOURCC_EXT;
       *attrib++ = fourcc_code('G', 'R', '1', '6');
       *attrib++ = EGL_WIDTH;
-      *attrib++ = glInterop.vaImage.width +1 >> 1;
+      *attrib++ = (glInterop.vaImage.width + 1) >> 1;
       *attrib++ = EGL_HEIGHT;
-      *attrib++ = glInterop.vaImage.height + 1 >> 1;
+      *attrib++ = (glInterop.vaImage.height + 1) >> 1;
       *attrib++ = EGL_DMA_BUF_PLANE0_FD_EXT;
       *attrib++ = (intptr_t)glInterop.vBufInfo.handle;
       *attrib++ = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
@@ -1271,7 +1270,7 @@ bool CVaapiRenderPicture::GLMapSurface()
       if (!glInterop.eglImageVU)
       {
         EGLint err = eglGetError();
-        CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image");
+        CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image: %d", err);
         return false;
       }
 
@@ -1321,7 +1320,7 @@ bool CVaapiRenderPicture::GLMapSurface()
       if (!glInterop.eglImage)
       {
         EGLint err = eglGetError();
-        CLog::Log(LOGERROR, "failed to import VA buffer NV12 into EGL image");
+        CLog::Log(LOGERROR, "failed to import VA buffer BGRA into EGL image: %d", err);
         return false;
       }
 
@@ -2260,9 +2259,6 @@ void COutput::ProcessReturnProcPicture(int id)
 
 bool COutput::EnsureBufferPool()
 {
-  int fbConfigIndex = 0;
-  int num;
-
   // create avFrames and init interop
   CVaapiRenderPicture *pic;
   for (unsigned int i = 0; i < m_bufferPool.allRenderPics.size(); i++)
