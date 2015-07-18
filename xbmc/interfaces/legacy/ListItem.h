@@ -340,9 +340,18 @@ namespace XBMCAddon
        * \n
        * mimetype           : string or unicode - mimetype.\n
        * \n
-       * *If known prehand, this can avoid xbmc doing HEAD requests to http servers to figure out file type.\n
+       * *If known prehand, this can / but does not have to avoid xbmc doing HEAD requests to http servers to figure out file type.\n
        */
       void setMimeType(const String& mimetype);
+
+       /**
+        * setContentLookup(enable) -- Tells that listitem needs content lookup.\n
+        * \n
+        * enable             : bool\n
+        * \n
+        * If set to false - HEAD requests to http servers won't be done.
+        */
+      void setContentLookup(bool enable);
 
       /**
        * setSubtitles() -- Sets subtitles for this listitem.\n
