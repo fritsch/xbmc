@@ -717,3 +717,24 @@ int CApplicationPlayer::GetPlaySpeed() const
 {
   return m_iPlaySpeed;
 }
+
+void CApplicationPlayer::FrameMove()
+{
+  std::shared_ptr<IPlayer> player = GetInternal();
+  if (player)
+    player->FrameMove();
+}
+
+void CApplicationPlayer::Render(bool clear, uint32_t alpha, bool gui)
+{
+  std::shared_ptr<IPlayer> player = GetInternal();
+  if (player)
+    player->Render(clear, alpha, gui);
+}
+
+void CApplicationPlayer::AfterRender()
+{
+  std::shared_ptr<IPlayer> player = GetInternal();
+  if (player)
+    player->AfterRender();
+}

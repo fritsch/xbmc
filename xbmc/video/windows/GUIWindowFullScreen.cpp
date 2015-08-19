@@ -303,10 +303,6 @@ bool CGUIWindowFullScreen::OnMessage(CGUIMessage& message)
       // switch resolution
       g_graphicsContext.SetFullScreenVideo(true);
 
-#ifdef HAS_VIDEO_PLAYBACK
-      // make sure renderer is uptospeed
-      g_renderManager.Update();
-#endif
       // now call the base class to load our windows
       CGUIWindow::OnMessage(message);
 
@@ -327,11 +323,6 @@ bool CGUIWindowFullScreen::OnMessage(CGUIMessage& message)
       g_graphicsContext.SetFullScreenVideo(false);
       lock.Leave();
 
-#ifdef HAS_VIDEO_PLAYBACK
-      // make sure renderer is uptospeed
-      g_renderManager.Update();
-      g_renderManager.FrameFinish();
-#endif
       return true;
     }
   case GUI_MSG_SETFOCUS:
@@ -539,8 +530,6 @@ void CGUIWindowFullScreen::FrameMove()
     SET_CONTROL_HIDDEN(LABEL_ROW3);
     SET_CONTROL_HIDDEN(BLUE_BAR);
   }
-
-  g_renderManager.FrameMove();
 }
 
 void CGUIWindowFullScreen::Process(unsigned int currentTime, CDirtyRegionList &dirtyregion)
@@ -558,7 +547,7 @@ void CGUIWindowFullScreen::Process(unsigned int currentTime, CDirtyRegionList &d
 void CGUIWindowFullScreen::Render()
 {
   g_graphicsContext.SetRenderingResolution(g_graphicsContext.GetVideoResolution(), false);
-  g_renderManager.Render(true, 0, 255);
+  g_application.m_pPlayer->Render(true, 255);
   g_graphicsContext.SetRenderingResolution(m_coordsRes, m_needsScaling);
   CGUIWindow::Render();
 }
@@ -567,10 +556,7 @@ void CGUIWindowFullScreen::RenderEx()
 {
   CGUIWindow::RenderEx();
   g_graphicsContext.SetRenderingResolution(g_graphicsContext.GetVideoResolution(), false);
-#ifdef HAS_VIDEO_PLAYBACK
-  g_renderManager.Render(false, 0, 255, false);
-  g_renderManager.FrameFinish();
-#endif
+  g_application.m_pPlayer->Render(false, 255, false);
 }
 
 void CGUIWindowFullScreen::ChangetheTimeCode(int remote)

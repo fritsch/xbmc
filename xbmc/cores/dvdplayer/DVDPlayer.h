@@ -288,6 +288,10 @@ public:
   virtual bool SwitchChannel(const PVR::CPVRChannelPtr &channel);
   virtual bool CachePVRStream(void) const;
 
+  virtual void FrameMove();
+  virtual void Render(bool clear, uint32_t alpha = 255, bool gui = true);
+  virtual void AfterRender();
+
   enum ECacheState
   { CACHESTATE_DONE = 0
   , CACHESTATE_FULL     // player is filling up the demux queue

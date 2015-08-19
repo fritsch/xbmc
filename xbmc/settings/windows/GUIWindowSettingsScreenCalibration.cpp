@@ -143,10 +143,6 @@ bool CGUIWindowSettingsScreenCalibration::OnMessage(CGUIMessage& message)
       g_windowManager.ShowOverlay(OVERLAY_STATE_SHOWN);
       // reset our screen resolution to what it was initially
       g_graphicsContext.SetVideoResolution(CDisplaySettings::Get().GetCurrentResolution());
-      // Inform the player so we can update the resolution
-#ifdef HAS_VIDEO_PLAYBACK
-      g_renderManager.Update();
-#endif
       g_windowManager.SendMessage(GUI_MSG_NOTIFY_ALL, 0, 0, GUI_MSG_WINDOW_RESIZE);
     }
     break;
@@ -165,8 +161,6 @@ bool CGUIWindowSettingsScreenCalibration::OnMessage(CGUIMessage& message)
 #ifdef HAS_VIDEO_PLAYBACK
         RESOLUTION res = g_renderManager.GetResolution();
         g_graphicsContext.SetVideoResolution(res);
-        // Inform the renderer so we can update the resolution
-        g_renderManager.Update();
 #endif
 
         m_iCurRes = 0;

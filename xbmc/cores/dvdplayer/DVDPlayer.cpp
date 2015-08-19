@@ -4658,3 +4658,20 @@ bool CDVDPlayer::CachePVRStream(void) const
       !g_PVRManager.IsPlayingRecording() &&
       g_advancedSettings.m_bPVRCacheInDvdPlayer;
 }
+
+void CDVDPlayer::FrameMove()
+{
+  g_renderManager.FrameMove();
+  g_renderManager.UpdateResolution();
+  g_renderManager.ManageCaptures();
+}
+
+void CDVDPlayer::Render(bool clear, uint32_t alpha, bool gui)
+{
+  g_renderManager.Render(clear, 0, alpha, gui);
+}
+
+void CDVDPlayer::AfterRender()
+{
+  g_renderManager.FrameFinish();
+}
