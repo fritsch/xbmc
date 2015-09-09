@@ -444,6 +444,7 @@ CAESinkPULSE::CAESinkPULSE()
   m_Context = NULL;
   m_IsStreamPaused = false;
   m_volume_needs_update = false;
+  m_delay = 0.0;
   pa_cvolume_init(&m_Volume);
 }
 
@@ -464,6 +465,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   m_Channels = 0;
   m_Stream = NULL;
   m_Context = NULL;
+  m_delay = 0.0;
 
   if (!SetupContext(NULL, &m_Context, &m_MainLoop))
   {
@@ -690,6 +692,7 @@ void CAESinkPULSE::Deinitialize()
   CSingleLock lock(m_sec);
   m_IsAllocated = false;
   m_passthrough = false;
+  m_delay = 0.0;
 
   if (m_Stream)
     Drain();
@@ -728,23 +731,24 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
   }
   int error = 0;
   pa_usec_t latency = (pa_usec_t) -1;
+
   pa_threaded_mainloop_lock(m_MainLoop);
+
+  // We use PA_STREAM_INTERPOLATE_TIMING and PA_STREAM_AUTO_TIMING_UPDATE
+  // therefore we save use the roundtrip and should always receive a value
   if ((error = pa_stream_get_latency(m_Stream, &latency, NULL)) < 0)
   {
-    if (error == -PA_ERR_NODATA)
-    {
-      WaitForOperation(pa_stream_update_timing_info(m_Stream, NULL,NULL), m_MainLoop, "Update Timing Information");
-      if ((error = pa_stream_get_latency(m_Stream, &latency, NULL)) < 0)
-      {
-        CLog::Log(LOGDEBUG, "GetDelay - Failed to get Latency %d", error); 
-      }
-    }
+    CLog::Log(LOGERROR, "GetDelay - Failed to get Latency %d", error);
   }
   if (error < 0 )
     latency = (pa_usec_t) 0;
 
+  // because of some flactuation ~ 60 ms in the delay we smooth
+  // the delay by using a running average
+  m_delay = (3.0 * m_delay + (latency / 1000000.0)) / 4.0;
   pa_threaded_mainloop_unlock(m_MainLoop);
-  status.SetDelay(latency / 1000000.0);
+
+  status.SetDelay(m_delay);
 }
 
 double CAESinkPULSE::GetCacheTotal()
