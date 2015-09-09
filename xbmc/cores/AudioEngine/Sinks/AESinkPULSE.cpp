@@ -446,6 +446,7 @@ CAESinkPULSE::CAESinkPULSE()
   m_Context = NULL;
   m_IsStreamPaused = false;
   m_volume_needs_update = false;
+  m_cache_total = 0;
   pa_cvolume_init(&m_Volume);
 }
 
@@ -466,6 +467,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   m_Channels = 0;
   m_Stream = NULL;
   m_Context = NULL;
+  m_cache_total = 0;
 
   if (!SetupContext(NULL, &m_Context, &m_MainLoop))
   {
@@ -603,7 +605,9 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
 
   pa_buffer_attr buffer_attr;
   buffer_attr.fragsize = latency;
-  buffer_attr.maxlength = (uint32_t) -1;
+  // PA might have upto 4MB buffer, limit it
+  // to the latency the buffer of the sink has
+  buffer_attr.maxlength = latency;
   buffer_attr.minreq = process_time;
   buffer_attr.prebuf = (uint32_t) -1;
   buffer_attr.tlength = latency;
@@ -645,6 +649,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   {
     unsigned int packetSize = a->minreq;
     m_BufferSize = a->tlength;
+    m_cache_total = a->maxlength;
 
     format.m_frames = packetSize / frameSize;
   }
@@ -692,6 +697,7 @@ void CAESinkPULSE::Deinitialize()
   CSingleLock lock(m_sec);
   m_IsAllocated = false;
   m_passthrough = false;
+  m_cache_total = 0;
 
   if (m_Stream)
     Drain();
@@ -730,28 +736,29 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
   }
   int error = 0;
   pa_usec_t latency = (pa_usec_t) -1;
+
   pa_threaded_mainloop_lock(m_MainLoop);
+
+  // We use PA_STREAM_INTERPOLATE_TIMING and PA_STREAM_AUTO_TIMING_UPDATE
+  // therefore we save us the roundtrip and should always receive a value
   if ((error = pa_stream_get_latency(m_Stream, &latency, NULL)) < 0)
   {
-    if (error == -PA_ERR_NODATA)
-    {
-      WaitForOperation(pa_stream_update_timing_info(m_Stream, NULL,NULL), m_MainLoop, "Update Timing Information");
-      if ((error = pa_stream_get_latency(m_Stream, &latency, NULL)) < 0)
-      {
-        CLog::Log(LOGDEBUG, "GetDelay - Failed to get Latency %d", error); 
-      }
-    }
+    CLog::Log(LOGERROR, "GetDelay - Failed to get Latency %d", error);
   }
   if (error < 0 )
     latency = (pa_usec_t) 0;
 
   pa_threaded_mainloop_unlock(m_MainLoop);
-  status.SetDelay(latency / 1000000.0);
+
+  // PA's delay is broken - so just clamp it with what we got
+  double delay = std::min(latency / 1000000.0, GetCacheTotal());
+
+  status.SetDelay(delay);
 }
 
 double CAESinkPULSE::GetCacheTotal()
 {
-  return (float)m_BufferSize / (float)m_BytesPerSecond;
+  return (float)m_cache_total / (float)m_BytesPerSecond;
 }
 
 unsigned int CAESinkPULSE::AddPackets(uint8_t **data, unsigned int frames, unsigned int offset)
