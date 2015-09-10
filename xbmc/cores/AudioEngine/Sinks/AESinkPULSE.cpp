@@ -747,6 +747,8 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
   // the delay by using a running average
   m_delay = (3.0 * m_delay + (latency / 1000000.0)) / 4.0;
   pa_threaded_mainloop_unlock(m_MainLoop);
+  CLog::Log(LOGNOTICE, "PA Delay: %lf", (latency / 1000000.0));
+  CLog::Log(LOGNOTICE, "PA Delay (avg): %lf", m_delay);
 
   status.SetDelay(m_delay);
 }
