@@ -71,6 +71,7 @@ private:
   pa_cvolume m_Volume;
   bool m_volume_needs_update;
   uint32_t m_cache_total;
+  uint32_t m_periodSize;
 
   pa_context *m_Context;
   pa_threaded_mainloop *m_MainLoop;
