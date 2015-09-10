@@ -555,7 +555,6 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
     return false;
   }
 
-  pa_sample_spec spec;
   #if PA_CHECK_VERSION(2,0,0)
     pa_format_info_to_sample_spec(info[0], &spec, NULL);
   #else
@@ -752,11 +751,14 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
   m_delay = (3.0 * m_delay + (latency / 1000000.0)) / 4.0;
   double del = std::min(m_delay, GetCacheTotal());
   pa_threaded_mainloop_unlock(m_MainLoop);
-  CLog::Log(LOGNOTICE, "PA Delay: %lf", (latency / 1000000.0));
+  CLog::Log(LOGNOTICE, "PA Delay (getDelay): %lf", (latency / 1000000.0));
   CLog::Log(LOGNOTICE, "PA Delay (avg): %lf", m_delay);
   CLog::Log(LOGNOTICE, "PA Delay (set): %lf", del);
+  const pa_timing_info* lala = pa_stream_get_timing_info(m_Stream);
+  pa_usec_t time_del = pa_bytes_to_usec(lala->write_index - lala->read_index, &spec);
+  CLog::Log(LOGNOTICE, "PA Delay (sink_usec, transport_usec, buffer) %lf, %lf, %lf", lala->sink_usec / 1000000.0, lala->transport_usec / 1000000.0, time_del / 1000000.0);
 
-  status.SetDelay(del);
+  status.SetDelay((lala->sink_usec + lala->transport_usec + time_del) / 1000000.0);
 }
 
 double CAESinkPULSE::GetCacheTotal()
