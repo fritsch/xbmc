@@ -445,6 +445,7 @@ CAESinkPULSE::CAESinkPULSE()
   m_IsStreamPaused = false;
   m_volume_needs_update = false;
   m_delay = 0.0;
+  m_cache_total = 0;
   pa_cvolume_init(&m_Volume);
 }
 
@@ -466,6 +467,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   m_Stream = NULL;
   m_Context = NULL;
   m_delay = 0.0;
+  m_cache_total = 0;
 
   if (!SetupContext(NULL, &m_Context, &m_MainLoop))
   {
@@ -603,7 +605,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
 
   pa_buffer_attr buffer_attr;
   buffer_attr.fragsize = latency;
-  buffer_attr.maxlength = (uint32_t) -1;
+  buffer_attr.maxlength = latency;
   buffer_attr.minreq = process_time;
   buffer_attr.prebuf = (uint32_t) -1;
   buffer_attr.tlength = latency;
@@ -645,6 +647,7 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   {
     unsigned int packetSize = a->minreq;
     m_BufferSize = a->tlength;
+    m_cache_total = a->maxlength;
 
     format.m_frames = packetSize / frameSize;
   }
@@ -693,6 +696,7 @@ void CAESinkPULSE::Deinitialize()
   m_IsAllocated = false;
   m_passthrough = false;
   m_delay = 0.0;
+  m_cache_total = 0;
 
   if (m_Stream)
     Drain();
@@ -757,7 +761,9 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
 
 double CAESinkPULSE::GetCacheTotal()
 {
-  return (float)m_BufferSize / (float)m_BytesPerSecond;
+  double cache = (float)m_cache_total / (float)m_BytesPerSecond;
+  CLog::Log(LOGNOTICE, "Internal Cache: %lf", cache);
+  return cache;
 }
 
 unsigned int CAESinkPULSE::AddPackets(uint8_t **data, unsigned int frames, unsigned int offset)

@@ -71,6 +71,7 @@ private:
   pa_cvolume m_Volume;
   bool m_volume_needs_update;
   double m_delay;
+  uint32_t m_cache_total;
 
   pa_context *m_Context;
   pa_threaded_mainloop *m_MainLoop;
