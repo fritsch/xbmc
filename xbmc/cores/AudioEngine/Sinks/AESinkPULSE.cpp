@@ -746,11 +746,13 @@ void CAESinkPULSE::GetDelay(AEDelayStatus& status)
   // because of some flactuation ~ 60 ms in the delay we smooth
   // the delay by using a running average
   m_delay = (3.0 * m_delay + (latency / 1000000.0)) / 4.0;
+  double del = std::min(m_delay, GetCacheTotal());
   pa_threaded_mainloop_unlock(m_MainLoop);
   CLog::Log(LOGNOTICE, "PA Delay: %lf", (latency / 1000000.0));
   CLog::Log(LOGNOTICE, "PA Delay (avg): %lf", m_delay);
+  CLog::Log(LOGNOTICE, "PA Delay (set): %lf", del);
 
-  status.SetDelay(m_delay);
+  status.SetDelay(del);
 }
 
 double CAESinkPULSE::GetCacheTotal()
