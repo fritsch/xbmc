@@ -169,6 +169,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_videoVDPAUdeintSD;
     bool m_videoVDPAUtelecine;
     bool m_videoVDPAUdeintSkipChromaHD;
+    int m_adjustRefreshrateMaxScreenWidth;
     bool m_musicUseTimeSeeking;
     int m_musicTimeSeekForward;
     int m_musicTimeSeekBackward;

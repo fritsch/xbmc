@@ -240,7 +240,8 @@ RESOLUTION CBaseRenderer::FindClosestResolution(float fps, float multiplier, RES
     ||  info.iScreenHeight < orig.iScreenHeight
     ||  info.iScreen       != orig.iScreen
     ||  (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)
-    ||  info.fRefreshRate < (fRefreshRate * multiplier / 1.001) - 0.001)
+    ||  (info.fRefreshRate < (fRefreshRate * multiplier / 1.001) - 0.001)
+    ||  (info.iScreenWidth > g_advancedSettings.m_adjustRefreshrateMaxScreenWidth))
       continue;
 
     // For 3D choose the closest refresh rate 
