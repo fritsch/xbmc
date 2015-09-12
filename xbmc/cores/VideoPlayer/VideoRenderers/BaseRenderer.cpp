@@ -222,7 +222,7 @@ void CBaseRenderer::FindResolutionFromFpsMatch(float fps, float& weight)
 RESOLUTION CBaseRenderer::FindClosestResolution(float fps, float multiplier, RESOLUTION current, float& weight)
 {
   RESOLUTION_INFO curr = g_graphicsContext.GetResInfo(current);
-
+  RESOLUTION_INFO orig = g_graphicsContext.GetResInfo(current);
   float fRefreshRate = fps;
 
   float last_diff = fRefreshRate;
@@ -239,7 +239,13 @@ RESOLUTION CBaseRenderer::FindClosestResolution(float fps, float multiplier, RES
     ||  info.iScreen       != curr.iScreen
     ||  (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)
     ||  info.fRefreshRate < (fRefreshRate * multiplier / 1.001) - 0.001)
-      continue;
+    {
+      // Allow switching to larger resolution:
+      // e.g. if m_sourceWidth == 3840 and we have a 3840 mode - use this one
+      // if it has a matching fps mode, which is evaluated below
+      if (info.iScreenWidth < orig.iScreenWidth)
+       continue;
+    }
 
     // For 3D choose the closest refresh rate 
     if(CONF_FLAGS_STEREO_MODE_MASK(m_iFlags))
@@ -263,6 +269,13 @@ RESOLUTION CBaseRenderer::FindClosestResolution(float fps, float multiplier, RES
       // Closer the better, prefer higher refresh rate if the same
       if ((i_weight <  c_weight)
       ||  (i_weight == c_weight && info.fRefreshRate > curr.fRefreshRate))
+      {
+        current = (RESOLUTION)i;
+        curr    = info;
+      }
+      // use case 1080p50 vs 3840x2160@25 for 3840@25 content
+      // prefer the higher resolution of 3840
+      else if (i_weight == c_weight && info.iScreenWidth > curr.iScreenWidth)
       {
         current = (RESOLUTION)i;
         curr    = info;
