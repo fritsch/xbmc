@@ -225,7 +225,8 @@ RESOLUTION CResolutionUtils::FindClosestResolution(float fps, int width, bool is
       // skip lower resolutions
       if ((width < orig.iScreenWidth) || // orig res large enough
          (info.iScreenWidth < orig.iScreenWidth) ||// new res is smaller
-         (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)) // don't switch to interlaced modes
+         (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK) ||// don't switch to interlaced modes
+         !CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_ADJUSTRESOLUTION)) // don't switch if user forbids
       {
         continue;
       }
