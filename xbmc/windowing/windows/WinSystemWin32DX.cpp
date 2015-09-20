@@ -49,7 +49,7 @@ bool CWinSystemWin32DX::CreateNewWindow(std::string name, bool fullScreen, RESOL
 
   SetFocusWnd(m_hWnd);
   SetDeviceWnd(m_hWnd);
-  CRenderSystemDX::m_interlaced = ((res.dwFlags & D3DPRESENTFLAG_INTERLACED) != 0);
+  CRenderSystemDX::m_interlaced = ((res.dwFlags & RESPRESENTFLAG_INTERLACED) != 0);
   CRenderSystemDX::m_useWindowedDX = UseWindowedDX(fullScreen);
   SetRenderParams(m_nWidth, m_nHeight, fullScreen, res.fRefreshRate);
   const MONITOR_DETAILS* monitor = GetMonitor(res.iScreen);
@@ -94,7 +94,7 @@ bool CWinSystemWin32DX::SetFullScreen(bool fullScreen, RESOLUTION_INFO& res, boo
     return false;
 
   SetMonitor(monitor->hMonitor);
-  CRenderSystemDX::m_interlaced = ((res.dwFlags & D3DPRESENTFLAG_INTERLACED) != 0);
+  CRenderSystemDX::m_interlaced = ((res.dwFlags & RESPRESENTFLAG_INTERLACED) != 0);
   CRenderSystemDX::m_useWindowedDX = UseWindowedDX(fullScreen);
 
   // this needed to prevent resize/move events from DXGI during changing mode

@@ -74,14 +74,14 @@ bool CEGLNativeTypeRKAndroid::SysModeToResolution(std::string mode, RESOLUTION_I
   res->iScreenWidth = w;
   res->iScreenHeight= h;
   res->fRefreshRate = r;
-  res->dwFlags = p[0] == 'p' ? D3DPRESENTFLAG_PROGRESSIVE : D3DPRESENTFLAG_INTERLACED;
+  res->dwFlags = p[0] == 'p' ? RESPRESENTFLAG_PROGRESSIVE : RESPRESENTFLAG_INTERLACED;
 
   res->iScreen       = 0;
   res->bFullScreen   = true;
   res->iSubtitles    = (int)(0.965 * res->iHeight);
   res->fPixelRatio   = 1.0f;
   res->strMode       = StringUtils::Format("%dx%d @ %.2f%s - Full Screen", res->iScreenWidth, res->iScreenHeight, res->fRefreshRate,
-                                           res->dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
+                                           res->dwFlags & RESPRESENTFLAG_INTERLACED ? "i" : "");
   res->strId         = mode;
 
   return res->iWidth > 0 && res->iHeight> 0;
@@ -120,7 +120,7 @@ bool CEGLNativeTypeRKAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
           return SetDisplayResolution("1280x720p-60");
           break;
         case 1920:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             return SetDisplayResolution("1920x1080i-60");
           else
             return SetDisplayResolution("1920x1080p-60");
@@ -135,7 +135,7 @@ bool CEGLNativeTypeRKAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
           return SetDisplayResolution("1280x720p-50");
           break;
         case 1920:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             return SetDisplayResolution("1920x1080i-50");
           else
             return SetDisplayResolution("1920x1080p-50");

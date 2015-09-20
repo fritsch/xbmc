@@ -95,7 +95,7 @@ bool CResolutionUtils::FindResolutionFromOverride(float fps, int width, bool is3
 
       if (info.iScreenWidth  == curr.iScreenWidth &&
           info.iScreenHeight == curr.iScreenHeight &&
-          (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (curr.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
+          (info.dwFlags & RESPRESENTFLAG_MODEMASK) == (curr.dwFlags & RESPRESENTFLAG_MODEMASK) &&
           info.iScreen == curr.iScreen)
       {
         if (info.fRefreshRate <= override.refreshmax &&
@@ -156,7 +156,7 @@ void CResolutionUtils::FindResolutionFromFpsMatch(float fps, int width, bool is3
         if (MathUtils::round_int(info.fRefreshRate) == 60
          && info.iScreenWidth  == curr.iScreenWidth
          && info.iScreenHeight == curr.iScreenHeight
-         && (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)
+         && (info.dwFlags & RESPRESENTFLAG_MODEMASK) == (curr.dwFlags & RESPRESENTFLAG_MODEMASK)
          && info.iScreen       == curr.iScreen)
         {
           if (fabs(info.fRefreshRate - 60.0) < fabs(curr.fRefreshRate - 60.0)) {
@@ -177,7 +177,7 @@ void CResolutionUtils::FindResolutionFromFpsMatch(float fps, int width, bool is3
           if (info.fRefreshRate  >  curr.fRefreshRate
            && info.iScreenWidth  == curr.iScreenWidth
            && info.iScreenHeight == curr.iScreenHeight
-           && (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)
+           && (info.dwFlags & RESPRESENTFLAG_MODEMASK) == (curr.dwFlags & RESPRESENTFLAG_MODEMASK)
            && info.iScreen       == curr.iScreen)
           {
             resolution = (RESOLUTION)i;
@@ -218,7 +218,7 @@ RESOLUTION CResolutionUtils::FindClosestResolution(float fps, int width, bool is
     if (info.iScreenWidth != curr.iScreenWidth ||
         info.iScreenHeight != curr.iScreenHeight ||
         info.iScreen != curr.iScreen ||
-        (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK) ||
+        (info.dwFlags & RESPRESENTFLAG_MODEMASK) != (curr.dwFlags & RESPRESENTFLAG_MODEMASK) ||
         info.fRefreshRate < (fRefreshRate * multiplier / 1.001) - 0.001)
     {
       // evaluate all higher modes and evalute them
@@ -227,7 +227,7 @@ RESOLUTION CResolutionUtils::FindClosestResolution(float fps, int width, bool is
       if ((width < orig.iScreenWidth) || // orig res large enough
          (info.iScreenWidth < orig.iScreenWidth) || // new res is smaller
          (info.iScreenHeight < orig.iScreenHeight) || // new height would be smaller
-         (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)) // don't switch to interlaced modes
+         (info.dwFlags & RESPRESENTFLAG_MODEMASK) != (curr.dwFlags & RESPRESENTFLAG_MODEMASK)) // don't switch to interlaced modes
       {
         continue;
       }

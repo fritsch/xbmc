@@ -63,7 +63,7 @@ float square_error(float x, float y)
 static std::string ModeFlagsToString(unsigned int flags, bool identifier)
 {
   std::string res;
-  if(flags & D3DPRESENTFLAG_INTERLACED)
+  if(flags & RESPRESENTFLAG_INTERLACED)
     res += "i";
   else
     res += "p";
@@ -71,9 +71,9 @@ static std::string ModeFlagsToString(unsigned int flags, bool identifier)
   if(!identifier)
     res += " ";
 
-  if(flags & D3DPRESENTFLAG_MODE3DSBS)
+  if(flags & RESPRESENTFLAG_MODE3DSBS)
     res += "sbs";
-  else if(flags & D3DPRESENTFLAG_MODE3DTB)
+  else if(flags & RESPRESENTFLAG_MODE3DTB)
     res += "tab";
   else if(identifier)
     res += "std";
@@ -424,7 +424,7 @@ void CDisplaySettings::AddResolutionInfo(const RESOLUTION_INFO &resolution)
   CSingleLock lock(m_critical);
   RESOLUTION_INFO res(resolution);
 
-  if((res.dwFlags & D3DPRESENTFLAG_MODE3DTB) == 0)
+  if((res.dwFlags & RESPRESENTFLAG_MODE3DTB) == 0)
   {
     /* add corrections for some special case modes frame packing modes */
 
@@ -432,14 +432,14 @@ void CDisplaySettings::AddResolutionInfo(const RESOLUTION_INFO &resolution)
     && res.iScreenHeight == 2205)
     {
       res.iBlanking = 45;
-      res.dwFlags  |= D3DPRESENTFLAG_MODE3DTB;
+      res.dwFlags  |= RESPRESENTFLAG_MODE3DTB;
     }
 
     if(res.iScreenWidth  == 1280
     && res.iScreenHeight == 1470)
     {
       res.iBlanking = 30;
-      res.dwFlags  |= D3DPRESENTFLAG_MODE3DTB;
+      res.dwFlags  |= RESPRESENTFLAG_MODE3DTB;
     }
   }
   m_resolutions.push_back(res);
@@ -536,14 +536,14 @@ RESOLUTION CDisplaySettings::FindBestMatchingResolution(const std::map<RESOLUTIO
   // find the closest match to these in our res vector.  If we have the screen, we score the res
   RESOLUTION bestRes = RES_DESKTOP;
   float bestScore = FLT_MAX;
-  flags &= D3DPRESENTFLAG_MODEMASK;
+  flags &= RESPRESENTFLAG_MODEMASK;
 
   for (std::map<RESOLUTION, RESOLUTION_INFO>::const_iterator it = resolutionInfos.begin(); it != resolutionInfos.end(); ++it)
   {
     const RESOLUTION_INFO &info = it->second;
 
     if ( info.iScreen               != screen
-    ||  (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != flags)
+    ||  (info.dwFlags & RESPRESENTFLAG_MODEMASK) != flags)
       continue;
 
     float score = 10 * (square_error((float)info.iScreenWidth, (float)width) +
@@ -576,12 +576,12 @@ RESOLUTION CDisplaySettings::GetResolutionFromString(const std::string &strResol
 
     // look for 'i' and treat everything else as progressive,
     if(StringUtils::Mid(strResolution, 20,1) == "i")
-      flags |= D3DPRESENTFLAG_INTERLACED;
+      flags |= RESPRESENTFLAG_INTERLACED;
 
     if(StringUtils::Mid(strResolution, 21,3) == "sbs")
-      flags |= D3DPRESENTFLAG_MODE3DSBS;
+      flags |= RESPRESENTFLAG_MODE3DSBS;
     else if(StringUtils::Mid(strResolution, 21,3) == "tab")
-      flags |= D3DPRESENTFLAG_MODE3DTB;
+      flags |= RESPRESENTFLAG_MODE3DTB;
 
     std::map<RESOLUTION, RESOLUTION_INFO> resolutionInfos;
     for (size_t resolution = RES_DESKTOP; resolution < CDisplaySettings::GetInstance().ResolutionInfoSize(); resolution++)

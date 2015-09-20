@@ -40,7 +40,7 @@ struct RESOLUTION_WHR
 {
   int width;
   int height;
-  int flags; //< only D3DPRESENTFLAG_MODEMASK flags
+  int flags; //< only RESPRESENTFLAG_MODEMASK flags
   int ResInfo_Index;
 };
 

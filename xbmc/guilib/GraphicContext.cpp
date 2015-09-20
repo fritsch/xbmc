@@ -432,14 +432,14 @@ void CGraphicContext::SetVideoResolutionInternal(RESOLUTION res, bool forceUpdat
 
   // if the new resolution is an actual stereo mode, switch to that
   // if the old resolution was an actual stereo mode and renderer is still in old 3D mode, switch to no 3d mode
-  if (info_org.dwFlags & D3DPRESENTFLAG_MODE3DTB)
+  if (info_org.dwFlags & RESPRESENTFLAG_MODE3DTB)
     stereo_mode = RENDER_STEREO_MODE_SPLIT_HORIZONTAL;
-  else if (info_org.dwFlags & D3DPRESENTFLAG_MODE3DSBS)
+  else if (info_org.dwFlags & RESPRESENTFLAG_MODE3DSBS)
     stereo_mode = RENDER_STEREO_MODE_SPLIT_VERTICAL;
-  else if ((info_last.dwFlags & D3DPRESENTFLAG_MODE3DTB)
+  else if ((info_last.dwFlags & RESPRESENTFLAG_MODE3DTB)
         && m_stereoMode == RENDER_STEREO_MODE_SPLIT_HORIZONTAL)
     stereo_mode = RENDER_STEREO_MODE_OFF;
-  else if ((info_last.dwFlags & D3DPRESENTFLAG_MODE3DSBS)
+  else if ((info_last.dwFlags & RESPRESENTFLAG_MODE3DSBS)
         && m_stereoMode == RENDER_STEREO_MODE_SPLIT_VERTICAL)
     stereo_mode = RENDER_STEREO_MODE_OFF;
 
@@ -566,7 +566,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 1080);
     info.iWidth = 1920;
     info.iHeight = 1080;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED | RESPRESENTFLAG_WIDESCREEN;
     info.fPixelRatio = 1.0f;
     info.strMode ="1080i 16:9";
     break;
@@ -574,7 +574,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 720);
     info.iWidth = 640;
     info.iHeight = 720;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN | D3DPRESENTFLAG_MODE3DSBS;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE | RESPRESENTFLAG_WIDESCREEN | RESPRESENTFLAG_MODE3DSBS;
     info.fPixelRatio = 2.0f;
     info.strMode = "720pSBS 16:9";
     break;
@@ -582,7 +582,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 720);
     info.iWidth = 1280;
     info.iHeight = 720;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN | D3DPRESENTFLAG_MODE3DTB;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE | RESPRESENTFLAG_WIDESCREEN | RESPRESENTFLAG_MODE3DTB;
     info.fPixelRatio = 0.5f;
     info.strMode = "720pTB 16:9";
     break;
@@ -590,7 +590,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 1080);
     info.iWidth = 1920;
     info.iHeight = 1080;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN | D3DPRESENTFLAG_MODE3DSBS;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE | RESPRESENTFLAG_WIDESCREEN | RESPRESENTFLAG_MODE3DSBS;
     info.fPixelRatio = 2.0f;
     info.strMode = "1080pSBS 16:9";
     break;
@@ -598,7 +598,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 1080);
     info.iWidth = 1920;
     info.iHeight = 1080;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN | D3DPRESENTFLAG_MODE3DTB;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE | RESPRESENTFLAG_WIDESCREEN | RESPRESENTFLAG_MODE3DTB;
     info.fPixelRatio = 0.5f;
     info.strMode = "1080pTB 16:9";
     break;
@@ -606,7 +606,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 720);
     info.iWidth = 1280;
     info.iHeight = 720;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE | RESPRESENTFLAG_WIDESCREEN;
     info.fPixelRatio = 1.0f;
     info.strMode = "720p 16:9";
     break;
@@ -614,7 +614,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.9 * 480);
     info.iWidth = 720;
     info.iHeight = 480;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE;
     info.fPixelRatio = 4320.0f / 4739.0f;
     info.strMode = "480p 4:3";
     break;
@@ -622,7 +622,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 480);
     info.iWidth = 720;
     info.iHeight = 480;
-    info.dwFlags = D3DPRESENTFLAG_PROGRESSIVE | D3DPRESENTFLAG_WIDESCREEN;
+    info.dwFlags = RESPRESENTFLAG_PROGRESSIVE | RESPRESENTFLAG_WIDESCREEN;
     info.fPixelRatio = 4320.0f / 4739.0f*4.0f / 3.0f;
     info.strMode = "480p 16:9";
     break;
@@ -630,7 +630,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.9 * 480);
     info.iWidth = 720;
     info.iHeight = 480;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED;
     info.fPixelRatio = 4320.0f / 4739.0f;
     info.strMode = "NTSC 4:3";
     break;
@@ -638,7 +638,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 480);
     info.iWidth = 720;
     info.iHeight = 480;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED | RESPRESENTFLAG_WIDESCREEN;
     info.fPixelRatio = 4320.0f / 4739.0f*4.0f / 3.0f;
     info.strMode = "NTSC 16:9";
     break;
@@ -646,7 +646,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.9 * 576);
     info.iWidth = 720;
     info.iHeight = 576;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED;
     info.fPixelRatio = 128.0f / 117.0f;
     info.strMode = "PAL 4:3";
     break;
@@ -654,7 +654,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 576);
     info.iWidth = 720;
     info.iHeight = 576;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED | RESPRESENTFLAG_WIDESCREEN;
     info.fPixelRatio = 128.0f / 117.0f*4.0f / 3.0f;
     info.strMode = "PAL 16:9";
     break;
@@ -662,7 +662,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.9 * 480);
     info.iWidth = 720;
     info.iHeight = 480;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED;
     info.fPixelRatio = 4320.0f / 4739.0f;
     info.strMode = "PAL60 4:3";
     break;
@@ -670,7 +670,7 @@ void CGraphicContext::ResetScreenParameters(RESOLUTION res)
     info.iSubtitles = (int)(0.965 * 480);
     info.iWidth = 720;
     info.iHeight = 480;
-    info.dwFlags = D3DPRESENTFLAG_INTERLACED | D3DPRESENTFLAG_WIDESCREEN;
+    info.dwFlags = RESPRESENTFLAG_INTERLACED | RESPRESENTFLAG_WIDESCREEN;
     info.fPixelRatio = 4320.0f / 4739.0f*4.0f / 3.0f;
     info.strMode = "PAL60 16:9";
     break;
@@ -707,11 +707,11 @@ const RESOLUTION_INFO CGraphicContext::GetResInfo(RESOLUTION res) const
 
   if(m_stereoMode == RENDER_STEREO_MODE_SPLIT_HORIZONTAL)
   {
-    if((info.dwFlags & D3DPRESENTFLAG_MODE3DTB) == 0)
+    if((info.dwFlags & RESPRESENTFLAG_MODE3DTB) == 0)
     {
       info.fPixelRatio     /= 2;
       info.iBlanking        = 0;
-      info.dwFlags         |= D3DPRESENTFLAG_MODE3DTB;
+      info.dwFlags         |= RESPRESENTFLAG_MODE3DTB;
     }
     info.iHeight          = (info.iHeight         - info.iBlanking) / 2;
     info.Overscan.top    /= 2;
@@ -721,11 +721,11 @@ const RESOLUTION_INFO CGraphicContext::GetResInfo(RESOLUTION res) const
 
   if(m_stereoMode == RENDER_STEREO_MODE_SPLIT_VERTICAL)
   {
-    if((info.dwFlags & D3DPRESENTFLAG_MODE3DSBS) == 0)
+    if((info.dwFlags & RESPRESENTFLAG_MODE3DSBS) == 0)
     {
       info.fPixelRatio     *= 2;
       info.iBlanking        = 0;
-      info.dwFlags         |= D3DPRESENTFLAG_MODE3DSBS;
+      info.dwFlags         |= RESPRESENTFLAG_MODE3DSBS;
     }
     info.iWidth           = (info.iWidth         - info.iBlanking) / 2;
     info.Overscan.left   /= 2;
@@ -747,18 +747,18 @@ void CGraphicContext::SetResInfo(RESOLUTION res, const RESOLUTION_INFO& info)
   curr.iSubtitles = info.iSubtitles;
   curr.fPixelRatio = info.fPixelRatio;
 
-  if(info.dwFlags & D3DPRESENTFLAG_MODE3DSBS)
+  if(info.dwFlags & RESPRESENTFLAG_MODE3DSBS)
   {
     curr.Overscan.right  = info.Overscan.right  * 2 + info.iBlanking;
-    if((curr.dwFlags & D3DPRESENTFLAG_MODE3DSBS) == 0)
+    if((curr.dwFlags & RESPRESENTFLAG_MODE3DSBS) == 0)
       curr.fPixelRatio  /= 2.0;
   }
 
-  if(info.dwFlags & D3DPRESENTFLAG_MODE3DTB)
+  if(info.dwFlags & RESPRESENTFLAG_MODE3DTB)
   {
     curr.Overscan.bottom = info.Overscan.bottom * 2 + info.iBlanking;
     curr.iSubtitles      = info.iSubtitles      * 2 + info.iBlanking;
-    if((curr.dwFlags & D3DPRESENTFLAG_MODE3DTB) == 0)
+    if((curr.dwFlags & RESPRESENTFLAG_MODE3DTB) == 0)
       curr.fPixelRatio  *= 2.0;
   }
 }

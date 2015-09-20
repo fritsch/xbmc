@@ -375,7 +375,7 @@ void CWinSystemX11::UpdateResolutions()
       res.bFullScreen  = true;
 
       if (mode.h > 0 && ((float)mode.w / (float)mode.h >= 1.59))
-        res.dwFlags = D3DPRESENTFLAG_WIDESCREEN;
+        res.dwFlags = RESPRESENTFLAG_WIDESCREEN;
       else
         res.dwFlags = 0;
 

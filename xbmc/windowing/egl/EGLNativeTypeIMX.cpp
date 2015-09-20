@@ -275,7 +275,7 @@ bool CEGLNativeTypeIMX::FindMatchingResolution(const RESOLUTION_INFO &res, const
     if(resolutions[i].iScreenWidth == res.iScreenWidth &&
        resolutions[i].iScreenHeight == res.iScreenHeight &&
        resolutions[i].fRefreshRate == res.fRefreshRate &&
-      (resolutions[i].dwFlags & D3DPRESENTFLAG_MODEMASK) == (res.dwFlags & D3DPRESENTFLAG_MODEMASK))
+      (resolutions[i].dwFlags & RESPRESENTFLAG_MODEMASK) == (res.dwFlags & RESPRESENTFLAG_MODEMASK))
     {
        return true;
     }
@@ -420,7 +420,7 @@ bool CEGLNativeTypeIMX::ModeToResolution(std::string mode, RESOLUTION_INFO *res)
   res->iScreenWidth = w;
   res->iScreenHeight= h;
   res->fRefreshRate = r;
-  res->dwFlags = p[0] == 'p' ? D3DPRESENTFLAG_PROGRESSIVE : D3DPRESENTFLAG_INTERLACED;
+  res->dwFlags = p[0] == 'p' ? RESPRESENTFLAG_PROGRESSIVE : RESPRESENTFLAG_INTERLACED;
 
   res->iScreen       = 0;
   res->bFullScreen   = true;
@@ -428,7 +428,7 @@ bool CEGLNativeTypeIMX::ModeToResolution(std::string mode, RESOLUTION_INFO *res)
 
   res->fPixelRatio   = !m_sar ? 1.0f : (float)m_sar / res->iScreenWidth * res->iScreenHeight;
   res->strMode       = StringUtils::Format("%dx%d @ %.2f%s - Full Screen", res->iScreenWidth, res->iScreenHeight, res->fRefreshRate,
-                                           res->dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
+                                           res->dwFlags & RESPRESENTFLAG_INTERLACED ? "i" : "");
   res->strId         = mode;
 
   return res->iWidth > 0 && res->iHeight> 0;

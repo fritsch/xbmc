@@ -767,7 +767,7 @@ void OMXPlayerVideo::ResolutionUpdateCallBack(uint32_t width, uint32_t height, f
 
   if(flags & CONF_FLAGS_STEREO_MODE_SBS)
   {
-    if(g_Windowing.Support3D(video_width, video_height, D3DPRESENTFLAG_MODE3DSBS))
+    if(g_Windowing.Support3D(video_width, video_height, RESPRESENTFLAG_MODE3DSBS))
       CLog::Log(LOGNOTICE, "3DSBS movie found");
     else
     {
@@ -777,7 +777,7 @@ void OMXPlayerVideo::ResolutionUpdateCallBack(uint32_t width, uint32_t height, f
   }
   else if(flags & CONF_FLAGS_STEREO_MODE_TAB)
   {
-    if(g_Windowing.Support3D(video_width, video_height, D3DPRESENTFLAG_MODE3DTB))
+    if(g_Windowing.Support3D(video_width, video_height, RESPRESENTFLAG_MODE3DTB))
       CLog::Log(LOGNOTICE, "3DTB movie found");
     else
     {

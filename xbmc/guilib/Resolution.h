@@ -30,6 +30,18 @@ typedef int DisplayMode;
 // DM_FULLSCREEN3        2
 // etc.
 
+// Definition of presentation flags
+#define RESPRESENTFLAG_INTERLACED   1
+#define RESPRESENTFLAG_WIDESCREEN   2
+#define RESPRESENTFLAG_PROGRESSIVE  4
+#define RESPRESENTFLAG_MODE3DSBS    8
+#define RESPRESENTFLAG_MODE3DTB    16
+
+/* what types are important for mode setting */
+#define RESPRESENTFLAG_MODEMASK ( RESPRESENTFLAG_INTERLACED \
+                                | RESPRESENTFLAG_MODE3DSBS  \
+                                | RESPRESENTFLAG_MODE3DTB   )
+
 enum RESOLUTION {
   RES_INVALID        = -1,
   RES_HDTV_1080i     =  0,

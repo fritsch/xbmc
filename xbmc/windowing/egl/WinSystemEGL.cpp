@@ -284,7 +284,7 @@ bool CWinSystemEGL::CreateNewWindow(const std::string& name, bool fullScreen, RE
     current_resolution.iWidth == res.iWidth && current_resolution.iHeight == res.iHeight &&
     current_resolution.iScreenWidth == res.iScreenWidth && current_resolution.iScreenHeight == res.iScreenHeight &&
     m_bFullScreen == fullScreen && current_resolution.fRefreshRate == res.fRefreshRate &&
-    (current_resolution.dwFlags & D3DPRESENTFLAG_MODEMASK) == (res.dwFlags & D3DPRESENTFLAG_MODEMASK))
+    (current_resolution.dwFlags & RESPRESENTFLAG_MODEMASK) == (res.dwFlags & RESPRESENTFLAG_MODEMASK))
   {
     CLog::Log(LOGDEBUG, "CWinSystemEGL::CreateNewWindow: No need to create a new window");
     return true;
@@ -402,14 +402,14 @@ void CWinSystemEGL::UpdateResolutions()
       resolutions[i].iScreen,
       resolutions[i].iScreenWidth,
       resolutions[i].iScreenHeight,
-      resolutions[i].dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "",
+      resolutions[i].dwFlags & RESPRESENTFLAG_INTERLACED ? "i" : "",
       resolutions[i].fRefreshRate);
 
     if(resDesktop.iWidth == resolutions[i].iWidth &&
        resDesktop.iHeight == resolutions[i].iHeight &&
        resDesktop.iScreenWidth == resolutions[i].iScreenWidth &&
        resDesktop.iScreenHeight == resolutions[i].iScreenHeight &&
-       (resDesktop.dwFlags & D3DPRESENTFLAG_MODEMASK) == (resolutions[i].dwFlags & D3DPRESENTFLAG_MODEMASK) &&
+       (resDesktop.dwFlags & RESPRESENTFLAG_MODEMASK) == (resolutions[i].dwFlags & RESPRESENTFLAG_MODEMASK) &&
        fabs(resDesktop.fRefreshRate - resolutions[i].fRefreshRate) < FLT_EPSILON)
     {
       ResDesktop = res_index;
@@ -423,7 +423,7 @@ void CWinSystemEGL::UpdateResolutions()
   {
     CLog::Log(LOGNOTICE, "Found (%dx%d%s@%f) at %d, setting to RES_DESKTOP at %d",
       resDesktop.iWidth, resDesktop.iHeight,
-      resDesktop.dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "",
+      resDesktop.dwFlags & RESPRESENTFLAG_INTERLACED ? "i" : "",
       resDesktop.fRefreshRate,
       (int)ResDesktop, (int)RES_DESKTOP);
 

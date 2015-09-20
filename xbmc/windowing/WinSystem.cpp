@@ -81,11 +81,11 @@ void CWinSystemBase::UpdateDesktopResolution(RESOLUTION_INFO& newRes, int screen
   newRes.strMode = StringUtils::Format("%dx%d", width, height);
   if (refreshRate > 1)
     newRes.strMode += StringUtils::Format("@ %.2f", refreshRate);
-  if (dwFlags & D3DPRESENTFLAG_INTERLACED)
+  if (dwFlags & RESPRESENTFLAG_INTERLACED)
     newRes.strMode += "i";
-  if (dwFlags & D3DPRESENTFLAG_MODE3DTB)
+  if (dwFlags & RESPRESENTFLAG_MODE3DTB)
     newRes.strMode += "tab";
-  if (dwFlags & D3DPRESENTFLAG_MODE3DSBS)
+  if (dwFlags & RESPRESENTFLAG_MODE3DSBS)
     newRes.strMode += "sbs";
   if (screen > 0)
     newRes.strMode = StringUtils::Format("%s #%d", newRes.strMode.c_str(), screen + 1);
@@ -135,14 +135,14 @@ static void AddResolution(std::vector<RESOLUTION_WHR> &resolutions, unsigned int
   RESOLUTION_INFO resInfo = CDisplaySettings::GetInstance().GetResolutionInfo(addindex);
   int width  = resInfo.iScreenWidth;
   int height = resInfo.iScreenHeight;
-  int flags  = resInfo.dwFlags & D3DPRESENTFLAG_MODEMASK;
+  int flags  = resInfo.dwFlags & RESPRESENTFLAG_MODEMASK;
   float refreshrate = resInfo.fRefreshRate;
 
   // don't touch RES_DESKTOP
   for (unsigned int idx = 1; idx < resolutions.size(); idx++)
     if (   resolutions[idx].width == width
         && resolutions[idx].height == height
-        &&(resolutions[idx].flags & D3DPRESENTFLAG_MODEMASK) == flags)
+        &&(resolutions[idx].flags & RESPRESENTFLAG_MODEMASK) == flags)
     {
       // check if the refresh rate of this resolution is better suited than
       // the refresh rate of the resolution with the same width/height/interlaced
@@ -210,7 +210,7 @@ std::vector<REFRESHRATE> CWinSystemBase::RefreshRates(int screen, int width, int
     if (   CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreen == screen
         && CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreenWidth  == width
         && CDisplaySettings::GetInstance().GetResolutionInfo(idx).iScreenHeight == height
-        && (CDisplaySettings::GetInstance().GetResolutionInfo(idx).dwFlags & D3DPRESENTFLAG_MODEMASK) == (dwFlags & D3DPRESENTFLAG_MODEMASK))
+        && (CDisplaySettings::GetInstance().GetResolutionInfo(idx).dwFlags & RESPRESENTFLAG_MODEMASK) == (dwFlags & RESPRESENTFLAG_MODEMASK))
       AddRefreshRate(refreshrates, idx);
 
   // Can't assume a sort order

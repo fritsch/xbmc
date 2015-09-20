@@ -179,7 +179,7 @@ bool CEGLNativeTypeAndroid::GetNativeResolution(RESOLUTION_INFO *res) const
   }
 
   res->fRefreshRate = currentRefreshRate();
-  res->dwFlags= D3DPRESENTFLAG_PROGRESSIVE;
+  res->dwFlags= RESPRESENTFLAG_PROGRESSIVE;
   res->iScreen       = 0;
   res->bFullScreen   = true;
   res->iSubtitles    = (int)(0.965 * res->iHeight);
@@ -187,7 +187,7 @@ bool CEGLNativeTypeAndroid::GetNativeResolution(RESOLUTION_INFO *res) const
   res->iScreenWidth  = res->iWidth;
   res->iScreenHeight = res->iHeight;
   res->strMode       = StringUtils::Format("%dx%d @ %.2f%s - Full Screen", res->iScreenWidth, res->iScreenHeight, res->fRefreshRate,
-                                           res->dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
+                                           res->dwFlags & RESPRESENTFLAG_INTERLACED ? "i" : "");
   CLog::Log(LOGNOTICE,"Current resolution: %s\n",res->strMode.c_str());
   return true;
 }
@@ -231,7 +231,7 @@ bool CEGLNativeTypeAndroid::ProbeResolutions(std::vector<RESOLUTION_INFO> &resol
       {
         res.fRefreshRate = refreshRates[i];
         res.strMode      = StringUtils::Format("%dx%d @ %.2f%s - Full Screen", res.iScreenWidth, res.iScreenHeight, res.fRefreshRate,
-                                               res.dwFlags & D3DPRESENTFLAG_INTERLACED ? "i" : "");
+                                               res.dwFlags & RESPRESENTFLAG_INTERLACED ? "i" : "");
         resolutions.push_back(res);
       }
     }

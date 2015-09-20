@@ -146,7 +146,7 @@ bool CEGLNativeTypeAmlogic::SetNativeResolution(const RESOLUTION_INFO &res)
           SetDisplayResolution("720p");
           break;
         case 1920:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             SetDisplayResolution("1080i");
           else
             SetDisplayResolution("1080p");
@@ -161,7 +161,7 @@ bool CEGLNativeTypeAmlogic::SetNativeResolution(const RESOLUTION_INFO &res)
           SetDisplayResolution("720p50hz");
           break;
         case 1920:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             SetDisplayResolution("1080i50hz");
           else
             SetDisplayResolution("1080p50hz");

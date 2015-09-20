@@ -88,14 +88,14 @@ bool CEGLNativeTypeAmlAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
           {
             if (res.iScreenHeight == 480)
             {
-              if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+              if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
                 return SetDisplayResolution("480i");
               else
                 return SetDisplayResolution("480p");
             }
             else
             {
-              if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+              if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
                 return SetDisplayResolution("576i");
               else
                 return SetDisplayResolution("576p");
@@ -106,7 +106,7 @@ bool CEGLNativeTypeAmlAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
           return SetDisplayResolution("720p");
           break;
         case 1920:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             return SetDisplayResolution("1080i");
           else
             return SetDisplayResolution("1080p");
@@ -117,7 +117,7 @@ bool CEGLNativeTypeAmlAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
       switch(res.iScreenWidth)
       {
         default:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             return SetDisplayResolution("1080i59hz");
           else
             return SetDisplayResolution("1080p59hz");
@@ -131,7 +131,7 @@ bool CEGLNativeTypeAmlAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
           return SetDisplayResolution("720p50hz");
           break;
         case 1920:
-          if (res.dwFlags & D3DPRESENTFLAG_INTERLACED)
+          if (res.dwFlags & RESPRESENTFLAG_INTERLACED)
             return SetDisplayResolution("1080i50hz");
           else
             return SetDisplayResolution("1080p50hz");
