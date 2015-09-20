@@ -379,9 +379,6 @@ void CWinSystemX11::UpdateResolutions()
       res.fRefreshRate = mode.hz;
       res.bFullScreen  = true;
 
-      if (mode.h > 0 && ((float)mode.w / (float)mode.h >= 1.59))
-        res.dwFlags |= D3DPRESENTFLAG_WIDESCREEN;
-
       g_graphicsContext.ResetOverscan(res);
       CDisplaySettings::Get().AddResolutionInfo(res);
     }
