@@ -334,3 +334,11 @@ double CDVDAudio::GetClock()
   else
     return 0.0;
 }
+
+double CDVDAudio::GetClockSpeed()
+{
+  if (m_pClock)
+    return m_pClock->GetClockSpeed();
+  else
+    return 1.0;
+}

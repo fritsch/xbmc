@@ -356,7 +356,7 @@ int CVideoPlayerAudio::DecodeFrame(DVDAudioFrame &audioframe)
 
       m_ptsInput.Flush();
       if (pMsgGeneralResync->m_clock)
-        m_pClock->Discontinuity(m_audioClock);
+        m_pClock->Discontinuity(m_audioClock - DVD_MSEC_TO_TIME(300));
     }
     else if (pMsg->IsType(CDVDMsg::GENERAL_RESET))
     {

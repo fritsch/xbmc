@@ -204,18 +204,19 @@ double CActiveAEStream::CalcResampleRatio(double error)
 
   double proportional = 0.0;
 
-  //on big errors use more proportional
-  if (fabs(error / 1000) > 0.0)
-  {
-    double proportionaldiv = 20 * (0.01 / fabs(error / 1000));
-    if (proportionaldiv < 2.0)
-      proportionaldiv = 2.0;
-    else if (proportionaldiv > 40.0)
-      proportionaldiv = 40.0;
+  double proportionaldiv = 0.02 * fabs(error / 1000);
+  if (proportionaldiv < 2.0)
+    proportionaldiv = 2.0;
+  else if (proportionaldiv > 40.0)
+    proportionaldiv = 40.0;
 
-    proportional = error / 1000 / proportionaldiv;
-  }
-  return 1.0 + proportional + m_resampleIntegral;
+  proportional = error / 1000 / proportionaldiv;
+
+  double clockspeed = 1.0;
+  if (m_pClock)
+    clockspeed = m_pClock->GetClockSpeed();
+
+  return 1.0 / clockspeed + proportional + m_resampleIntegral;
 }
 
 unsigned int CActiveAEStream::GetSpace()

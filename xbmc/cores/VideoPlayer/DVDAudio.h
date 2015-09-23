@@ -68,6 +68,7 @@ public:
   void SetResampleRatio(double ratio);
 
   double GetClock();
+  double GetClockSpeed();
   IAEStream *m_pAudioStream;
 
 protected:
