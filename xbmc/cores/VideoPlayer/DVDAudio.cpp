@@ -142,7 +142,8 @@ unsigned int CDVDAudio::AddPackets(const DVDAudioFrame &audioframe)
   unsigned int offset = 0;
   do
   {
-    unsigned int copied = m_pAudioStream->AddData(audioframe.data, offset, frames, audioframe.pts / DVD_TIME_BASE * 1000);
+    double pts = (offset == 0) ? audioframe.pts / DVD_TIME_BASE * 1000 : 0.0;
+    unsigned int copied = m_pAudioStream->AddData(audioframe.data, offset, frames, pts);
     offset += copied;
     frames -= copied;
     if (frames <= 0)

@@ -216,7 +216,10 @@ double CActiveAEStream::CalcResampleRatio(double error)
   if (m_pClock)
     clockspeed = m_pClock->GetClockSpeed();
 
-  return 1.0 / clockspeed + proportional + m_resampleIntegral;
+  double ret = 1.0 / clockspeed + proportional + m_resampleIntegral;
+//  CLog::Log(LOGNOTICE,"----- error: %f, rr: %f, prop: %f, int: %f",
+//                      error, ret, proportional, m_resampleIntegral);
+  return ret;
 }
 
 unsigned int CActiveAEStream::GetSpace()
