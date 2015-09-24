@@ -1865,8 +1865,6 @@ bool CActiveAE::RunStages()
         double pts = buf->timestamp - (buf->pkt_start_offset * 1000 / buf->pkt->config.sample_rate);
         double delay = status.GetDelay() * 1000;
         double playingPts = pts - delay;
-        if (playingPts < 0)
-          playingPts = 0;
         double error = playingPts - (*it)->m_pClock->GetClock();
         (*it)->m_syncError.Add(error);
       }
