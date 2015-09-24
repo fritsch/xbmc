@@ -94,5 +94,4 @@ protected:
 
   double m_maxspeedadjust;
   CCriticalSection m_speedsection;
-  static CDVDClock *m_playerclock;
 };
