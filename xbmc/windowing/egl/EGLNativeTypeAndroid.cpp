@@ -22,6 +22,7 @@
 #include "system.h"
 #include <EGL/egl.h>
 #include "EGLNativeTypeAndroid.h"
+#include "utils/TimeUtils.h"
 #include "utils/log.h"
 #include "guilib/gui3d.h"
 #include "android/activity/XBMCApp.h"
