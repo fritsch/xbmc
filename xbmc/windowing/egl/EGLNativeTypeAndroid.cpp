@@ -143,6 +143,7 @@ static float currentRefreshRate()
     float preferredRate = window.getAttributes().getpreferredRefreshRate();
     if (preferredRate > 1.0)
     {
+      CLog::Log(LOGINFO, "PreferredRate: %f", preferredRate);
       return preferredRate;
     }
     CJNIView view(window.getDecorView());
@@ -151,11 +152,12 @@ static float currentRefreshRate()
       if (display)
       {
         float reportedRate = display.getRefreshRate();
+        CLog::Log(LOGINFO, "reportedRate: %f", reportedRate);
         return reportedRate;
       }
     }
   }
-  CLog::Log(LOGDEBUG, "found no refresh rate");
+  CLog::Log(LOGINFO, "found no refresh rate will return 60.0");
   return 60.0;
 }
 
