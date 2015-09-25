@@ -202,6 +202,11 @@ bool CEGLNativeTypeAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
 
   if (abs(currentRefreshRate() - res.fRefreshRate) > 0.0001)
   {
+    if (currentRefreshRate() <= 24.1 && currentRefreshRate() > 23.0)
+    {
+      CLog::Log(LOGINFO, "I skipped this - cause I want it so!");
+      return true;
+    }
     CLog::Log(LOGINFO, "I want to set Refreshrate: %.6f", res.fRefreshRate);
     CXBMCApp::SetRefreshRate(res.fRefreshRate);
   }
