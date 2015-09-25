@@ -50,4 +50,5 @@ public:
 protected:
   int m_width;
   int m_height;
+  uint64_t m_refTimer;
 };

@@ -35,7 +35,7 @@
 #include "android/jni/System.h"
 
 CEGLNativeTypeAndroid::CEGLNativeTypeAndroid()
-  : m_width(0), m_height(0)
+  : m_width(0), m_height(0), m_refTimer(0)
 {
 }
 
@@ -202,12 +202,17 @@ bool CEGLNativeTypeAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
 
   if (abs(currentRefreshRate() - res.fRefreshRate) > 0.0001)
   {
-    if (currentRefreshRate() <= 24.1 && currentRefreshRate() > 23.0)
+    uint64_t diff = CurrentHostCounter() - m_refTimer;
+    // Dump and silly workaround I don't want to see this anywhere in
+    // mainline code - thanks much. Ignore refreshrate switch
+    // when happens two times within 2 seconds.
+    if (diff * 1000 / CurrentHostFrequency() < 2000)
     {
-      CLog::Log(LOGINFO, "I skipped this - cause I want it so!");
+      CLog::Log(LOGNOTICE, "Skipped refreshrate - false positive");
       return true;
     }
     CLog::Log(LOGINFO, "I want to set Refreshrate: %.6f", res.fRefreshRate);
+    m_refTimer = CurrentHostFrequency();
     CXBMCApp::SetRefreshRate(res.fRefreshRate);
   }
 
