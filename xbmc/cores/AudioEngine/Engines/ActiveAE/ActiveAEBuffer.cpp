@@ -464,7 +464,10 @@ bool CActiveAEBufferPoolResample::ResampleBuffers(int64_t timestamp)
       {
         if (!timestamp)
         {
-          m_lastSamplePts = in->timestamp;
+          if (in->timestamp)
+            m_lastSamplePts = in->timestamp;
+          else
+            in->pkt_start_offset = 0;
           m_procSample->clockId = in->clockId;
         }
         else
