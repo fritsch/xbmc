@@ -204,6 +204,8 @@ bool CEGLNativeTypeAndroid::SetNativeResolution(const RESOLUTION_INFO &res)
   if (abs(currentRefreshRate() - res.fRefreshRate) > 0.0001)
   {
     uint64_t diff = CurrentHostCounter() - m_refTimer;
+    uint64_t time = diff * 1000 / CurrentHostFrequency();
+    CLog::Log(LOGNOTICE, "Time passed since last switch: %u", time);
     // Dump and silly workaround I don't want to see this anywhere in
     // mainline code - thanks much. Ignore refreshrate switch
     // when happens two times within 2 seconds.
