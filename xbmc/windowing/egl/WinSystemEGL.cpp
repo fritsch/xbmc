@@ -146,6 +146,8 @@ bool CWinSystemEGL::InitWindowSystem()
 
 bool CWinSystemEGL::CreateWindow(RESOLUTION_INFO &res)
 {
+
+  CLog::Log(LOGNOTICE, "Create Window was called");
   if (!m_egl)
   {
     CLog::Log(LOGERROR, "CWinSystemEGL::CreateWindow no EGL!");
@@ -273,6 +275,8 @@ bool CWinSystemEGL::CreateNewWindow(const std::string& name, bool fullScreen, RE
 {
   RESOLUTION_INFO current_resolution;
   current_resolution.iWidth = current_resolution.iHeight = 0;
+
+   CLog::Log(LOGNOTICE, "Create Window was called with %f", res.fRefreshRate);
 
   m_nWidth        = res.iWidth;
   m_nHeight       = res.iHeight;
