@@ -36,7 +36,7 @@
 #include "android/jni/System.h"
 
 CEGLNativeTypeAndroid::CEGLNativeTypeAndroid()
-  : m_width(0), m_height(0), m_refTimer(0)
+  : m_width(0), m_height(0), m_refTimer(CurrentHostCounter())
 {
 }
 
