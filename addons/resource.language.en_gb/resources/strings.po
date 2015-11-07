@@ -18075,3 +18075,15 @@ msgstr ""
 msgctxt "#38023"
 msgid "Set my rating"
 msgstr ""
+
+#. Setting #38024 Allow resolution switching in combination with Adjust-Refreshrate to match video
+#: system/settings/settings.xml
+msgctxt "#38024"
+msgid "Allow Switching of Resolution"
+msgstr ""
+
+#. Help text for #38024 Allow resolution switching in combination with Adjust-Refreshrate to match video
+#: system/settings/settings.xml
+msgctxt "#38025"
+msgid "Kodi will try to use the maximum available display resolution with large enough refreshrate for the currently playing video"
+msgstr ""

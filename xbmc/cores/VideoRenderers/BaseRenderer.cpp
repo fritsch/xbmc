@@ -256,7 +256,8 @@ RESOLUTION CBaseRenderer::FindClosestResolution(float fps, float multiplier, RES
       if (((int) m_sourceWidth < orig.iScreenWidth) // orig res large enough
       || (info.iScreenWidth < orig.iScreenWidth) // new width would be smaller
       || (info.iScreenHeight < orig.iScreenHeight) // new height would be smaller
-      || (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK)) // don't switch to interlaced modes
+      || (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK) // don't switch to interlaced modes
+      || !CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_ADJUSTREFRESHRATESWITCHUP)) // if user does not want to alter resolution
       {
         continue;
       }

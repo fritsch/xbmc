@@ -574,6 +574,16 @@
           </constraints>
           <control type="list" format="string" />
         </setting>
+        <setting id="videoplayer.adjustrefreshrateswitchup" type="boolean" label="38024" help="38025">
+        <level>2</level>
+        <default>true</default>
+        <dependencies>
+          <dependency type="enable">
+            <condition setting="videoplayer.adjustrefreshrate" operator="!is">0</condition>
+          </dependency>
+        </dependencies>
+        <control type="toggle"/>
+        </setting>
         <setting id="videoplayer.pauseafterrefreshchange" type="integer" parent="videoplayer.adjustrefreshrate" label="13550" help="36165">
           <level>2</level>
           <default>0</default>
