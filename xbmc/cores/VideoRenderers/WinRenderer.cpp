@@ -1307,6 +1307,14 @@ bool CWinRenderer::Supports(ESCALINGMETHOD method)
         int minScale = CSettings::Get().GetInt("videoplayer.hqscalers");
         if (scaleX < minScale && scaleY < minScale)
           return false;
+        // if we are output > Full HD - lanczos 3 optimized is too slow on 90% of the hw
+        if (m_destRect.Width() > 1920 || m_destRect.Height() > 1080)
+          return false;
+
+        // Also don't use hq scalers when input is 4k
+        if (m_sourceWidth > 1920 || m_sourceHeight > 1080)
+          return false;
+
         return true;
       }
     }
