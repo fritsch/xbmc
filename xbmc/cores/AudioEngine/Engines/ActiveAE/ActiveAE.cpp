@@ -70,7 +70,7 @@ void CEngineStats::AddSamples(int samples, std::list<CActiveAEStream*> &streams)
   std::list<CActiveAEStream*>::iterator it;
   for(it=streams.begin(); it!=streams.end(); ++it)
   {
-    float delay = 0;
+    double delay = 0;
     std::deque<CSampleBuffer*>::iterator itBuf;
     for(itBuf=(*it)->m_processingSamples.begin(); itBuf!=(*it)->m_processingSamples.end(); ++itBuf)
     {

@@ -45,8 +45,8 @@ struct SinkConfig
 struct SinkReply
 {
   AEAudioFormat format;
-  float cacheTotal;
-  float latency;
+  double cacheTotal;
+  double latency;
   bool hasVolume;
 };
 

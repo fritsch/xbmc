@@ -182,7 +182,7 @@ protected:
   float m_volume;
   float m_rgain;
   float m_amplify;
-  float m_bufferedTime;
+  double m_bufferedTime;
   int m_fadingSamples;
   float m_fadingBase;
   float m_fadingTarget;
