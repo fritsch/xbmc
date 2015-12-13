@@ -51,6 +51,8 @@ public:
 private:
   static void FreeIOCtx(AVIOContext* ioctx);
   static AVPixelFormat ConvertFormats(AVFrame* frame);
+  void CleanupLocalOutputBuffer();
 
   AVFrame* m_pFrame;
+  uint8_t* m_outputBuffer;
 };

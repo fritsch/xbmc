@@ -41,6 +41,29 @@ struct MemBuffer
   size_t pos;
 };
 
+struct ThumbDataManagement
+{
+  uint8_t* intermediateBuffer = nullptr; // gets av_alloced
+  AVFrame* frame_input = nullptr;
+  AVFrame* frame_temporary = nullptr;
+  SwsContext* sws = nullptr;
+  AVCodecContext* avOutctx = nullptr;
+  AVCodec* codec = nullptr;
+  ~ThumbDataManagement()
+  {
+    av_free(intermediateBuffer);
+    intermediateBuffer = nullptr;
+    av_frame_free(&frame_input);
+    frame_input = nullptr;
+    av_frame_free(&frame_temporary);
+    frame_temporary = nullptr;
+    avcodec_close(avOutctx);
+    avcodec_free_context(&avOutctx);
+    avOutctx = nullptr;
+    sws_freeContext(sws);
+    sws = nullptr;
+  }
+};
 static size_t Clamp(int64_t newPosition, size_t bufferSize, size_t offset)
 {
   size_t clampedPosition = 0;
@@ -101,12 +124,14 @@ CFFmpegImage::CFFmpegImage()
 {
   m_hasAlpha = false;
   m_pFrame = nullptr;
-
+  m_outputBuffer = nullptr;
 }
 
 CFFmpegImage::~CFFmpegImage()
 {
   av_frame_free(&m_pFrame);
+  // someone could have forgotten to call us
+  CleanupLocalOutputBuffer();
 }
 
 bool CFFmpegImage::LoadImageFromMemory(unsigned char* buffer, unsigned int bufSize,
@@ -243,7 +268,7 @@ bool CFFmpegImage::Decode(unsigned char * const pixels, unsigned int width, unsi
 
   bool needsCopy = false;
   int pixelsSize = pitch * height;
-  if (size == pixelsSize && pitch == pictureRGB->linesize[0])
+  if (size == pixelsSize && (int) pitch == pictureRGB->linesize[0])
   {
     // We can use the pixels buffer directly
     pictureRGB->data[0] = pixels;
@@ -309,9 +334,175 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
                                              unsigned char* &bufferout,
                                              unsigned int &bufferoutSize)
 {
-  return false;
+  // It seems XB_FMT_A8R8G8B8 mean RGBA and not ARGB
+  if (format != XB_FMT_A8R8G8B8)
+  {
+    CLog::Log(LOGERROR, "Supplied format: %d is not supported.", format);
+    return false;
+  }
+
+  ThumbDataManagement tdm;
+
+  tdm.codec = avcodec_find_encoder(CODEC_ID_MJPEG);
+  if (!tdm.codec)
+  {
+    CLog::Log(LOGERROR, "Your are missing a working MJPEG encoder");
+    return false;
+  }
+
+  tdm.avOutctx = avcodec_alloc_context3(tdm.codec);
+  if (!tdm.avOutctx)
+  {
+    CLog::Log(LOGERROR, "Could not allocate context for thumbnail: %s", destFile.c_str());
+    return false;
+  }
+
+  tdm.avOutctx->height = height;
+  tdm.avOutctx->width = width;
+  tdm.avOutctx->time_base.num = 1;
+  tdm.avOutctx->time_base.den = 1;
+  tdm.avOutctx->pix_fmt = AV_PIX_FMT_YUVJ420P;
+  tdm.avOutctx->flags = CODEC_FLAG_QSCALE;
+  tdm.avOutctx->mb_lmin = tdm.avOutctx->qmin * FF_QP2LAMBDA;
+  tdm.avOutctx->mb_lmax = tdm.avOutctx->qmax * FF_QP2LAMBDA;
+  tdm.avOutctx->global_quality = tdm.avOutctx->qmin * FF_QP2LAMBDA;
+
+  unsigned int internalBufOutSize = 0;
+
+  int size = avpicture_get_size(tdm.avOutctx->pix_fmt, tdm.avOutctx->width, tdm.avOutctx->height);
+  if (size < 0)
+  {
+    CLog::Log(LOGERROR, "Could not compute picture size for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+  internalBufOutSize = (unsigned int) size;
+
+  m_outputBuffer = (uint8_t*) av_malloc(internalBufOutSize);
+
+  if (!m_outputBuffer)
+  {
+    CLog::Log(LOGERROR, "Could not generate allocate memory for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  tdm.intermediateBuffer = (uint8_t*) av_malloc(internalBufOutSize);
+  if (!tdm.intermediateBuffer)
+  {
+    CLog::Log(LOGERROR, "Could not allocate memory for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  if (avcodec_open2(tdm.avOutctx, tdm.codec, NULL) < 0)
+  {
+    CLog::Log(LOGERROR, "Could not open avcodec context thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  tdm.frame_input = av_frame_alloc();
+  if (!tdm.frame_input)
+  {
+    CLog::Log(LOGERROR, "Could not allocate frame for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  // convert the RGB32 frame to AV_PIX_FMT_YUV420P - we use this later on as AV_PIX_FMT_YUVJ420P
+  tdm.frame_temporary = av_frame_alloc();
+  if (!tdm.frame_temporary)
+  {
+    CLog::Log(LOGERROR, "Could not allocate frame for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  if (avpicture_fill((AVPicture*)tdm.frame_temporary, tdm.intermediateBuffer, AV_PIX_FMT_YUV420P, width, height) < 0)
+  {
+    CLog::Log(LOGERROR, "Could not fill picture for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+  //input size == output size which means only pix_fmt conversion
+  tdm.sws = sws_getContext(width, height, AV_PIX_FMT_RGB32, width, height, AV_PIX_FMT_YUV420P, 0, 0, 0, 0);
+  if (!tdm.sws)
+  {
+    CLog::Log(LOGERROR, "Could not setup scaling context for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  // Setup jpeg range for sws
+  int* inv_table = nullptr;
+  int* table = nullptr;
+  int srcRange, dstRange, brightness, contrast, saturation;
+
+  if (sws_getColorspaceDetails(tdm.sws, &inv_table, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation) < 0)
+  {
+    CLog::Log(LOGERROR, "SWS_SCALE failed to get ColorSpaceDetails for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+  dstRange = 1; // jpeg full range yuv420p output
+  srcRange = 0; // full range RGB32 input
+  if (sws_setColorspaceDetails(tdm.sws, inv_table, srcRange, table, dstRange, brightness, contrast, saturation) < 0)
+  {
+    CLog::Log(LOGERROR, "SWS_SCALE failed to set ColorSpace Details for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  uint8_t* src[] = { bufferin, NULL, NULL, NULL };
+  int srcStride[] = { (int) pitch, 0, 0, 0};
+
+  if (sws_scale(tdm.sws, src, srcStride, 0, height, tdm.frame_temporary->data, tdm.frame_temporary->linesize) < 0)
+  {
+    CLog::Log(LOGERROR, "SWS_SCALE failed for thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  tdm.frame_input->pts = 1;
+  tdm.frame_input->quality = tdm.avOutctx->global_quality;
+  tdm.frame_input->data[0] = (uint8_t*) tdm.frame_temporary->data[0];
+  tdm.frame_input->data[1] = (uint8_t*) tdm.frame_temporary->data[1];
+  tdm.frame_input->data[2] = (uint8_t*) tdm.frame_temporary->data[2];
+  tdm.frame_input->height = height;
+  tdm.frame_input->width = width;
+  tdm.frame_input->linesize[0] = tdm.frame_temporary->linesize[0];
+  tdm.frame_input->linesize[1] = tdm.frame_temporary->linesize[1];
+  tdm.frame_input->linesize[2] = tdm.frame_temporary->linesize[2];
+  // this is deprecated but mjpeg is not yet transitioned
+  tdm.frame_input->format = AV_PIX_FMT_YUVJ420P;
+
+  int got_package = 0;
+  AVPacket avpkt;
+  av_init_packet(&avpkt);
+  avpkt.data = m_outputBuffer;
+  avpkt.size = internalBufOutSize;
+
+  if ((avcodec_encode_video2(tdm.avOutctx, &avpkt, tdm.frame_input, &got_package) < 0) || (got_package == 0))
+  {
+    CLog::Log(LOGERROR, "Could not encode thumbnail: %s", destFile.c_str());
+    CleanupLocalOutputBuffer();
+    return false;
+  }
+
+  bufferoutSize = avpkt.size;
+  bufferout = m_outputBuffer;
+
+  return true;
 }
 
 void CFFmpegImage::ReleaseThumbnailBuffer()
 {
+  CleanupLocalOutputBuffer();
+}
+
+void CFFmpegImage::CleanupLocalOutputBuffer()
+{
+  av_free(m_outputBuffer);
+  m_outputBuffer = nullptr;
 }
