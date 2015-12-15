@@ -33,6 +33,7 @@ extern "C"
 #include "libavcodec/avcodec.h"
 #include "libavutil/avutil.h"
 #include "libswscale/swscale.h"
+#include "libavutil/pixdesc.h"
 }
 
 struct MemBuffer
@@ -200,6 +201,10 @@ bool CFFmpegImage::LoadImageFromMemory(unsigned char* buffer, unsigned int bufSi
     {
       m_height = m_pFrame->height;
       m_width = m_pFrame->width;
+
+      const AVPixFmtDescriptor* pixDescriptor = av_pix_fmt_desc_get(static_cast<AVPixelFormat>(m_pFrame->format));
+      if (pixDescriptor && ((pixDescriptor->flags & AV_PIX_FMT_FLAG_ALPHA) != 0))
+        m_hasAlpha = true;
     }    
     else
     {
