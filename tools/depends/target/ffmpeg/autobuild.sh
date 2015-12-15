@@ -153,6 +153,7 @@ CFLAGS="$CFLAGS" CXXFLAGS="$CXXFLAGS" LDFLAGS="$LDFLAGS" \
 	--enable-libvorbis \
 	--enable-muxer=ogg \
 	--enable-encoder=libvorbis \
+        --enable-encoder=png \
 	--enable-nonfree \
 	--enable-pthreads \
 	--enable-zlib \
