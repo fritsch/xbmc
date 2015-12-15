@@ -22,6 +22,7 @@
 #include "utils/log.h"
 #include "cores/FFmpeg.h"
 #include "guilib/Texture.h"
+#include "utils/StringUtils.h"
 
 #include <algorithm>
 
@@ -120,7 +121,7 @@ static int64_t mem_file_seek(void *h, int64_t pos, int whence)
   return mbuf->pos;
 }
 
-CFFmpegImage::CFFmpegImage()
+CFFmpegImage::CFFmpegImage(const std::string& strMimeType) : m_strMimeType(strMimeType)
 {
   m_hasAlpha = false;
   m_pFrame = nullptr;
@@ -341,12 +342,23 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
     return false;
   }
 
+  bool jpg_output = false;
+  if (m_strMimeType == "image/jpeg" || m_strMimeType == "image/jpg")
+    jpg_output = true;
+  else if (m_strMimeType == "image/png")
+    jpg_output = false;
+  else
+  {
+    CLog::Log(LOGERROR, "Output Format is not supported: %s is not supported.", destFile.c_str());
+    return false;
+  }
+
   ThumbDataManagement tdm;
 
-  tdm.codec = avcodec_find_encoder(CODEC_ID_MJPEG);
+  tdm.codec = avcodec_find_encoder(jpg_output ? AV_CODEC_ID_MJPEG : AV_CODEC_ID_PNG);
   if (!tdm.codec)
   {
-    CLog::Log(LOGERROR, "Your are missing a working MJPEG encoder");
+    CLog::Log(LOGERROR, "Your are missing a working encoder for format: %d", jpg_output ? AV_CODEC_ID_MJPEG : AV_CODEC_ID_PNG);
     return false;
   }
 
@@ -361,7 +373,7 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
   tdm.avOutctx->width = width;
   tdm.avOutctx->time_base.num = 1;
   tdm.avOutctx->time_base.den = 1;
-  tdm.avOutctx->pix_fmt = AV_PIX_FMT_YUVJ420P;
+  tdm.avOutctx->pix_fmt = jpg_output ? AV_PIX_FMT_YUVJ420P : AV_PIX_FMT_RGBA;
   tdm.avOutctx->flags = CODEC_FLAG_QSCALE;
   tdm.avOutctx->mb_lmin = tdm.avOutctx->qmin * FF_QP2LAMBDA;
   tdm.avOutctx->mb_lmax = tdm.avOutctx->qmax * FF_QP2LAMBDA;
@@ -386,6 +398,7 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
     CleanupLocalOutputBuffer();
     return false;
   }
+
 
   tdm.intermediateBuffer = (uint8_t*) av_malloc(internalBufOutSize);
   if (!tdm.intermediateBuffer)
@@ -419,14 +432,18 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
     return false;
   }
 
-  if (avpicture_fill((AVPicture*)tdm.frame_temporary, tdm.intermediateBuffer, AV_PIX_FMT_YUV420P, width, height) < 0)
+  if (avpicture_fill((AVPicture*)tdm.frame_temporary, tdm.intermediateBuffer, jpg_output ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_RGBA, width, height) < 0)
   {
     CLog::Log(LOGERROR, "Could not fill picture for thumbnail: %s", destFile.c_str());
     CleanupLocalOutputBuffer();
     return false;
   }
+
+  uint8_t* src[] = { bufferin, NULL, NULL, NULL };
+  int srcStride[] = { (int) pitch, 0, 0, 0};
+
   //input size == output size which means only pix_fmt conversion
-  tdm.sws = sws_getContext(width, height, AV_PIX_FMT_RGB32, width, height, AV_PIX_FMT_YUV420P, 0, 0, 0, 0);
+  tdm.sws = sws_getContext(width, height, AV_PIX_FMT_RGB32, width, height, jpg_output ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_RGBA, 0, 0, 0, 0);
   if (!tdm.sws)
   {
     CLog::Log(LOGERROR, "Could not setup scaling context for thumbnail: %s", destFile.c_str());
@@ -435,27 +452,27 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
   }
 
   // Setup jpeg range for sws
-  int* inv_table = nullptr;
-  int* table = nullptr;
-  int srcRange, dstRange, brightness, contrast, saturation;
-
-  if (sws_getColorspaceDetails(tdm.sws, &inv_table, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation) < 0)
+  if (jpg_output)
   {
-    CLog::Log(LOGERROR, "SWS_SCALE failed to get ColorSpaceDetails for thumbnail: %s", destFile.c_str());
-    CleanupLocalOutputBuffer();
-    return false;
-  }
-  dstRange = 1; // jpeg full range yuv420p output
-  srcRange = 0; // full range RGB32 input
-  if (sws_setColorspaceDetails(tdm.sws, inv_table, srcRange, table, dstRange, brightness, contrast, saturation) < 0)
-  {
-    CLog::Log(LOGERROR, "SWS_SCALE failed to set ColorSpace Details for thumbnail: %s", destFile.c_str());
-    CleanupLocalOutputBuffer();
-    return false;
-  }
+    int* inv_table = nullptr;
+    int* table = nullptr;
+    int srcRange, dstRange, brightness, contrast, saturation;
 
-  uint8_t* src[] = { bufferin, NULL, NULL, NULL };
-  int srcStride[] = { (int) pitch, 0, 0, 0};
+    if (sws_getColorspaceDetails(tdm.sws, &inv_table, &srcRange, &table, &dstRange, &brightness, &contrast, &saturation) < 0)
+    {
+      CLog::Log(LOGERROR, "SWS_SCALE failed to get ColorSpaceDetails for thumbnail: %s", destFile.c_str());
+      CleanupLocalOutputBuffer();
+      return false;
+    }
+    dstRange = 1; // jpeg full range yuv420p output
+    srcRange = 0; // full range RGB32 input
+    if (sws_setColorspaceDetails(tdm.sws, inv_table, srcRange, table, dstRange, brightness, contrast, saturation) < 0)
+    {
+      CLog::Log(LOGERROR, "SWS_SCALE failed to set ColorSpace Details for thumbnail: %s", destFile.c_str());
+      CleanupLocalOutputBuffer();
+      return false;
+    }
+  }
 
   if (sws_scale(tdm.sws, src, srcStride, 0, height, tdm.frame_temporary->data, tdm.frame_temporary->linesize) < 0)
   {
@@ -463,7 +480,6 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
     CleanupLocalOutputBuffer();
     return false;
   }
-
   tdm.frame_input->pts = 1;
   tdm.frame_input->quality = tdm.avOutctx->global_quality;
   tdm.frame_input->data[0] = (uint8_t*) tdm.frame_temporary->data[0];
@@ -475,7 +491,7 @@ bool CFFmpegImage::CreateThumbnailFromSurface(unsigned char* bufferin, unsigned 
   tdm.frame_input->linesize[1] = tdm.frame_temporary->linesize[1];
   tdm.frame_input->linesize[2] = tdm.frame_temporary->linesize[2];
   // this is deprecated but mjpeg is not yet transitioned
-  tdm.frame_input->format = AV_PIX_FMT_YUVJ420P;
+  tdm.frame_input->format = jpg_output ? AV_PIX_FMT_YUVJ420P : AV_PIX_FMT_RGBA;
 
   int got_package = 0;
   AVPacket avpkt;

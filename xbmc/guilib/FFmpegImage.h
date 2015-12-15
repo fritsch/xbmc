@@ -35,7 +35,7 @@ struct AVCodecContext;
 class CFFmpegImage : public IImage
 {
 public:
-  CFFmpegImage();
+  CFFmpegImage(const std::string& strMimeType);
   virtual ~CFFmpegImage();
 
   virtual bool LoadImageFromMemory(unsigned char* buffer, unsigned int bufSize,
@@ -51,6 +51,7 @@ public:
 private:
   static void FreeIOCtx(AVIOContext* ioctx);
   static AVPixelFormat ConvertFormats(AVFrame* frame);
+  std::string m_strMimeType;
   void CleanupLocalOutputBuffer();
 
   AVFrame* m_pFrame;
