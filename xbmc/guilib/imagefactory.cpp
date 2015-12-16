@@ -50,8 +50,3 @@ IImage* ImageFactory::CreateLoaderFromMimeType(const std::string& strMimeType)
 
   return new CFFmpegImage(strMimeType);
 }
-
-IImage* ImageFactory::CreateFallbackLoader(const std::string& strMimeType)
-{
-  return new CXImage(strMimeType);
-}
