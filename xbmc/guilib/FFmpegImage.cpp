@@ -22,7 +22,6 @@
 #include "utils/log.h"
 #include "cores/FFmpeg.h"
 #include "guilib/Texture.h"
-#include "utils/StringUtils.h"
 
 #include <algorithm>
 
@@ -96,6 +95,7 @@ static int mem_file_read(void *h, uint8_t* buf, int size)
   size_t tocopy = std::min((size_t)size, (size_t)unread);
   memcpy(buf, mbuf->data + mbuf->pos, tocopy);
   mbuf->pos += tocopy;
+  CLog::Log(LOGNOTICE, "mem_file_read: %d", tocopy);
   return tocopy;
 }
 
@@ -119,6 +119,7 @@ static int64_t mem_file_seek(void *h, int64_t pos, int whence)
   else
     CLog::LogFunction(LOGERROR, __FUNCTION__, "Unknown seek mode: %i", whence);
 
+  CLog::Log(LOGNOTICE, "Seek: %d", (int) mbuf->pos);
   return mbuf->pos;
 }
 
@@ -127,6 +128,7 @@ CFFmpegImage::CFFmpegImage(const std::string& strMimeType) : m_strMimeType(strMi
   m_hasAlpha = false;
   m_pFrame = nullptr;
   m_outputBuffer = nullptr;
+  CLog::Log(LOGNOTICE, "Created Image");
 }
 
 CFFmpegImage::~CFFmpegImage()
@@ -172,6 +174,7 @@ bool CFFmpegImage::LoadImageFromMemory(unsigned char* buffer, unsigned int bufSi
   {
     avformat_close_input(&fctx);
     FreeIOCtx(ioctx);
+    CLog::Log(LOGNOTICE, "avformat_open failed");
     return false;
   }
 
@@ -181,6 +184,7 @@ bool CFFmpegImage::LoadImageFromMemory(unsigned char* buffer, unsigned int bufSi
   {
     avformat_close_input(&fctx);
     FreeIOCtx(ioctx);
+    CLog::Log(LOGNOTICE, "avcodec_open2 failed");
     return false;
   }
 
@@ -254,7 +258,10 @@ bool CFFmpegImage::Decode(unsigned char * const pixels, unsigned int width, unsi
                           unsigned int pitch, unsigned int format)
 {
   if (m_width == 0 || m_height == 0 || format != XB_FMT_A8R8G8B8)
+  {
+    CLog::Log(LOGNOTICE, "Decoder (1)");
     return false;
+  }
 
   if (!m_pFrame || !m_pFrame->data)
   {
