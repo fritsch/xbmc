@@ -14,12 +14,12 @@ function(core_link_library lib wraplib)
     set(check_arg ${ARGV3})
     set(data_arg ${ARGV4})
   endif()
-  if("${check_arg}" STREQUAL "export")
+  if(check_arg STREQUAL "export")
     set(export ${export} 
         -Wl,--version-script=${ARGV3})
-  elseif("${check_arg}" STREQUAL "nowrap")
+  elseif(check_arg STREQUAL "nowrap")
     set(export ${data_arg})
-  elseif("${check_arg}" STREQUAL "extras")
+  elseif(check_arg STREQUAL "extras")
     foreach(arg ${data_arg})
       list(APPEND export ${arg})
     endforeach()
@@ -74,6 +74,7 @@ endfunction()
 # Add precompiled header to target
 # Arguments:
 #   target existing target that will be set up to compile with a precompiled header
+#   pch_header the precompiled header file
 #   pch_source the precompiled header source file
 # Optional Arguments:
 #   PCH_TARGET build precompiled header as separate target with the given name
@@ -81,19 +82,18 @@ endfunction()
 # On return:
 #   Compiles the pch_source into a precompiled header and adds the header to
 #   the given target
-function(add_precompiled_header target pch_source)
+function(add_precompiled_header target pch_header pch_source)
   cmake_parse_arguments(PCH "" "PCH_TARGET" "" ${ARGN})
 
-  get_filename_component(pch_header ${pch_source} NAME_WE)
-  set(pch_header ${pch_header}.h)
   if(PCH_PCH_TARGET)
-    set(pch_binary ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PCH_PCH_TARGET}.pch)
+    set(pch_binary ${PRECOMPILEDHEADER_DIR}/${PCH_PCH_TARGET}.pch)
   else()
-    set(pch_binary ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${target}.pch)
+    set(pch_binary ${PRECOMPILEDHEADER_DIR}/${target}.pch)
   endif()
 
   # Set compile options and dependency for sources
   get_target_property(sources ${target} SOURCES)
+  list(REMOVE_ITEM sources ${pch_source})
   set_source_files_properties(${sources}
                               PROPERTIES COMPILE_FLAGS "/Yu\"${pch_header}\" /Fp\"${pch_binary}\" /FI\"${pch_header}\""
                               OBJECT_DEPENDS "${pch_binary}")

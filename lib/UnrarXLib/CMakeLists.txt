@@ -41,10 +41,10 @@ set(SOURCES archive.cpp
             unpack.cpp
             volume.cpp)
 
-add_definitions(-DSILENT)
+add_definitions(-DSILENT -D_XBMC)
 
 core_add_library(unrarxlib)
 
 if(WIN32)
-  add_precompiled_header(unrarxlib rar.cpp)
+  add_precompiled_header(unrarxlib rar.hpp rar.cpp)
 endif()

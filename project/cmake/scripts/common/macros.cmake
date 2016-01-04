@@ -14,13 +14,13 @@ include(${CORE_SOURCE_DIR}/project/cmake/scripts/${CORE_SYSTEM_NAME}/macros.cmak
 function(core_add_library name)
   add_library(${name} STATIC ${SOURCES})
   set_target_properties(${name} PROPERTIES PREFIX "")
-  if("${ARGN}" STREQUAL "")
+  if(ARGN STREQUAL "")
     set(core_DEPENDS ${name} ${core_DEPENDS} CACHE STRING "" FORCE)
   endif()
 
   # Add precompiled headers to Kodi main libraries
   if(WIN32 AND "${CMAKE_CURRENT_LIST_DIR}" MATCHES "^${CORE_SOURCE_DIR}/xbmc")
-    add_precompiled_header(${name} ${CORE_SOURCE_DIR}/xbmc/win32/pch.cpp
+    add_precompiled_header(${name} pch.h ${CORE_SOURCE_DIR}/xbmc/win32/pch.cpp
                            PCH_TARGET kodi)
   endif()
 endfunction()
