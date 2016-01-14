@@ -39,8 +39,7 @@ typedef struct frame_queue {
   struct frame_queue *nextframe;
 } frame_queue;
 
-CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic(IVPClockCallback* clock) :
-  m_clock(clock),
+CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic() :
   m_Codec(NULL),
   m_pFormatName("amcodec"),
   m_last_pts(0.0),
@@ -49,6 +48,7 @@ CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic(IVPClockCallback* clock) :
   m_framerate(0.0),
   m_video_rate(0),
   m_mpeg2_sequence(NULL),
+  m_dropState(false),
   m_bitparser(NULL),
   m_bitstream(NULL)
 {
@@ -180,7 +180,7 @@ bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
   }
 
   m_aspect_ratio = m_hints.aspect;
-  m_Codec = new CAMLCodec(m_clock);
+  m_Codec = new CAMLCodec();
   if (!m_Codec)
   {
     CLog::Log(LOGERROR, "%s: Failed to create Amlogic Codec", __MODULE_NAME__);
@@ -288,8 +288,16 @@ void CDVDVideoCodecAmlogic::Reset(void)
 
 bool CDVDVideoCodecAmlogic::GetPicture(DVDVideoPicture* pDvdVideoPicture)
 {
-  if (m_Codec)
+
+  if (m_DropState)
+  {
+    pDvdVideoPicture->iFlags |= DVP_FLAG_DROPPED;
+    // init decoder dropping by setting pts to current value
+    SetVideoPtsSeconds(m_cur_pts);
+  }
+  else if (m_Codec)
     m_Codec->GetPicture(&m_videobuffer);
+
   *pDvdVideoPicture = m_videobuffer;
 
   CDVDAmlogicInfo* info = new CDVDAmlogicInfo(this, m_Codec);
@@ -328,6 +336,9 @@ bool CDVDVideoCodecAmlogic::ClearPicture(DVDVideoPicture *pDvdVideoPicture)
 
 void CDVDVideoCodecAmlogic::SetDropState(bool bDrop)
 {
+  m_dropState = bDrop;
+  if (m_Codec)
+    m_Codec->SetVideoPtsSeconds(m_last_pts);
 }
 
 void CDVDVideoCodecAmlogic::SetSpeed(int iSpeed)

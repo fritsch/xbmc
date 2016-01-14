@@ -35,7 +35,7 @@ class IVPClockCallback;
 class CAMLCodec : public CThread
 {
 public:
-  CAMLCodec(IVPClockCallback* clock);
+  CAMLCodec();
   virtual ~CAMLCodec();
 
   bool          OpenDecoder(CDVDStreamInfo &hints);

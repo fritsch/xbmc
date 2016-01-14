@@ -1377,9 +1377,8 @@ int set_header_info(am_private_t *para)
 }
 
 /*************************************************************************/
-CAMLCodec::CAMLCodec(IVPClockCallback* clock)
+CAMLCodec::CAMLCodec()
   : CThread("CAMLCodec")
-  , m_clock(clock)
 {
   m_opened = false;
   am_private = new am_private_t;
@@ -1944,51 +1943,6 @@ void CAMLCodec::Process()
         CLog::Log(LOGDEBUG, "CAMLCodec::Process: codec_poll_cntl failed");
         Sleep(10);
       }
-
-      pts_video = get_pts_video();
-      if (m_cur_pts != pts_video)
-      {
-        //CLog::Log(LOGDEBUG, "CAMLCodec::Process: pts_video(%lld), pts_video/PTS_FREQ(%f), duration(%f)",
-        //  pts_video, (double)pts_video/PTS_FREQ, 1.0/((double)(pts_video - m_cur_pts)/PTS_FREQ));
-
-        // other threads look at these, do them first
-        m_cur_pts = pts_video;
-        m_cur_pictcnt++;
-        m_ready_event.Set();
-
-        // correct video pts by starting pts.
-        if (m_start_pts != 0)
-          pts_video += m_start_pts;
-        else if (m_start_dts != 0)
-          pts_video += m_start_dts;
-
-        double app_pts = GetPlayerPtsSeconds();
-        // add in audio delay/display latency contribution
-        // FIXME: Replace Video latency?
-        double offset  = 0 - CMediaSettings::GetInstance().GetCurrentVideoSettings().m_AudioDelay;
-        // correct video pts by user set delay and rendering delay
-        app_pts += offset;
-
-        //CLog::Log(LOGDEBUG, "CAMLCodec::Process: app_pts(%f), pts_video/PTS_FREQ(%f)",
-        //  app_pts, (double)pts_video/PTS_FREQ);
-
-        double error = app_pts - (double)pts_video/PTS_FREQ;
-        double abs_error = fabs(error);
-        if (abs_error > 0.125)
-        {
-          //CLog::Log(LOGDEBUG, "CAMLCodec::Process pts diff = %f", error);
-          if (abs_error > 0.150)
-          {
-            // big error so try to reset pts_pcrscr
-            SetVideoPtsSeconds(app_pts);
-          }
-          else
-          {
-            // small error so try to avoid a frame jump
-            SetVideoPtsSeconds((double)pts_video/PTS_FREQ + error/4);
-          }
-        }
-      }
     }
     else
     {
@@ -2001,16 +1955,7 @@ void CAMLCodec::Process()
 
 double CAMLCodec::GetPlayerPtsSeconds()
 {
-  double clock_pts = 0.0;
-  if (m_clock)
-    clock_pts = m_clock->GetInterpolatedClock() / DVD_TIME_BASE;
-  else
-  {
-    CLog::Log(LOGWARNING, "CAMLCodec::GetPlayerPtsSeconds: cannot get player clock");
-    clock_pts = CDVDClock::GetAbsoluteClock() / DVD_TIME_BASE;
-  }
-
-  return clock_pts;
+  return (double) get_pts_video();
 }
 
 void CAMLCodec::SetVideoPtsSeconds(const double pts)
