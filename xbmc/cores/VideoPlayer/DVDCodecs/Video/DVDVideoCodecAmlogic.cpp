@@ -293,7 +293,7 @@ bool CDVDVideoCodecAmlogic::GetPicture(DVDVideoPicture* pDvdVideoPicture)
   {
     pDvdVideoPicture->iFlags |= DVP_FLAG_DROPPED;
     // init decoder dropping by setting pts to current value
-    SetVideoPtsSeconds(m_cur_pts);
+    SetVideoPtsSeconds(m_last_pts);
   }
   else if (m_Codec)
     m_Codec->GetPicture(&m_videobuffer);
@@ -337,8 +337,6 @@ bool CDVDVideoCodecAmlogic::ClearPicture(DVDVideoPicture *pDvdVideoPicture)
 void CDVDVideoCodecAmlogic::SetDropState(bool bDrop)
 {
   m_dropState = bDrop;
-  if (m_Codec)
-    m_Codec->SetVideoPtsSeconds(m_last_pts);
 }
 
 void CDVDVideoCodecAmlogic::SetSpeed(int iSpeed)
