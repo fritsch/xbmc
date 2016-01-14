@@ -264,6 +264,15 @@ int CDVDVideoCodecAmlogic::Decode(uint8_t *pData, int iSize, double dts, double 
     FrameRateTracking( pData, iSize, dts, pts);
   }
 
+  // we should flush everything we have
+  if (!pData && iSize == 0)
+  {
+    if (m_Codec)
+      m_Codec->SetVideoPtsSeconds(m_last_pts);
+
+    return 0;
+  }
+
   if (!m_opened)
   {
     if (m_Codec && !m_Codec->OpenDecoder(m_hints))
