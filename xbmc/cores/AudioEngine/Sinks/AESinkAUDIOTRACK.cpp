@@ -284,9 +284,18 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
                                                                            m_encoding);
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-      m_format.m_frames         = 16384;
-      min_buffer_size         = (min_buffer_size * 4 / (m_format.m_frameSize*m_format.m_frames)+1) * (m_format.m_frameSize*m_format.m_frames);
+      switch (m_format.m_streamInfo.m_type)
+      {
+        case CAEStreamInfo::STREAM_TYPE_DTSHD:
+        case CAEStreamInfo::STREAM_TYPE_TRUEHD:
+          m_format.m_frames = 60 * 1024;
+          break;
+        default:
+          m_format.m_frames = 16 * 1024;
+          break;
+      }
       m_format.m_frameSize    = 1;
+      min_buffer_size         = std::max(min_buffer_size, m_format.m_frames * m_format.m_frameSize);
     }
     else
     {
