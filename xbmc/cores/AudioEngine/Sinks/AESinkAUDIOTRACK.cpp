@@ -169,12 +169,15 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
 {
   m_alignedS16 = NULL;
   m_sink_frameSize = 0;
+  m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
   m_audiotrackbuffer_sec = 0.0;
   m_at_jni = NULL;
   m_duration_written = 0;
-  m_lastHeadPosition = 0;
-  m_ptOffset = 0;
   m_offset = -1;
+  m_volume = -1;
+  m_smoothedDelayCount = 0;
+  m_sink_sampleRate = 0;
+  m_passthrough = false;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -374,8 +377,6 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_at_jni->release();
 
   m_duration_written = 0;
-  m_lastHeadPosition = 0;
-  m_ptOffset = 0;
   m_offset = -1;
 
   delete m_at_jni;
@@ -418,10 +419,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     smootheDelay += d;
   smootheDelay /= m_smoothedDelayCount;
 
-#ifdef DEBUG_VERBOSE
-  CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::GetDelay m_frames_written/head_pos %f/%u %f", m_duration_written, head_pos, smootheDelay);
-#endif
-  CLog::Log(LOGNOTICE, "Current-Delay: %lf Head Pos: %u", smootheDelay * 1000, head_pos);
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u", smootheDelay * 1000, head_pos);
   status.SetDelay(smootheDelay);
 }
 
@@ -450,6 +448,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
   // write as many frames of audio as we can fit into our internal buffer.
   int written = 0;
+  int loop_written = 0;
   if (frames)
   {
     // android will auto pause the playstate when it senses idle,
@@ -457,19 +456,34 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     // writing into its buffer.
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
       m_at_jni->play();
-    written = m_at_jni->write((char*)out_buf, 0, size);
-    if (written < 0)
+    int frag = 0;
+
+    while (written < size)
     {
-      CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets write returned error:  %d", written);
-      return INT_MAX;
+      loop_written = m_at_jni->write((char*)out_buf, 0, size);
+      written += loop_written;
+      if (loop_written < 0)
+      {
+        CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets write returned error:  %d", written);
+        return INT_MAX;
+      }
+      if (m_passthrough && !m_info.m_wantsIECPassthrough)
+      {
+        if (loop_written != m_format.m_frames && frag == 0)
+          m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
+      }
+      else
+        m_duration_written += ((double)loop_written / m_sink_frameSize) / m_format.m_sampleRate;
+
+      // just try again to care for fragmentation
+      if (written < size)
+      {
+	out_buf = out_buf + loop_written;
+	CLog::Log(LOGDEBUG, "Fragmentation - run - run -run");
+      }
+      loop_written = 0;
+      frag++;
     }
-    if (m_passthrough && !m_info.m_wantsIECPassthrough)
-    {
-      if (written != m_format.m_frames)
-        m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
-    }
-    else
-      m_duration_written += ((double)written / m_sink_frameSize) / m_format.m_sampleRate;
   }
 
 #ifdef DEBUG_VERBOSE
@@ -492,7 +506,6 @@ void CAESinkAUDIOTRACK::Drain()
   // we should not return from drain as long the device is in playing state
   m_at_jni->stop();
   m_duration_written = 0;
-  m_lastHeadPosition = 0;
   m_offset = -1;
 }
 

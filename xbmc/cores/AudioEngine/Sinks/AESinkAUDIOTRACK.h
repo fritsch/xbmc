@@ -56,8 +56,6 @@ protected:
 private:
   jni::CJNIAudioTrack  *m_at_jni;
   double                m_duration_written;
-  uint32_t              m_lastHeadPosition;
-  uint32_t              m_ptOffset;
   int64_t               m_offset;
 
   static CAEDeviceInfo m_info;
@@ -67,7 +65,6 @@ private:
 
   AEAudioFormat      m_format;
   double             m_volume;
-  volatile int       m_min_frames;
   int16_t           *m_alignedS16;
   unsigned int       m_sink_frameSize;
   unsigned int       m_sink_sampleRate;
