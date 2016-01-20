@@ -58,6 +58,7 @@ private:
   double                m_duration_written;
   uint32_t              m_lastHeadPosition;
   uint32_t              m_ptOffset;
+  int64_t               m_offset;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;

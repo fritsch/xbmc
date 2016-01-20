@@ -174,6 +174,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_duration_written = 0;
   m_lastHeadPosition = 0;
   m_ptOffset = 0;
+  m_offset = -1;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -193,6 +194,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_volume      = -1;
   m_smoothedDelayCount = 0;
   m_smoothedDelayVec.clear();
+  m_offset = -1;
 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
@@ -374,6 +376,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_duration_written = 0;
   m_lastHeadPosition = 0;
   m_ptOffset = 0;
+  m_offset = -1;
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -396,9 +399,13 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // return a 32bit "int" that you should "interpret as unsigned."  As such,
   // for wrap saftey, we need to do all ops on it in 32bit integer math.
   uint32_t head_pos = (uint32_t)m_at_jni->getPlaybackHeadPosition();
+  // head_pos does not necessarily start at the beginning
+  if (m_offset == -1)
+    m_offset = head_pos;
 
   double delay;
-  delay = m_duration_written - ((double)head_pos / m_sink_sampleRate);
+  uint32_t normHead_pos = head_pos - m_offset;
+  delay = m_duration_written - ((double)normHead_pos / m_sink_sampleRate);
 
   m_smoothedDelayVec.push_back(delay);
   if (m_smoothedDelayCount <= SMOOTHED_DELAY_MAX)
@@ -486,6 +493,7 @@ void CAESinkAUDIOTRACK::Drain()
   m_at_jni->stop();
   m_duration_written = 0;
   m_lastHeadPosition = 0;
+  m_offset = -1;
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
