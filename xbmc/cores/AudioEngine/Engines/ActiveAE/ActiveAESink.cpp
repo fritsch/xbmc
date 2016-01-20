@@ -456,6 +456,7 @@ void CActiveAESink::StateMachine(int signal, Protocol *port, Message *msg)
           m_extError = false;
           OpenSink();
           OutputSamples(&m_sampleOfSilence);
+          CLog::Log(LOGNOTICE, "Sample of silence was output (1)");
           m_state = S_TOP_CONFIGURED_PLAY;
           m_extTimeout = 0;
           m_bStateMachineSelfTrigger = true;
@@ -486,6 +487,7 @@ void CActiveAESink::StateMachine(int signal, Protocol *port, Message *msg)
         switch (signal)
         {
         case CSinkDataProtocol::SAMPLE:
+          CLog::Log(LOGNOTICE, "Sample of silence was output (2)"); 
           OutputSamples(&m_sampleOfSilence);
           m_state = S_TOP_CONFIGURED_PLAY;
           m_extTimeout = 0;
@@ -545,6 +547,7 @@ void CActiveAESink::StateMachine(int signal, Protocol *port, Message *msg)
         switch (signal)
         {
         case CSinkControlProtocol::TIMEOUT:
+          CLog::Log(LOGNOTICE, "Sample of silence was output (3)");
           OutputSamples(&m_sampleOfSilence);
           if (m_extError)
           {

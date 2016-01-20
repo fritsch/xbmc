@@ -1855,6 +1855,7 @@ bool CActiveAE::RunStages()
         double delay = status.GetDelay() * 1000;
         double playingPts = pts - delay;
         double error = playingPts - (*it)->m_pClock->GetClock();
+        CLog::Log(LOGNOTICE, "ActiveAE: delay %lf error %lf", delay, error);
         (*it)->m_syncError.Add(error);
       }
     }

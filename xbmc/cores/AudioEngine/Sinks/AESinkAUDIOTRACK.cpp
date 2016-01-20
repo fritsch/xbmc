@@ -414,7 +414,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 #ifdef DEBUG_VERBOSE
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::GetDelay m_frames_written/head_pos %f/%u %f", m_duration_written, head_pos, smootheDelay);
 #endif
-
+  CLog::Log(LOGNOTICE, "Current-Delay: %lf Head Pos: %u", smootheDelay * 1000, head_pos);
   status.SetDelay(smootheDelay);
 }
 
@@ -436,6 +436,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   if (!IsInitialized())
     return INT_MAX;
 
+  CLog::Log(LOGNOTICE, "Got frames: %u", frames);
   uint8_t *buffer = data[0]+offset*m_format.m_frameSize;
   uint8_t *out_buf = buffer;
   int size = frames * m_format.m_frameSize;
@@ -468,7 +469,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::AddPackets written %d", written);
 #endif
 
-  return (unsigned int)(written/m_format.m_frameSize);
+  unsigned int written_frames = (unsigned int)(written/m_format.m_frameSize);
+  if (written_frames != frames)
+    CLog::Log(LOGNOTICE, "Only written %d of %d frames", (int) written_frames, (int) frames);
+
+  return written_frames;
 }
 
 void CAESinkAUDIOTRACK::Drain()
@@ -480,6 +485,7 @@ void CAESinkAUDIOTRACK::Drain()
   // we should not return from drain as long the device is in playing state
   m_at_jni->stop();
   m_duration_written = 0;
+  m_lastHeadPosition = 0;
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
