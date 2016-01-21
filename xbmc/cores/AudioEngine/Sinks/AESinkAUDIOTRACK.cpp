@@ -178,6 +178,13 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_smoothedDelayCount = 0;
   m_sink_sampleRate = 0;
   m_passthrough = false;
+  m_min_buffer_size = 0;
+  m_raw_buffer_time = 0;
+  m_extSilenceTimer.SetExpired();
+  // intermediate buffer management
+  m_raw_buffer = nullptr;
+  m_raw_buffer_packages = 0;
+  m_raw_package_size = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -197,7 +204,12 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_volume      = -1;
   m_smoothedDelayCount = 0;
   m_smoothedDelayVec.clear();
+  m_extSilenceTimer.SetExpired();
+
   m_offset = -1;
+  m_raw_buffer_time = 0;
+  m_raw_buffer_packages = 0;
+  m_raw_package_size = 0;
 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
@@ -284,7 +296,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
   while (!m_at_jni)
   {
-    unsigned int min_buffer_size       = CJNIAudioTrack::getMinBufferSize( m_sink_sampleRate,
+    m_min_buffer_size       = CJNIAudioTrack::getMinBufferSize( m_sink_sampleRate,
                                                                            atChannelMask,
                                                                            m_encoding);
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
@@ -300,21 +312,22 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           break;
       }
       m_format.m_frameSize    = 1;
-      min_buffer_size         = std::max(min_buffer_size, m_format.m_frames * m_format.m_frameSize);
+      m_min_buffer_size         = std::max(m_min_buffer_size, m_format.m_frames * m_format.m_frameSize);
+      m_raw_buffer = (uint8_t*) malloc(m_min_buffer_size);
     }
     else
     {
-      min_buffer_size           *= 2;
+      m_min_buffer_size           *= 2;
       m_format.m_frameSize    = m_format.m_channelLayout.Count() *
         (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
-      m_format.m_frames         = (int)(min_buffer_size / m_format.m_frameSize) / 2;
+      m_format.m_frames         = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
     }
     m_sink_frameSize          = m_format.m_frameSize;
-    m_audiotrackbuffer_sec    = (double)(min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
+    m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
 
     m_at_jni                  = CreateAudioTrack(stream, m_sink_sampleRate,
                                                  atChannelMask, m_encoding,
-                                                 min_buffer_size);
+                                                 m_min_buffer_size);
 
     if (!IsInitialized())
     {
@@ -338,7 +351,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       Deinitialize();
       return false;
     }
-    CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize returned: m_sampleRate %u; format:%s; min_buffer_size %u; m_frames %u; m_frameSize %u; channels: %d", m_format.m_sampleRate, CAEUtil::DataFormatToStr(m_format.m_dataFormat), min_buffer_size, m_format.m_frames, m_format.m_frameSize, m_format.m_channelLayout.Count());
+    CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize returned: m_sampleRate %u; format:%s; min_buffer_size %u; m_frames %u; m_frameSize %u; channels: %d", m_format.m_sampleRate, CAEUtil::DataFormatToStr(m_format.m_dataFormat), m_min_buffer_size, m_format.m_frames, m_format.m_frameSize, m_format.m_channelLayout.Count());
   }
 
   format                    = m_format;
@@ -379,6 +392,14 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_duration_written = 0;
   m_offset = -1;
 
+  free (m_raw_buffer);
+  m_raw_buffer = nullptr;
+  m_raw_buffer_packages = 0;
+
+  m_extSilenceTimer.SetExpired();
+  m_raw_buffer_time = 0;
+  m_raw_package_size = 0;
+
   delete m_at_jni;
   m_at_jni = NULL;
 }
@@ -408,6 +429,13 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   uint32_t normHead_pos = head_pos - m_offset;
   delay = m_duration_written - ((double)normHead_pos / m_sink_sampleRate);
 
+  // silence timer might still running
+  if (m_passthrough && !m_info.m_wantsIECPassthrough)
+  {
+    delay += m_extSilenceTimer.MillisLeft() / 1000.;
+    delay += m_raw_buffer_time;
+  }
+
   m_smoothedDelayVec.push_back(delay);
   if (m_smoothedDelayCount <= SMOOTHED_DELAY_MAX)
     m_smoothedDelayCount++;
@@ -419,7 +447,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     smootheDelay += d;
   smootheDelay /= m_smoothedDelayCount;
 
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u", smootheDelay * 1000, head_pos);
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u", smootheDelay * 1000,
+                       head_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft());
+
   status.SetDelay(smootheDelay);
 }
 
@@ -451,6 +481,73 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   int loop_written = 0;
   if (frames)
   {
+    if (m_passthrough && !m_info.m_wantsIECPassthrough)
+    {
+     // use for sanity check
+     if (m_raw_package_size == 0)
+       m_raw_package_size = size;
+
+     if (!m_extSilenceTimer.IsTimePast())
+     {
+        CLog::Log(LOGDEBUG, "Space left in sidebuffer: %lf ms", GetIntermediateBufferSpace() * 1000);
+
+        // sanity check if we would block
+        if (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0) && m_extSilenceTimer.MillisLeft() < m_format.m_streamInfo.GetDuration())
+        {
+	  CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets) - it will never be enough space - aborting!");
+	  return INT_MAX;
+        }
+
+        // let the timer run down
+        while (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0) && !m_extSilenceTimer.IsTimePast())
+        {
+          usleep(m_format.m_streamInfo.GetDuration() * 1000);
+          CLog::Log(LOGDEBUG, "Waiting for buffer space: %lf", GetIntermediateBufferSpace());
+        }
+
+        if (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0))
+        {
+          CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 2) - cannot find space - aborting");
+          return INT_MAX;
+        }
+
+        if (size != m_raw_package_size)
+        {
+           CLog::Log(LOGERROR, "(1) Receiving a packet with a different raw size %u vs %u", size, m_raw_package_size);
+           return INT_MAX;
+        }
+        CLog::Log(LOGDEBUG, "Added a raw package with size: %u in silence mode", size);
+        memcpy(m_raw_buffer + m_raw_buffer_packages * size, buffer, size);
+        m_raw_buffer_packages++;
+        m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.;
+        return frames;
+      }
+      else
+      {
+	if (GetIntermediateBufferSpace() < m_format.m_streamInfo.GetDuration() / 1000.)
+	{
+          CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 3) - cannot find space - aborting");
+          return INT_MAX;
+	}
+	// enqueue and add completely onto the real sink
+        if (m_raw_buffer_packages > 0)
+        {
+          if (size != m_raw_package_size)
+          {
+            CLog::Log(LOGERROR, "(2) Receiving a packet with a different raw size %u vs %u", size, m_raw_package_size);
+            return INT_MAX;
+          }
+          CLog::Log(LOGDEBUG, "Added a raw package with size: %u in silence mode", size);
+          memcpy(m_raw_buffer + m_raw_buffer_packages * size, buffer, size);
+          m_raw_buffer_packages++;
+          m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.;
+          // update out_buf and increased size
+          out_buf = m_raw_buffer;
+          size = m_raw_buffer_packages * size;
+          CLog::Log(LOGDEBUG, "Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
+        }
+      }
+    }
     // android will auto pause the playstate when it senses idle,
     // check it and set playing if it does this. Do this before
     // writing into its buffer.
@@ -464,12 +561,24 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       written += loop_written;
       if (loop_written < 0)
       {
-        CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets write returned error:  %d", written);
+        CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets write returned error:  %d", loop_written);
         return INT_MAX;
       }
       if (m_passthrough && !m_info.m_wantsIECPassthrough)
       {
-        if (loop_written != m_format.m_frames && frag == 0)
+	// if we did not get a full raw package onto the sink
+	// error out as implementations cannot cope with with fragmented raw packages
+        if (loop_written != size)
+        {
+            CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets causes fragmentation of raw packages:  %d", loop_written);
+            m_raw_buffer_packages = 0;
+            m_raw_buffer_time = 0;
+            return INT_MAX;
+        }
+        // add the time for raw packages
+        if (m_raw_buffer_packages > 0)
+          m_duration_written += m_raw_buffer_packages * m_format.m_streamInfo.GetDuration() / 1000;
+        else
           m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
       }
       else
@@ -479,22 +588,68 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       if (written < size)
       {
 	out_buf = out_buf + loop_written;
-	CLog::Log(LOGDEBUG, "Fragmentation - run - run -run");
       }
       loop_written = 0;
       frag++;
     }
-  }
 
-#ifdef DEBUG_VERBOSE
-  CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::AddPackets written %d", written);
-#endif
+    if (m_passthrough && !m_info.m_wantsIECPassthrough)
+    {
+       // remove from calculation as it was added into the sink buffer
+       m_raw_buffer_time = 0;
+       // all went fine intermediate buffer is on sink
+       m_raw_buffer_packages = 0;
+       // tell AE that all data was written
+       written = frames;
+    }
+  }
 
   unsigned int written_frames = (unsigned int)(written/m_format.m_frameSize);
   if (written_frames != frames)
     CLog::Log(LOGNOTICE, "Only written %d of %d frames", (int) written_frames, (int) frames);
 
   return written_frames;
+}
+
+double CAESinkAUDIOTRACK::GetIntermediateBufferSpace()
+{
+  return GetCacheTotal() - m_raw_buffer_time - m_extSilenceTimer.MillisLeft() / 1000.;
+}
+
+void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
+{
+  if (!m_at_jni)
+    return;
+
+  if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
+    m_at_jni->pause();
+
+  CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms", millis);
+
+  double spaceInteral = GetCacheTotal() - m_raw_buffer_time;
+  double space = spaceInteral - m_extSilenceTimer.MillisLeft() / 1000.;
+
+  // if this happens we are in non running state but also have no chance
+  // that we get more space
+  if (space < millis / 1000. && m_extSilenceTimer.MillisLeft() < millis)
+  {
+    CLog::Log(LOGDEBUG, "We are running out of space - miscalculation - ignoring silence");
+    return;
+  }
+
+  while (space < millis / 1000. && !m_extSilenceTimer.IsTimePast())
+  {
+    usleep(m_format.m_streamInfo.GetDuration() * 1000);
+    CLog::Log(LOGDEBUG, "No space in buffer %lf", space);
+    space = spaceInteral - m_extSilenceTimer.MillisLeft() / 1000.;
+  }
+
+  space = spaceInteral - m_extSilenceTimer.MillisLeft() / 1000.;
+  // increase running silence timer
+  if (space >= millis / 1000.)
+    m_extSilenceTimer.Set(m_extSilenceTimer.MillisLeft() + millis);
+  else
+   CLog::Log(LOGDEBUG, "We are running out of space - miscalculation - ignoring silence");
 }
 
 void CAESinkAUDIOTRACK::Drain()
@@ -504,9 +659,12 @@ void CAESinkAUDIOTRACK::Drain()
 
   // TODO: does this block until last samples played out?
   // we should not return from drain as long the device is in playing state
+
   m_at_jni->stop();
   m_duration_written = 0;
   m_offset = -1;
+  m_raw_buffer_packages = 0;
+  m_raw_buffer_time = 0;
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)

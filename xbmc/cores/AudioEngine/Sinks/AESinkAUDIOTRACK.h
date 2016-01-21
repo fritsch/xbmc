@@ -22,6 +22,7 @@
 #include "cores/AudioEngine/Interfaces/AESink.h"
 #include "cores/AudioEngine/Utils/AEDeviceInfo.h"
 #include "threads/CriticalSection.h"
+#include "threads/Thread.h"
 
 #include <set>
 
@@ -47,6 +48,7 @@ public:
   virtual double       GetLatency      ();
   virtual double       GetCacheTotal   ();
   virtual unsigned int AddPackets      (uint8_t **data, unsigned int frames, unsigned int offset);
+  virtual void         AddPause        (unsigned int millis);
   virtual void         Drain           ();
   static void          EnumerateDevicesEx(AEDeviceInfoList &list, bool force = false);
 
@@ -54,9 +56,23 @@ protected:
   static bool IsSupported(int sampleRateInHz, int channelConfig, int audioFormat);
 
 private:
+  // Return the time we have left in our internal buffer
+  // make sure to subtract the idle timer (if running)
+  // as both are compared to TotalCache()
+  // Unit: seconds
+  double GetBufferSpaceInternal();
   jni::CJNIAudioTrack  *m_at_jni;
   double                m_duration_written;
+  unsigned int          m_min_buffer_size;
   int64_t               m_offset;
+  uint8_t*              m_raw_buffer;
+
+  /* In raw Mode we only receive equally sized raw packages */
+  unsigned int          m_raw_buffer_packages;
+  double                m_raw_buffer_time;
+  unsigned int          m_raw_package_size;
+  // return seconds of free intermediate buffer
+  double                GetIntermediateBufferSpace();
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
@@ -71,4 +87,5 @@ private:
   bool               m_passthrough;
   double             m_audiotrackbuffer_sec;
   int                m_encoding;
+  XbmcThreads::EndTime m_extSilenceTimer;
 };
