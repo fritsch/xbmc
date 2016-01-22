@@ -70,7 +70,7 @@ private:
   /* In raw Mode we only receive equally sized raw packages */
   unsigned int          m_raw_buffer_packages;
   double                m_raw_buffer_time;
-  int                   m_raw_package_size;
+  int                   m_raw_package_sum_size;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;

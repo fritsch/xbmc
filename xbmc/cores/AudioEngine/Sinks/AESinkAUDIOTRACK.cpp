@@ -39,6 +39,8 @@
 
 using namespace jni;
 
+#define MAX_AT_WANTS_TO_OPEN 16384
+
 /*
  * ADT-1 on L preview as of 2014-10 downmixes all non-5.1/7.1 content
  * to stereo, so use 7.1 or 5.1 for all multichannel content for now to
@@ -184,7 +186,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   // intermediate buffer management
   m_raw_buffer = nullptr;
   m_raw_buffer_packages = 0;
-  m_raw_package_size = 0;
+  m_raw_package_sum_size = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -209,7 +211,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_offset = -1;
   m_raw_buffer_time = 0;
   m_raw_buffer_packages = 0;
-  m_raw_package_size = 0;
+  m_raw_package_sum_size = 0;
 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
@@ -301,19 +303,16 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
                                                                            m_encoding);
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-      switch (m_format.m_streamInfo.m_type)
-      {
-        case CAEStreamInfo::STREAM_TYPE_DTSHD:
-        case CAEStreamInfo::STREAM_TYPE_TRUEHD:
-          m_format.m_frames = 60 * 1024;
-          break;
-        default:
-          m_format.m_frames = 16 * 1024;
-          break;
-      }
-      m_format.m_frameSize    = 1;
-      m_min_buffer_size         = std::max(m_min_buffer_size, m_format.m_frames * m_format.m_frameSize);
+      // This is not fun at all - just in case 500k
+      unsigned int storage     = 32 * MAX_AT_WANTS_TO_OPEN;
+      m_format.m_frameSize      = 1;
+      m_min_buffer_size         = std::max(m_min_buffer_size, storage * m_format.m_frameSize);
       m_raw_buffer = (uint8_t*) malloc(m_min_buffer_size);
+      if (!m_raw_buffer)
+      {
+        CLog::Log(LOGERROR, "Failed to create buffer");
+        return false;
+      }
     }
     else
     {
@@ -323,7 +322,19 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       m_format.m_frames         = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
     }
     m_sink_frameSize          = m_format.m_frameSize;
-    m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
+
+    if (m_passthrough && !m_info.m_wantsIECPassthrough)
+    {
+      // let's at least have 32 packages in buffer
+      m_audiotrackbuffer_sec    = 32 * m_format.m_streamInfo.GetDuration() / 1000;
+      // tell AE something else matching the ms in buffer
+      m_format.m_frames = m_audiotrackbuffer_sec * m_format.m_sampleRate * m_sink_frameSize;
+      CLog::Log(LOGDEBUG, "We are faking buffer (ms): %lf m_sink_frameSize: %u", m_audiotrackbuffer_sec, m_format.m_frames);
+    }
+    else
+      m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
+
+    CLog::Log(LOGDEBUG, "M_audiotrackbuffer_sec: %lf ms ", m_audiotrackbuffer_sec * 1000);
 
     m_at_jni                  = CreateAudioTrack(stream, m_sink_sampleRate,
                                                  atChannelMask, m_encoding,
@@ -398,7 +409,8 @@ void CAESinkAUDIOTRACK::Deinitialize()
 
   m_extSilenceTimer.SetExpired();
   m_raw_buffer_time = 0;
-  m_raw_package_size = 0;
+  m_raw_buffer_packages = 0;
+  m_raw_package_sum_size = 0;
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -423,10 +435,20 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   uint32_t head_pos = (uint32_t)m_at_jni->getPlaybackHeadPosition();
   // head_pos does not necessarily start at the beginning
   if (m_offset == -1)
+  {
+    CLog::Log(LOGDEBUG, "Offset update to %u", head_pos);
     m_offset = head_pos;
+  }
 
   double delay;
   uint32_t normHead_pos = head_pos - m_offset;
+  // might happen at start of buffer
+  if (normHead_pos < 0)
+  {
+    normHead_pos = 0;
+    CLog::Log(LOGDEBUG, "Something in Audiotrack goes wrong!");
+  }
+
   delay = m_duration_written - ((double)normHead_pos / m_sink_sampleRate);
 
   // silence timer might still running
@@ -447,8 +469,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     smootheDelay += d;
   smootheDelay /= m_smoothedDelayCount;
 
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u", smootheDelay * 1000,
-                       head_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft());
+  bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
+                       normHead_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
 
   status.SetDelay(smootheDelay);
 }
@@ -483,10 +506,13 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   {
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-     // use for sanity check
-     if (m_raw_package_size == 0)
-       m_raw_package_size = size;
+     if (size > MAX_AT_WANTS_TO_OPEN)
+     {
+       CLog::Log(LOGERROR, "Sorry We cannot cope with so much samples!");
+       return INT_MAX;
+     }
 
+     CLog::Log(LOGDEBUG, "Current packages in sidebuffer filled size: %u", m_raw_package_sum_size);
      if (!m_extSilenceTimer.IsTimePast())
      {
         CLog::Log(LOGDEBUG, "Space left in sidebuffer: %lf ms", GetIntermediateBufferSpace() * 1000);
@@ -494,7 +520,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         while (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0) && !m_extSilenceTimer.IsTimePast())
         {
           usleep(m_format.m_streamInfo.GetDuration() * 1000);
-          CLog::Log(LOGDEBUG, "Waiting for buffer space: %lf", GetIntermediateBufferSpace());
+          CLog::Log(LOGDEBUG, "Waiting for buffer space, free space: %lf ms", GetIntermediateBufferSpace() * 1000);
         }
 
         if (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0))
@@ -503,14 +529,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
           return INT_MAX;
         }
 
-        if (size != m_raw_package_size)
-        {
-           CLog::Log(LOGERROR, "(1) Receiving a packet with a different raw size %u vs %u", size, m_raw_package_size);
-           return INT_MAX;
-        }
         CLog::Log(LOGDEBUG, "Added a raw package with size: %u in silence mode", size);
-        memcpy(m_raw_buffer + m_raw_buffer_packages * size, buffer, size);
+        memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
         m_raw_buffer_packages++;
+        m_raw_package_sum_size += size;
         m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
         return frames;
       }
@@ -524,18 +546,14 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 	// enqueue and add completely onto the real sink
         if (m_raw_buffer_packages > 0)
         {
-          if (size != m_raw_package_size)
-          {
-            CLog::Log(LOGERROR, "(2) Receiving a packet with a different raw size %u vs %u", size, m_raw_package_size);
-            return INT_MAX;
-          }
-          CLog::Log(LOGDEBUG, "Added a raw package with size: %u in silence mode", size);
-          memcpy(m_raw_buffer + m_raw_buffer_packages * size, buffer, size);
+          CLog::Log(LOGDEBUG, "Added a raw package with size: %u in normal mode", size);
+          memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
           m_raw_buffer_packages++;
+          m_raw_package_sum_size += size;
           m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
           // update out_buf and increased size
           out_buf = m_raw_buffer;
-          size = m_raw_buffer_packages * size;
+          size = m_raw_package_sum_size;
           CLog::Log(LOGDEBUG, "Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
         }
       }
@@ -565,11 +583,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
             CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets causes fragmentation of raw packages:  %d", loop_written);
             m_raw_buffer_packages = 0;
             m_raw_buffer_time = 0;
+            m_raw_package_sum_size = 0;
             return INT_MAX;
         }
         // add the time for raw packages
         if (m_raw_buffer_packages > 0)
-          m_duration_written += m_raw_buffer_packages * m_format.m_streamInfo.GetDuration() / 1000;
+          m_duration_written += m_raw_buffer_time;
         else
           m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
       }
@@ -588,9 +607,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
        // remove from calculation as it was added into the sink buffer
+       CLog::Log(LOGDEBUG, "Successfully written packages onto sink: time %lf size %u", m_raw_buffer_time, m_raw_package_sum_size);
        m_raw_buffer_time = 0;
        // all went fine intermediate buffer is on sink
        m_raw_buffer_packages = 0;
+       m_raw_package_sum_size = 0;
        // tell AE that all data was written
        written = frames;
     }
@@ -613,6 +634,12 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
+  if (m_raw_buffer_time > 0)
+  {
+    CLog::Log(LOGDEBUG, "Ignoring Pause package - buffer has started to fill already");
+    return;
+  }
+
   if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
     m_at_jni->pause();
 
@@ -626,7 +653,9 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 
   // increase running silence timer
   if (GetIntermediateBufferSpace() >= millis / 1000.0)
+  {
     m_extSilenceTimer.Set(m_extSilenceTimer.MillisLeft() + millis);
+  }
   else
    CLog::Log(LOGDEBUG, "We are running out of space - miscalculation - ignoring silence");
 }
