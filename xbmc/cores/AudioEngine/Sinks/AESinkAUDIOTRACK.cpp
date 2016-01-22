@@ -432,7 +432,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // silence timer might still running
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
-    delay += m_extSilenceTimer.MillisLeft() / 1000.;
+    delay += m_extSilenceTimer.MillisLeft() / 1000.0;
     delay += m_raw_buffer_time;
   }
 
@@ -490,14 +490,6 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
      if (!m_extSilenceTimer.IsTimePast())
      {
         CLog::Log(LOGDEBUG, "Space left in sidebuffer: %lf ms", GetIntermediateBufferSpace() * 1000);
-
-        // sanity check if we would block
-        if (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0) && m_extSilenceTimer.MillisLeft() < m_format.m_streamInfo.GetDuration())
-        {
-	  CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets) - it will never be enough space - aborting!");
-	  return INT_MAX;
-        }
-
         // let the timer run down
         while (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0) && !m_extSilenceTimer.IsTimePast())
         {
@@ -519,12 +511,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         CLog::Log(LOGDEBUG, "Added a raw package with size: %u in silence mode", size);
         memcpy(m_raw_buffer + m_raw_buffer_packages * size, buffer, size);
         m_raw_buffer_packages++;
-        m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.;
+        m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
         return frames;
       }
       else
       {
-	if (GetIntermediateBufferSpace() < m_format.m_streamInfo.GetDuration() / 1000.)
+	if (GetIntermediateBufferSpace() < m_format.m_streamInfo.GetDuration() / 1000.0)
 	{
           CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 3) - cannot find space - aborting");
           return INT_MAX;
@@ -540,7 +532,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
           CLog::Log(LOGDEBUG, "Added a raw package with size: %u in silence mode", size);
           memcpy(m_raw_buffer + m_raw_buffer_packages * size, buffer, size);
           m_raw_buffer_packages++;
-          m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.;
+          m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
           // update out_buf and increased size
           out_buf = m_raw_buffer;
           size = m_raw_buffer_packages * size;
@@ -613,7 +605,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
 double CAESinkAUDIOTRACK::GetIntermediateBufferSpace()
 {
-  return GetCacheTotal() - m_raw_buffer_time - m_extSilenceTimer.MillisLeft() / 1000.;
+  return GetCacheTotal() - m_raw_buffer_time - m_extSilenceTimer.MillisLeft() / 1000.0;
 }
 
 void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
@@ -626,27 +618,14 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 
   CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms", millis);
 
-  double spaceInteral = GetCacheTotal() - m_raw_buffer_time;
-  double space = spaceInteral - m_extSilenceTimer.MillisLeft() / 1000.;
-
-  // if this happens we are in non running state but also have no chance
-  // that we get more space
-  if (space < millis / 1000. && m_extSilenceTimer.MillisLeft() < millis)
-  {
-    CLog::Log(LOGDEBUG, "We are running out of space - miscalculation - ignoring silence");
-    return;
-  }
-
-  while (space < millis / 1000. && !m_extSilenceTimer.IsTimePast())
+  while (GetIntermediateBufferSpace() < millis / 1000.0 && !m_extSilenceTimer.IsTimePast())
   {
     usleep(m_format.m_streamInfo.GetDuration() * 1000);
-    CLog::Log(LOGDEBUG, "No space in buffer %lf", space);
-    space = spaceInteral - m_extSilenceTimer.MillisLeft() / 1000.;
+    CLog::Log(LOGDEBUG, "Not enough space in buffer %lf", GetIntermediateBufferSpace());
   }
 
-  space = spaceInteral - m_extSilenceTimer.MillisLeft() / 1000.;
   // increase running silence timer
-  if (space >= millis / 1000.)
+  if (GetIntermediateBufferSpace() >= millis / 1000.0)
     m_extSilenceTimer.Set(m_extSilenceTimer.MillisLeft() + millis);
   else
    CLog::Log(LOGDEBUG, "We are running out of space - miscalculation - ignoring silence");

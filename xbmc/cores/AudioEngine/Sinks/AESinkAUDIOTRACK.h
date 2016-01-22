@@ -60,7 +60,7 @@ private:
   // make sure to subtract the idle timer (if running)
   // as both are compared to TotalCache()
   // Unit: seconds
-  double GetBufferSpaceInternal();
+  double                GetIntermediateBufferSpace();
   jni::CJNIAudioTrack  *m_at_jni;
   double                m_duration_written;
   unsigned int          m_min_buffer_size;
@@ -70,9 +70,7 @@ private:
   /* In raw Mode we only receive equally sized raw packages */
   unsigned int          m_raw_buffer_packages;
   double                m_raw_buffer_time;
-  unsigned int          m_raw_package_size;
-  // return seconds of free intermediate buffer
-  double                GetIntermediateBufferSpace();
+  int                   m_raw_package_size;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
