@@ -188,6 +188,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_raw_buffer = nullptr;
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
+  m_raw_sink_delay = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -213,6 +214,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_buffer_time = 0;
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
+  m_raw_sink_delay = 0;
 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
@@ -413,6 +415,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_raw_buffer_time = 0;
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
+  m_raw_sink_delay = 0;
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -451,6 +454,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     CLog::Log(LOGDEBUG, "Something in Audiotrack goes wrong!");
   }
 
+
+
   delay = m_duration_written - ((double)normHead_pos / m_sink_sampleRate);
 
   // silence timer might still running
@@ -458,6 +463,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   {
     delay += m_extSilenceTimer.MillisLeft() / 1000.0;
     delay += m_raw_buffer_time;
+    m_raw_sink_delay = delay;
   }
 
   m_smoothedDelayVec.push_back(delay);
@@ -580,6 +586,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       }
       if (m_passthrough && !m_info.m_wantsIECPassthrough)
       {
+
+	// as the audiotrack buffer is much larger than what we tell to the outside - we need to block ourselves
+	if (m_raw_buffer_packages == 0 && m_raw_sink_delay > GetCacheTotal())
+	{
+	  CLog::Log(LOGDEBUG, "AT is not blocking - but we need it blocking");
+	  double extra_sleep = (m_raw_sink_delay - GetCacheTotal()) * 1000 + m_format.m_streamInfo.GetDuration();
+	  usleep(extra_sleep * 1000);
+	  CLog::Log(LOGDEBUG, "Did an extra sleep of: %lf ms", extra_sleep * 1000);
+	}
 	// if we did not get a full raw package onto the sink
 	// error out as implementations cannot cope with with fragmented raw packages
         if (loop_written != size)
@@ -610,14 +625,17 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-       // remove from calculation as it was added into the sink buffer
-       CLog::Log(LOGDEBUG, "Successfully written packages onto sink: time %lf size %u", m_raw_buffer_time, m_raw_package_sum_size);
-       m_raw_buffer_time = 0;
-       // all went fine intermediate buffer is on sink
-       m_raw_buffer_packages = 0;
-       m_raw_package_sum_size = 0;
-       // tell AE that all data was written
-       written = frames;
+       if (m_raw_buffer_packages > 0)
+       {
+         // remove from calculation as it was added into the sink buffer
+         CLog::Log(LOGDEBUG, "Successfully written combined packages onto sink: time %lf size %u", m_raw_buffer_time, m_raw_package_sum_size);
+         m_raw_buffer_time = 0;
+         // all went fine intermediate buffer is on sink
+         m_raw_buffer_packages = 0;
+         m_raw_package_sum_size = 0;
+         // tell AE that all data was written
+         written = frames;
+       }
     }
   }
 

@@ -71,6 +71,7 @@ private:
   unsigned int          m_raw_buffer_packages;
   double                m_raw_buffer_time;
   int                   m_raw_package_sum_size;
+  double                m_raw_sink_delay;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
