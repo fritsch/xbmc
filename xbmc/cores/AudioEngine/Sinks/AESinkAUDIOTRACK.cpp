@@ -39,8 +39,8 @@
 
 using namespace jni;
 
-#define MAX_AT_WANTS_TO_OPEN 16384
-#define RAW_BUFFER_TIME 0.35
+const unsigned int MAX_RAW_AT_WANTS_TO_OPEN = 61440;
+const unsigned int NUM_RAW_PACKAGES = 8;
 
 /*
  * ADT-1 on L preview as of 2014-10 downmixes all non-5.1/7.1 content
@@ -304,16 +304,15 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
                                                                            m_encoding);
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-      // This is not fun at all - just in case 500k
-      unsigned int num_packages = RAW_BUFFER_TIME / (m_format.m_streamInfo.GetDuration() / 1000.0);
-      CLog::Log(LOGDEBUG, "Creating storage for %u packages", num_packages);
-      unsigned int storage      = num_packages * MAX_AT_WANTS_TO_OPEN;
+      unsigned int storage      = NUM_RAW_PACKAGES * MAX_RAW_AT_WANTS_TO_OPEN;
+
       m_format.m_frameSize      = 1;
       m_min_buffer_size         = std::max(m_min_buffer_size, storage * m_format.m_frameSize);
       m_raw_buffer = (uint8_t*) malloc(m_min_buffer_size);
       if (!m_raw_buffer)
       {
         CLog::Log(LOGERROR, "Failed to create buffer");
+        Deinitialize();
         return false;
       }
     }
@@ -328,12 +327,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-      // let's at least have 350 ms in buffer
-      m_audiotrackbuffer_sec    = RAW_BUFFER_TIME;
-      // tell AE something else matching the ms in buffer
-      m_format.m_frames = m_audiotrackbuffer_sec * m_format.m_sampleRate * m_sink_frameSize;
-      // Underrun does not harm us - aim for 100 ms periodSize
-      m_format.m_frames /= 3;
+       m_audiotrackbuffer_sec = NUM_RAW_PACKAGES * m_format.m_streamInfo.GetDuration() / 1000.0;
+       m_format.m_frames = MAX_RAW_AT_WANTS_TO_OPEN;
+
       CLog::Log(LOGDEBUG, "We are faking buffer (ms): %lf m_sink_frameSize: %u", m_audiotrackbuffer_sec, m_format.m_frames);
     }
     else
@@ -511,7 +507,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   {
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-     if (size > MAX_AT_WANTS_TO_OPEN)
+     if (size > MAX_RAW_AT_WANTS_TO_OPEN)
      {
        CLog::Log(LOGERROR, "Sorry We cannot cope with so much samples!");
        return INT_MAX;
