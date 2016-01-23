@@ -527,7 +527,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
         if (GetIntermediateBufferSpace() < (m_format.m_streamInfo.GetDuration() / 1000.0))
         {
-          CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 2) - cannot find space - aborting");
+          CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 2) - cannot find space - aborting, free: GetIntermediateBufferSpace(), needed: m_format.m_streamInfo.GetDuration() / 1000.0");
           return INT_MAX;
         }
 
@@ -540,10 +540,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       }
       else
       {
-	if (GetIntermediateBufferSpace() < m_format.m_streamInfo.GetDuration() / 1000.0)
-	{
-          CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 3) - cannot find space - aborting");
-          return INT_MAX;
+	// if we get here our intermediate buffer is perhaps "full by calculation" - but as we have more space
+	// just append it and write out that shit
+	if (m_raw_package_sum_size + size >= m_min_buffer_size)
+        {
+	   CLog::Log(LOGDEBUG, "Buffer miscalculation (AddPakets 2) - cannot find space - aborting, free: GetIntermediateBufferSpace(), needed: m_format.m_streamInfo.GetDuration() / 1000.0");
+	   return INT_MAX;
 	}
 	// enqueue and add completely onto the real sink
         if (m_raw_buffer_packages > 0)
