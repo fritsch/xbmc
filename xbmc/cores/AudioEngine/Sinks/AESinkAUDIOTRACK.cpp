@@ -305,6 +305,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
       unsigned int storage      = NUM_RAW_PACKAGES * MAX_RAW_AT_WANTS_TO_OPEN;
+      CLog::Log(LOGDEBUG, "storage: %u", storage);
 
       m_format.m_frameSize      = 1;
       m_min_buffer_size         = std::max(m_min_buffer_size, storage * m_format.m_frameSize);
