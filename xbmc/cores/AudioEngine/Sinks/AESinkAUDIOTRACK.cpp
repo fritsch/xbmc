@@ -359,7 +359,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
        m_audiotrackbuffer_sec = (double)(real_minimum / m_sink_frameSize) / (double)m_sink_sampleRate;
        m_format.m_frames = m_atbuffer / 2;
        // just for fun
-       m_updatePeriodInterval = 2048;
+       m_updatePeriodInterval = m_sink_sampleRate / 20;
     }
     else
       m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
