@@ -192,7 +192,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
-  m_atbuffer = MAX_RAW_AUDIO_BUFFER;
+  m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -220,7 +220,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
 
-  m_atbuffer = MAX_RAW_AUDIO_BUFFER;
+  m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
@@ -263,13 +263,13 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           m_encoding              = CJNIAudioFormat::ENCODING_DTS_HD;
           m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
-          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD;
+          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD * 2;
           break;
 
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           m_encoding              = CJNIAudioFormat::ENCODING_DOLBY_TRUEHD;
           m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
-          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD;
+          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD * 2;
           break;
 
         default:
@@ -345,7 +345,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
        m_audiotrackbuffer_sec = (double)(m_atbuffer / m_sink_frameSize) / (double)m_sink_sampleRate;;
-       m_format.m_frames = m_atbuffer;
+       m_format.m_frames = m_atbuffer / 2;
     }
     else
       m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
@@ -465,13 +465,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // silence timer might still running
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
+    // save as measurement for for real payload
+    m_raw_sink_delay = delay;
     delay += m_extSilenceTimer.MillisLeft() / 1000.0;
     delay += m_raw_buffer_time;
-    m_raw_sink_delay = delay;
-    status.SetDelay(m_raw_sink_delay);
-    CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u Playing: %s", m_raw_sink_delay * 1000,
-                         normHead_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
-    return;
   }
 
   m_smoothedDelayVec.push_back(delay);
@@ -528,8 +525,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
      }
 
      // No matter what happens if we have already filled up >= our half real sink buffer
-     // we could overrun the AT buffer with the next package so directly flush all PAUSE stuff
-     // and output
+     // we could overrun the AT buffer with the next package so directly write out everything we
+     // have
      if (m_raw_package_sum_size + size > m_atbuffer / 2)
      {
        memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
@@ -539,8 +536,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
        // update out_buf and increased size
        out_buf = m_raw_buffer;
        size = m_raw_package_sum_size;
-       CLog::Log(LOGDEBUG, "(A) Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
        m_extSilenceTimer.SetExpired();
+       CLog::Log(LOGDEBUG, "(A) Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
      }
      else if (!m_extSilenceTimer.IsTimePast())
      {
@@ -686,6 +683,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms", millis);
 
   // AE wants to flush our audio - we still have data in buffer
+  // give it time to write it away
   if (m_raw_sink_delay > 0)
   {
     CLog::Log(LOGDEBUG, "Syncing: %lf", millis);
