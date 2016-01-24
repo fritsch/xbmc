@@ -54,12 +54,12 @@ void CJNIAudioTrack::PopulateStaticFields()
   }
 }
 
-CJNIAudioTrack::CJNIAudioTrack(int streamType, int sampleRateInHz, int channelConfig, int audioFormat, int bufferSizeInBytes, int mode) throw(std::invalid_argument)
+CJNIAudioTrack::CJNIAudioTrack(int streamType, int sampleRateInHz, int channelConfig, int audioFormat, int localbufferSizeinBytes, int remotebufferSizeInBytes, int mode) throw(std::invalid_argument)
   : CJNIBase("android/media/AudioTrack")
 {
   m_object = new_object(GetClassName(), "<init>", "(IIIIII)V",
                         streamType, sampleRateInHz, channelConfig,
-                        audioFormat, bufferSizeInBytes, mode);
+                        audioFormat, remotebufferSizeInBytes, mode);
 
   /* AudioTrack constructor may throw IllegalArgumentException, pass it to
    * caller instead of getting us killed */
@@ -76,9 +76,9 @@ CJNIAudioTrack::CJNIAudioTrack(int streamType, int sampleRateInHz, int channelCo
 
   m_audioFormat = audioFormat;
   if (m_audioFormat == CJNIAudioFormat::ENCODING_PCM_FLOAT)
-    m_buffer = jharray(xbmc_jnienv()->NewFloatArray(bufferSizeInBytes / sizeof(float)));
+    m_buffer = jharray(xbmc_jnienv()->NewFloatArray(localbufferSizeinBytes / sizeof(float)));
   else
-    m_buffer = jharray(xbmc_jnienv()->NewByteArray(bufferSizeInBytes));
+    m_buffer = jharray(xbmc_jnienv()->NewByteArray(localbufferSizeinBytes));
 
   m_object.setGlobal();
   m_buffer.setGlobal();

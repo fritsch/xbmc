@@ -145,7 +145,7 @@ static int AEChannelMapToAUDIOTRACKChannelMask(CAEChannelInfo info)
   return atMask;
 }
 
-static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int channelMask, int encoding, int bufferSize)
+static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int channelMask, int encoding, int localbufferSize, int remoteBufferSize)
 {
   jni::CJNIAudioTrack *jniAt = NULL;
 
@@ -155,7 +155,8 @@ static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int cha
                                sampleRate,
                                channelMask,
                                encoding,
-                               bufferSize,
+                               localbufferSize,
+                               remoteBufferSize,
                                CJNIAudioTrack::MODE_STREAM);
   }
   catch (const std::invalid_argument& e)
@@ -312,6 +313,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_min_buffer_size       = CJNIAudioTrack::getMinBufferSize( m_sink_sampleRate,
                                                                            atChannelMask,
                                                                            m_encoding);
+    CLog::Log(LOGNOTICE, "Min Buffer size: %u", m_min_buffer_size);
+    unsigned int real_minimum = m_min_buffer_size;
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
       // heap memory is cheap - this is only for the intermediate buffer
@@ -344,7 +347,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-       m_audiotrackbuffer_sec = (double)(m_atbuffer / m_sink_frameSize) / (double)m_sink_sampleRate;;
+       m_audiotrackbuffer_sec = (double)(real_minimum * 2 / m_sink_frameSize) / (double)m_sink_sampleRate;;
        m_format.m_frames = m_atbuffer / 2;
     }
     else
@@ -352,9 +355,18 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
     CLog::Log(LOGDEBUG, "Created Audiotrackbuffer with playing time of %lf ms ", m_audiotrackbuffer_sec * 1000);
 
-    m_at_jni                  = CreateAudioTrack(stream, m_sink_sampleRate,
-                                                 atChannelMask, m_encoding,
-                                                 m_atbuffer);
+    if (m_passthrough && !m_info.m_wantsIECPassthrough)
+    {
+      m_at_jni                  = CreateAudioTrack(stream, m_sink_sampleRate,
+                                                   atChannelMask, m_encoding,
+                                                   m_atbuffer, real_minimum * 2); // let's see what happens
+    }
+    else
+    {
+      m_at_jni                  = CreateAudioTrack(stream, m_sink_sampleRate,
+	                                           atChannelMask, m_encoding,
+	                                           m_atbuffer, m_atbuffer);
+    }
 
     if (!IsInitialized())
     {
