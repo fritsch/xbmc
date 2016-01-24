@@ -33,7 +33,7 @@ class CJNIAudioTrack : public CJNIBase
   int     m_audioFormat;
 
   public:
-  CJNIAudioTrack::CJNIAudioTrack(int streamType, int sampleRateInHz, int channelConfig, int audioFormat, int localbufferSizeinBytes, int remotebufferSizeInBytes, int mode) throw(std::invalid_argument);
+  CJNIAudioTrack(int streamType, int sampleRateInHz, int channelConfig, int audioFormat, int localbufferSizeinBytes, int remotebufferSizeInBytes, int mode) throw(std::invalid_argument);
 
     void  play();
     void  pause();
