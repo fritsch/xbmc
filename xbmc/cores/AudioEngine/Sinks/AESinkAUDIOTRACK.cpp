@@ -347,7 +347,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-       m_audiotrackbuffer_sec = (double)(real_minimum * 2 / m_sink_frameSize) / (double)m_sink_sampleRate;;
+      // aim for 250 ms buffer
+       real_minimum = std::max(m_sink_sampleRate * m_sink_frameSize / 4, 2 * real_minimum);
+       m_audiotrackbuffer_sec = (double)(real_minimum / m_sink_frameSize) / (double)m_sink_sampleRate;
        m_format.m_frames = m_atbuffer / 2;
     }
     else
@@ -359,7 +361,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     {
       m_at_jni                  = CreateAudioTrack(stream, m_sink_sampleRate,
                                                    atChannelMask, m_encoding,
-                                                   m_atbuffer, real_minimum * 2); // let's see what happens
+                                                   m_atbuffer, real_minimum); // let's see what happens
     }
     else
     {
