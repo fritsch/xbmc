@@ -194,6 +194,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
   m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
+  m_updatePeriodInterval = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -220,6 +221,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
+  m_updatePeriodInterval = 0;
 
   m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
 
@@ -342,18 +344,28 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       // in non pass-through mode we can use proper calculations for AT, meaning
       // frames have a direct mapping to play-length
       m_atbuffer = m_min_buffer_size;
+      m_updatePeriodInterval = m_format.m_frames / 2;
     }
     m_sink_frameSize          = m_format.m_frameSize;
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-      // aim for 250 ms buffer
-       real_minimum = std::max(m_sink_sampleRate * m_sink_frameSize / 4, 2 * real_minimum);
+       // aim for 500 ms buffer but for TrueHD we hard code
+       real_minimum = std::max(m_sink_sampleRate * m_sink_frameSize / 2, 2 * real_minimum);
+
+       if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+	 real_minimum = MAX_RAW_AUDIO_BUFFER_HD;
+
        m_audiotrackbuffer_sec = (double)(real_minimum / m_sink_frameSize) / (double)m_sink_sampleRate;
        m_format.m_frames = m_atbuffer / 2;
+       // just for fun
+       m_updatePeriodInterval = 2048;
     }
     else
       m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
+
+
+
 
     CLog::Log(LOGDEBUG, "Created Audiotrackbuffer with playing time of %lf ms ", m_audiotrackbuffer_sec * 1000);
 
@@ -394,6 +406,12 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize returned: m_sampleRate %u; format:%s; min_buffer_size %u; m_frames %u; m_frameSize %u; channels: %d", m_format.m_sampleRate, CAEUtil::DataFormatToStr(m_format.m_dataFormat), m_min_buffer_size, m_format.m_frames, m_format.m_frameSize, m_format.m_channelLayout.Count());
   }
+
+  // we are initialized
+  if (m_at_jni->setPositionNotificationPeriod(m_updatePeriodInterval) < 0 )
+    CLog::Log(LOGNOTICE, "PeriodUpdate Interval Setter failed: %u!", m_updatePeriodInterval);
+  else
+    CLog::Log(LOGNOTICE, "Sucessfully set periodSize to %u", m_updatePeriodInterval);
 
   format                    = m_format;
 

@@ -156,6 +156,12 @@ int CJNIAudioTrack::getPlayState()
   return call_method<int>(m_object, "getPlayState", "()I");
 }
 
+int CJNIAudioTrack::setPositionNotificationPeriod(int periodSamples)
+{
+  return call_method<int>(m_object, "setNotificationMarkerPosition", "(I)I",
+                                  periodSamples);
+}
+
 int CJNIAudioTrack::getPlaybackHeadPosition()
 {
   return call_method<int>(m_object, "getPlaybackHeadPosition", "()I");
