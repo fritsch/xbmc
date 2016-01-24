@@ -42,7 +42,7 @@ using namespace jni;
 // those are empirical values while the HD buffer
 // is the max TrueHD package
 const unsigned int MAX_RAW_AUDIO_BUFFER_HD = 61440;
-const unsigned int MAX_RAW_AUDIO_BUFFER = 9 * 2560;
+const unsigned int MAX_RAW_AUDIO_BUFFER = 16384;
 const unsigned int NUM_RAW_PACKAGES = 8;
 
 /*
@@ -220,7 +220,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
 
-  m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
+  m_atbuffer = MAX_RAW_AUDIO_BUFFER;
 
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
@@ -263,13 +263,13 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           m_encoding              = CJNIAudioFormat::ENCODING_DTS_HD;
           m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
-          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD * 2;
+          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD;
           break;
 
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           m_encoding              = CJNIAudioFormat::ENCODING_DOLBY_TRUEHD;
           m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
-          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD * 2;
+          m_atbuffer = MAX_RAW_AUDIO_BUFFER_HD;
           break;
 
         default:
@@ -345,7 +345,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
        m_audiotrackbuffer_sec = NUM_RAW_PACKAGES * m_format.m_streamInfo.GetDuration() / 1000.0;
-       m_format.m_frames = m_atbuffer / 2;
+       m_format.m_frames = m_atbuffer;
     }
     else
       m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
