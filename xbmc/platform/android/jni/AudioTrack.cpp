@@ -140,7 +140,12 @@ int CJNIAudioTrack::write(char* audioData, int offsetInBytes, int sizeInBytes)
       written *= sizeof(float);
     }
     else
-      written = call_method<int>(m_object, "write", "([BII)I", m_buffer, offsetInBytes, sizeInBytes, CJNIAudioTrack::WRITE_BLOCKING);
+    {
+     if (CJNIBase::GetSDKVersion() >= 21)
+       written = call_method<int>(m_object, "write", "([BII)I", m_buffer, offsetInBytes, sizeInBytes, CJNIAudioTrack::WRITE_BLOCKING);
+     else
+       written = call_method<int>(m_object, "write", "([BII)I", m_buffer, offsetInBytes, sizeInBytes);
+    }
   }
 
   return written;
