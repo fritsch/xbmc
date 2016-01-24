@@ -344,7 +344,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-       m_audiotrackbuffer_sec = NUM_RAW_PACKAGES * m_format.m_streamInfo.GetDuration() / 1000.0;
+       m_audiotrackbuffer_sec = (double)(m_atbuffer / m_sink_frameSize) / (double)m_sink_sampleRate;;
        m_format.m_frames = m_atbuffer;
     }
     else
@@ -460,6 +460,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   uint32_t normHead_pos = head_pos - m_offset;
 
   double delay = m_duration_written - ((double)normHead_pos / m_sink_sampleRate);
+  bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
   // silence timer might still running
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
@@ -467,6 +468,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     delay += m_extSilenceTimer.MillisLeft() / 1000.0;
     delay += m_raw_buffer_time;
     m_raw_sink_delay = delay;
+    status.SetDelay(m_raw_sink_delay);
+    CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u Playing: %s", m_raw_sink_delay * 1000,
+                         normHead_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
+    return;
   }
 
   m_smoothedDelayVec.push_back(delay);
@@ -480,7 +485,6 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     smootheDelay += d;
   smootheDelay /= m_smoothedDelayCount;
 
-  bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
   CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
                        normHead_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
 
@@ -678,16 +682,21 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
-  if (m_raw_buffer_time > 0)
+
+  CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms", millis);
+
+  // AE wants to flush our audio - we still have data in buffer
+  if (m_raw_sink_delay > 0)
   {
-    CLog::Log(LOGDEBUG, "Ignoring Pause package - buffer has started to fill already");
+    CLog::Log(LOGDEBUG, "Syncing: %lf", millis);
+    m_extSilenceTimer.Set(m_extSilenceTimer.MillisLeft() + millis);
+    usleep(millis * 1000);
     return;
   }
 
+  // if we are here - we have nothing to play in buffer
   if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
     m_at_jni->pause();
-
-  CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms", millis);
 
   while (GetIntermediateBufferSpace() < millis / 1000.0 && !m_extSilenceTimer.IsTimePast())
   {
