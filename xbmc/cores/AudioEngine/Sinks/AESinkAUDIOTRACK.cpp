@@ -351,10 +351,14 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
        // aim for 500 ms buffer but for TrueHD we hard code
-       real_minimum = std::max(m_sink_sampleRate * m_sink_frameSize / 2, 2 * real_minimum);
+       //real_minimum = std::max(m_sink_sampleRate * m_sink_frameSize / 2, 2 * real_minimum);
+       // think again about it
+       real_minimum = MAX_RAW_AUDIO_BUFFER + MAX_RAW_AUDIO_BUFFER / NUM_RAW_PACKAGES;
 
-       if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+       if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD || m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD)
 	 real_minimum = MAX_RAW_AUDIO_BUFFER_HD;
+
+       CLog::Log(LOGDEBUG, "Initialized with: %u", real_minimum);
 
        m_audiotrackbuffer_sec = (double)(real_minimum / m_sink_frameSize) / (double)m_sink_sampleRate;
        m_format.m_frames = m_atbuffer / 2;
