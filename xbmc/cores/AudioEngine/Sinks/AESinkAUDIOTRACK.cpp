@@ -194,7 +194,6 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
   m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
-  m_updatePeriodInterval = 0;
   m_realRawTime = 0;
 }
 
@@ -223,7 +222,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
   m_realRawTime = 0;
-  m_updatePeriodInterval = 0;
 
   m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
 
@@ -346,7 +344,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       // in non pass-through mode we can use proper calculations for AT, meaning
       // frames have a direct mapping to play-length
       m_atbuffer = m_min_buffer_size;
-      m_updatePeriodInterval = m_format.m_frames / 2;
     }
     m_sink_frameSize          = m_format.m_frameSize;
 
@@ -364,8 +361,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
        m_audiotrackbuffer_sec = (double)(real_minimum / m_sink_frameSize) / (double)m_sink_sampleRate;
        m_format.m_frames = m_atbuffer / 2;
-       // just for fun
-       m_updatePeriodInterval = m_sink_sampleRate / 20;
     }
     else
       m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
@@ -412,27 +407,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize returned: m_sampleRate %u; format:%s; min_buffer_size %u; m_frames %u; m_frameSize %u; channels: %d", m_format.m_sampleRate, CAEUtil::DataFormatToStr(m_format.m_dataFormat), m_min_buffer_size, m_format.m_frames, m_format.m_frameSize, m_format.m_channelLayout.Count());
   }
-
-  // we are initialized
-  // This is for testing only to see what they mean with periodInFrames
-  int lowest = m_updatePeriodInterval;
-  for (int i = m_updatePeriodInterval; i > 1; i--)
-  {
-    if (m_at_jni->setPositionNotificationPeriod(i) < 0 )
-      CLog::Log(LOGNOTICE, "PeriodUpdate Interval Setter failed: %u!", m_updatePeriodInterval);
-    else
-    {
-      CLog::Log(LOGNOTICE, "Sucessfully set periodSize to %u", m_updatePeriodInterval);
-      if (i < lowest)
-      lowest = i;
-      // break; // as said testing only
-    }
-  }
-  m_updatePeriodInterval = lowest;
-  CLog::Log(LOGNOTICE, "In deed found a periodInFrames: %u", m_updatePeriodInterval);
-  int lalaframes = m_at_jni->getBufferSizeInFrames();
-  CLog::Log(LOGNOTICE, "The AT says its internal buffer would be: %d frames", lalaframes);
-
   format                    = m_format;
 
   // Force volume to 100% for passthrough
