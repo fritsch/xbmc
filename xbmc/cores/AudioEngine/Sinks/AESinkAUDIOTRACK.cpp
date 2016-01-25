@@ -524,7 +524,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     delay += m_raw_buffer_time;
   }
 
-  m_smoothedDelayVec.push_back(delay);
+    double smootheDelay = delay;
+/*  m_smoothedDelayVec.push_back(delay);
   if (m_smoothedDelayCount <= SMOOTHED_DELAY_MAX)
     m_smoothedDelayCount++;
   else
@@ -534,9 +535,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   for (double d : m_smoothedDelayVec)
     smootheDelay += d;
   smootheDelay /= m_smoothedDelayCount;
+*/
 
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Intermediate Buffer Time: %lf, Real Raw Buffer Time: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
-                       normHead_pos, m_raw_buffer_time * 1000, m_realRawTime * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Intermediate Buffer Time: %lf, Real Raw Buffer Time: %lf, Real Sink delay: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
+                       normHead_pos, m_raw_buffer_time * 1000, m_realRawTime * 1000, m_raw_sink_delay * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
 
   status.SetDelay(smootheDelay);
 }
