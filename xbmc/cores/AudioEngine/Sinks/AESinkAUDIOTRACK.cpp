@@ -195,6 +195,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_raw_sink_delay = 0;
   m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
   m_updatePeriodInterval = 0;
+  m_realRawTime = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -221,6 +222,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
+  m_realRawTime = 0;
   m_updatePeriodInterval = 0;
 
   m_atbuffer = MAX_RAW_AUDIO_BUFFER * 2;
@@ -476,6 +478,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
+  m_realRawTime = 0;
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -530,8 +533,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     smootheDelay += d;
   smootheDelay /= m_smoothedDelayCount;
 
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Buffer Time: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
-                       normHead_pos, m_raw_buffer_time * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Intermediate Buffer Time: %lf, Real Raw Buffer Time: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
+                       normHead_pos, m_raw_buffer_time * 1000, m_realRawTime * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
 
   status.SetDelay(smootheDelay);
 }
@@ -682,9 +685,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         }
         // add the time for raw packages
         if (m_raw_buffer_packages > 0)
+        {
           m_duration_written += m_raw_buffer_time;
+          m_realRawTime += m_raw_buffer_time;
+        }
         else
+        {
           m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
+          m_realRawTime += m_format.m_streamInfo.GetDuration() / 1000;
+        }
       }
       else
         m_duration_written += ((double)loop_written / m_sink_frameSize) / m_format.m_sampleRate;
@@ -772,6 +781,8 @@ void CAESinkAUDIOTRACK::Drain()
   m_offset = -1;
   m_raw_buffer_packages = 0;
   m_raw_buffer_time = 0;
+  m_raw_package_sum_size = 0;
+  m_realRawTime = 0;
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)

@@ -73,6 +73,7 @@ private:
   double                m_raw_sink_delay;
   unsigned int          m_atbuffer;
   unsigned int          m_updatePeriodInterval;
+  double                m_realRawTime;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
