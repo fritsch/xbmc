@@ -185,6 +185,7 @@ int CJNIAudioTrack::getNativeOutputSampleRate(int streamType)
 }
 
 int CJNIAudioTrack::getBufferSizeInFrames()
+{
   if (CJNIBase::GetSDKVersion() >= 23)
     return call_method<int>(m_object, "getBufferSizeInFrames", "()I");
   else
