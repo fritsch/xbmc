@@ -68,7 +68,7 @@ private:
   uint8_t*              m_raw_buffer;
 
   unsigned int          m_raw_buffer_packages;
-  double                m_raw_buffer_time;
+  double                m_raw_intermediate_buffer_time;
   int                   m_raw_package_sum_size;
   double                m_raw_sink_delay;
   unsigned int          m_atbuffer;

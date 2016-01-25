@@ -186,7 +186,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
-  m_raw_buffer_time = 0;
+  m_raw_intermediate_buffer_time = 0;
   m_extSilenceTimer.SetExpired();
   // intermediate buffer management
   m_raw_buffer = nullptr;
@@ -217,7 +217,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_extSilenceTimer.SetExpired();
 
   m_offset = -1;
-  m_raw_buffer_time = 0;
+  m_raw_intermediate_buffer_time = 0;
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
@@ -450,7 +450,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_raw_buffer_packages = 0;
 
   m_extSilenceTimer.SetExpired();
-  m_raw_buffer_time = 0;
+  m_raw_intermediate_buffer_time = 0;
   m_raw_buffer_packages = 0;
   m_raw_package_sum_size = 0;
   m_raw_sink_delay = 0;
@@ -498,7 +498,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     // save as measurement for for real payload
     m_raw_sink_delay = delay;
     delay += m_extSilenceTimer.MillisLeft() / 1000.0;
-    delay += m_raw_buffer_time;
+    delay += m_raw_intermediate_buffer_time;
   }
 
     double smootheDelay = delay;
@@ -515,7 +515,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 */
 
   CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Raw Intermediate Buffer Time: %lf, Real Raw Buffer Time: %lf, Real Sink delay: %lf, Silence: %u Playing: %s", smootheDelay * 1000,
-                       normHead_pos, m_raw_buffer_time * 1000, m_realRawTime * 1000, m_raw_sink_delay * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
+                       normHead_pos, m_raw_intermediate_buffer_time * 1000, m_realRawTime * 1000, m_raw_sink_delay * 1000, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
 
   status.SetDelay(smootheDelay);
 }
@@ -564,12 +564,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
        memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
        m_raw_buffer_packages++;
        m_raw_package_sum_size += size;
-       m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
+       m_raw_intermediate_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
        // update out_buf and increased size
        out_buf = m_raw_buffer;
        size = m_raw_package_sum_size;
        m_extSilenceTimer.SetExpired();
-       CLog::Log(LOGDEBUG, "(A) Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
+       CLog::Log(LOGDEBUG, "(A) Trying to add the complete intermediate buffer: %u %lf", size, m_raw_intermediate_buffer_time);
      }
      else if (!m_extSilenceTimer.IsTimePast())
      {
@@ -589,7 +589,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
           memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
           m_raw_buffer_packages++;
           m_raw_package_sum_size += size;
-          m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
+          m_raw_intermediate_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
           return frames;
         }
 
@@ -599,11 +599,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
           memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
           m_raw_buffer_packages++;
           m_raw_package_sum_size += size;
-          m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
+          m_raw_intermediate_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
           // update out_buf and increased size
           out_buf = m_raw_buffer;
           size = m_raw_package_sum_size;
-          CLog::Log(LOGDEBUG, "(1) Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
+          CLog::Log(LOGDEBUG, "(1) Trying to add the complete intermediate buffer: %u %lf", size, m_raw_intermediate_buffer_time);
         }
         else
         {
@@ -628,11 +628,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
           memcpy(m_raw_buffer + m_raw_package_sum_size, buffer, size);
           m_raw_buffer_packages++;
           m_raw_package_sum_size += size;
-          m_raw_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
+          m_raw_intermediate_buffer_time += m_format.m_streamInfo.GetDuration() / 1000.0;
           // update out_buf and increased size
           out_buf = m_raw_buffer;
           size = m_raw_package_sum_size;
-          CLog::Log(LOGDEBUG, "Trying to add the complete intermediate buffer: %u %lf", size, m_raw_buffer_time);
+          CLog::Log(LOGDEBUG, "Trying to add the complete intermediate buffer: %u %lf", size, m_raw_intermediate_buffer_time);
         }
       }
     }
@@ -660,15 +660,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         {
             CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets causes fragmentation of raw packages:  %d", loop_written);
             m_raw_buffer_packages = 0;
-            m_raw_buffer_time = 0;
+            m_raw_intermediate_buffer_time = 0;
             m_raw_package_sum_size = 0;
             return INT_MAX;
         }
         // add the time for raw packages
         if (m_raw_buffer_packages > 0)
         {
-          m_duration_written += m_raw_buffer_time;
-          m_realRawTime += m_raw_buffer_time;
+          m_duration_written += m_raw_intermediate_buffer_time;
+          m_realRawTime += m_raw_intermediate_buffer_time;
         }
         else
         {
@@ -693,7 +693,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
        if (m_raw_buffer_packages > 0)
        {
          // remove from calculation as it was added into the sink buffer
-         m_raw_buffer_time = 0;
+         m_raw_intermediate_buffer_time = 0;
          // all went fine intermediate buffer is on sink
          m_raw_buffer_packages = 0;
          m_raw_package_sum_size = 0;
@@ -709,7 +709,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
 double CAESinkAUDIOTRACK::GetIntermediateBufferSpace()
 {
-  return GetCacheTotal() - m_raw_buffer_time - m_extSilenceTimer.MillisLeft() / 1000.0;
+  return GetCacheTotal() - m_raw_intermediate_buffer_time - m_extSilenceTimer.MillisLeft() / 1000.0;
 }
 
 void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
@@ -760,7 +760,7 @@ void CAESinkAUDIOTRACK::Drain()
   m_duration_written = 0;
   m_offset = -1;
   m_raw_buffer_packages = 0;
-  m_raw_buffer_time = 0;
+  m_raw_intermediate_buffer_time = 0;
   m_raw_package_sum_size = 0;
   m_realRawTime = 0;
 }
