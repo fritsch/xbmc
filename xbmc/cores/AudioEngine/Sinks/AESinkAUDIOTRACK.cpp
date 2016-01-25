@@ -184,7 +184,6 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_min_buffer_size = 0;
   m_extSilenceTimer.SetExpired();
   m_raw_sink_delay = 0;
-  m_raw_buffer_count_bytes = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -203,7 +202,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_format      = format;
   m_volume      = -1;
   m_extSilenceTimer.SetExpired();
-  m_raw_buffer_count_bytes = 0;
   m_offset = -1;
   m_raw_sink_delay = 0;
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
@@ -476,21 +474,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
        return INT_MAX;
      }
     }
-    // warm up
-    if (!m_extSilenceTimer.IsTimePast() && m_raw_buffer_count_bytes + size < m_min_buffer_size / 2)
-    {
-      if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
-        m_at_jni->pause();
-    }
-    else
-    {
-      if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
-        m_at_jni->play();
 
-      // reset warmup counter
-      m_extSilenceTimer.SetExpired();
-      m_raw_buffer_count_bytes = 0;
-    }
+    // just writ out the first packet and fake a bit to AE
+    if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
+      m_at_jni->play();
+    // reset warmup counter
+    double left = (double) m_extSilenceTimer.MillisLeft() - m_format.m_streamInfo.GetDuration();
+    if (left > 0)
+      m_extSilenceTimer.Set((unsigned int)left);
+
     while (written < size)
     {
       loop_written = m_at_jni->write((char*)out_buf, 0, size);
@@ -580,7 +572,6 @@ void CAESinkAUDIOTRACK::Drain()
   m_at_jni->stop();
   m_duration_written = 0;
   m_offset = -1;
-  m_raw_buffer_count_bytes = 0;
   m_raw_sink_delay = 0;
 }
 
