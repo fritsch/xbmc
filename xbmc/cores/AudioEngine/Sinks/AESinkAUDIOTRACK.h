@@ -22,6 +22,7 @@
 #include "cores/AudioEngine/Interfaces/AESink.h"
 #include "cores/AudioEngine/Utils/AEDeviceInfo.h"
 #include "threads/CriticalSection.h"
+#include "threads/Thread.h"
 
 #include <set>
 
@@ -47,6 +48,7 @@ public:
   virtual double       GetLatency      ();
   virtual double       GetCacheTotal   ();
   virtual unsigned int AddPackets      (uint8_t **data, unsigned int frames, unsigned int offset);
+  virtual void         AddPause        (unsigned int millis);
   virtual void         Drain           ();
   static void          EnumerateDevicesEx(AEDeviceInfoList &list, bool force = false);
 
@@ -54,23 +56,32 @@ protected:
   static bool IsSupported(int sampleRateInHz, int channelConfig, int audioFormat);
 
 private:
+  // Return the time we have left in our internal buffer
+  // make sure to subtract the idle timer (if running)
+  // as both are compared to TotalCache()
+  // Unit: seconds
+  double                GetIntermediateBufferSpace();
   jni::CJNIAudioTrack  *m_at_jni;
   double                m_duration_written;
-  uint32_t              m_lastHeadPosition;
-  uint32_t              m_ptOffset;
+  unsigned int          m_min_buffer_size;
+  int64_t               m_offset;
+
+  // track raw sink delay to know if we over / underrun
+  double                m_raw_sink_delay;
+  // while warming up make sure we don't cache more than the number of
+  // bytes we can write out - we can on paused buffer
+  unsigned int          m_raw_buffer_count_bytes;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
-  std::vector<double>                 m_smoothedDelayVec;
-  int                                 m_smoothedDelayCount;
 
   AEAudioFormat      m_format;
   double             m_volume;
-  volatile int       m_min_frames;
   int16_t           *m_alignedS16;
   unsigned int       m_sink_frameSize;
   unsigned int       m_sink_sampleRate;
   bool               m_passthrough;
   double             m_audiotrackbuffer_sec;
   int                m_encoding;
+  XbmcThreads::EndTime m_extSilenceTimer;
 };
