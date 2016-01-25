@@ -743,8 +743,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   // give it time to write it away
   if (m_raw_sink_delay > 0)
   {
-    CLog::Log(LOGDEBUG, "Syncing: %lf", millis);
-    m_extSilenceTimer.Set(m_extSilenceTimer.MillisLeft() + millis);
+    CLog::Log(LOGDEBUG, "Syncing: %u", millis);
     usleep(millis * 1000);
     return;
   }
