@@ -418,7 +418,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   int lowest = m_updatePeriodInterval;
   for (int i = 1; i < m_updatePeriodInterval; i++)
   {
-    if (m_at_jni->setPositionNotificationPeriod(m_updatePeriodInterval) < 0 )
+    if (m_at_jni->setPositionNotificationPeriod(i) < 0 )
       CLog::Log(LOGNOTICE, "PeriodUpdate Interval Setter failed: %u!", m_updatePeriodInterval);
     else
     {
