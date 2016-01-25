@@ -65,14 +65,12 @@ private:
   double                m_duration_written;
   unsigned int          m_min_buffer_size;
   int64_t               m_offset;
-  uint8_t*              m_raw_buffer;
 
-  unsigned int          m_raw_buffer_packages;
-  double                m_raw_intermediate_buffer_time;
-  int                   m_raw_package_sum_size;
+  // track raw sink delay to know if we over / underrun
   double                m_raw_sink_delay;
-  unsigned int          m_atbuffer;
-  double                m_realRawTime;
+  // while warming up make sure we don't cache more than the number of
+  // bytes we can write out - we can on paused buffer
+  unsigned int          m_raw_buffer_count_bytes;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
