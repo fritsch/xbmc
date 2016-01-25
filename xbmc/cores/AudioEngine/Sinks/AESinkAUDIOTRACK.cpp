@@ -486,9 +486,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   uint32_t normHead_pos = head_pos - m_offset;
 
-  double gone = (double)normHead_pos / m_sink_sampleRate;
+  double gone = (double)normHead_pos / (double) m_sink_sampleRate;
 
-  double delay = (double) m_duration_written - gone;
+  double delay = m_duration_written - gone;
   CLog::Log(LOGNOTICE, "Jetzt aber: duration written: %lf sampleRate: %u gone: %lf", m_duration_written, m_sink_sampleRate, gone);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
