@@ -430,6 +430,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   }
   m_updatePeriodInterval = lowest;
   CLog::Log(LOGNOTICE, "In deed found a periodInFrames: %u", m_updatePeriodInterval);
+  int lalaframes = m_at_jni->getBufferSizeInFrames();
+  CLog::Log(LOGNOTICE, "The AT says its internal buffer would be: %d frames", lalaframes);
 
   format                    = m_format;
 
