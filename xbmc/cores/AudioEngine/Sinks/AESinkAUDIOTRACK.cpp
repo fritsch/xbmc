@@ -416,7 +416,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   // we are initialized
   // This is for testing only to see what they mean with periodInFrames
   int lowest = m_updatePeriodInterval;
-  for (int i = 1; i < m_updatePeriodInterval; i++)
+  for (int i = m_updatePeriodInterval; i > 1; i--)
   {
     if (m_at_jni->setPositionNotificationPeriod(i) < 0 )
       CLog::Log(LOGNOTICE, "PeriodUpdate Interval Setter failed: %u!", m_updatePeriodInterval);
