@@ -56,8 +56,6 @@ class CJNIAudioTrack : public CJNIBase
     static void PopulateStaticFields();
     static int  getMinBufferSize(int sampleRateInHz, int channelConfig, int audioFormat);
     static int  getNativeOutputSampleRate(int streamType);
-    int setPositionNotificationPeriod(int periodSamples);
-    int getBufferSizeInFrames();
 };
 
 };
