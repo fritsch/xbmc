@@ -541,7 +541,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
-  CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms", millis);
+  CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms Raw Delay: %lf", millis, m_raw_sink_delay);
 
   // AE wants to flush our audio - we still have data in buffer
   // give it time to write it away
