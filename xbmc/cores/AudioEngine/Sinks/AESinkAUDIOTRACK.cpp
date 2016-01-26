@@ -481,6 +481,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     {
       if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
         m_at_jni->pause();
+
+      m_raw_buffer_count_bytes += size;
     }
     else
     {
