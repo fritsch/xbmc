@@ -184,7 +184,6 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_min_buffer_size = 0;
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
-  m_extSilenceTimer.SetExpired();
   m_raw_sink_delay = 0;
   m_raw_buffer_count_bytes = 0;
 }
@@ -204,7 +203,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 {
   m_format      = format;
   m_volume      = -1;
-  m_extSilenceTimer.SetExpired();
   m_raw_buffer_count_bytes = 0;
   m_offset = -1;
   m_raw_sink_delay = 0;
@@ -329,6 +327,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
              m_min_buffer_size = 15 * 1536; // 120 ms
            else
              m_min_buffer_size = 5 * 1536; // 160 ms
+           break;
         default:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
           break;
@@ -419,7 +418,6 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_duration_written = 0;
   m_offset = -1;
 
-  m_extSilenceTimer.SetExpired();
   m_raw_sink_delay = 0;
 
   m_lastPlaybackHeadPosition = 0;
@@ -457,10 +455,17 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   double correction = 0.0;
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
+
+    if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
+    {
+	CLog::Log(LOGDEBUG, "Faking Delay: %lf", GetCacheTotal());
+	status.SetDelay(GetCacheTotal());
+	return;
+    }
     // if the head does not move and while we don't fill up
     // with silence correct the buffer
     // TODO: can be done for normal usage, too
-    if (normHead_pos == m_lastPlaybackHeadPosition && m_extSilenceTimer.IsTimePast())
+    if (normHead_pos == m_lastPlaybackHeadPosition)
     {
       // We added a package but HeadPos was not update
       correction = m_packages_not_counted * m_format.m_streamInfo.GetDuration() / 1000;
@@ -490,10 +495,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   {
     // save as measurement for for real payload
     m_raw_sink_delay = delay;
-    delay += m_extSilenceTimer.MillisLeft() / 1000.0;
   }
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Raw-Delay: %lf, Head Pos: %u Silence: %u Playing: %s", delay * 1000, m_raw_sink_delay,
-                       normHead_pos, m_extSilenceTimer.MillisLeft(), playing ? "yes" : "no");
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Raw-Delay: %lf, Head Pos: %u Playing: %s", delay * 1000, m_raw_sink_delay,
+                       normHead_pos, playing ? "yes" : "no");
 
   status.SetDelay(delay);
 }
@@ -535,11 +539,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
      }
     }
     // warm up
-    if (!m_extSilenceTimer.IsTimePast() && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
+    if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
     {
-      if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
-        m_at_jni->pause();
-
+      // enqueue a package in blocking way
+      usleep(m_format.m_streamInfo.GetDuration() * 1000);
       m_raw_buffer_count_bytes += size;
     }
     else
@@ -548,7 +551,6 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         m_at_jni->play();
 
       // reset warmup counter
-      m_extSilenceTimer.SetExpired();
       m_raw_buffer_count_bytes = 0;
       m_packages_not_counted++;
     }
@@ -590,53 +592,31 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   return written_frames;
 }
 
-double CAESinkAUDIOTRACK::GetIntermediateBufferSpace()
-{
-  return GetCacheTotal() - m_extSilenceTimer.MillisLeft() / 1000.0;
-}
-
 void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 {
   if (!m_at_jni)
     return;
 
-  CLog::Log(LOGDEBUG, "Trying to add Pause packet of size: %u ms Raw Delay: %lf", millis, m_raw_sink_delay);
+  CLog::Log(LOGDEBUG, "AddPause was called with millis: %lf", millis);
 
-  // AE wants to flush our audio - we still have data in buffer
-  // give it time to write it away
-  if (m_raw_sink_delay > 0)
-  {
-    CLog::Log(LOGDEBUG, "Syncing: %u", millis);
-    usleep(millis * 1000);
-    return;
-  }
-
-  // if we are here - we have nothing to play in buffer
   if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
-    m_at_jni->pause();
-
-  while (GetIntermediateBufferSpace() < millis / 1000.0 && !m_extSilenceTimer.IsTimePast())
   {
-    usleep(m_format.m_streamInfo.GetDuration() * 1000);
-    CLog::Log(LOGDEBUG, "Waiting for space in buffer %lf", GetIntermediateBufferSpace());
+      m_at_jni->pause();
+      m_at_jni->flush();
+      m_lastPlaybackHeadPosition = 0;
+      m_duration_written = 0;
+      m_raw_buffer_count_bytes = 0;
+      m_packages_not_counted = 0;
+      m_offset = -1;
+      m_raw_sink_delay = GetCacheTotal();
   }
-
-  // increase running silence timer
-  if (GetIntermediateBufferSpace() >= millis / 1000.0)
-  {
-    m_extSilenceTimer.Set(m_extSilenceTimer.MillisLeft() + millis);
-  }
-  else
-   CLog::Log(LOGDEBUG, "We are running out of space - miscalculation - ignoring silence");
+  usleep(millis * 1000);
 }
 
 void CAESinkAUDIOTRACK::Drain()
 {
   if (!m_at_jni)
     return;
-
-  // TODO: does this block until last samples played out?
-  // we should not return from drain as long the device is in playing state
 
   m_at_jni->stop();
   m_duration_written = 0;

@@ -60,7 +60,6 @@ private:
   // make sure to subtract the idle timer (if running)
   // as both are compared to TotalCache()
   // Unit: seconds
-  double                GetIntermediateBufferSpace();
   jni::CJNIAudioTrack  *m_at_jni;
   double                m_duration_written;
   unsigned int          m_min_buffer_size;
@@ -85,5 +84,4 @@ private:
   bool               m_passthrough;
   double             m_audiotrackbuffer_sec;
   int                m_encoding;
-  XbmcThreads::EndTime m_extSilenceTimer;
 };
