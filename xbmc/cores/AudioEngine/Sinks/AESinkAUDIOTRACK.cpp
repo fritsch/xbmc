@@ -597,7 +597,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
-  CLog::Log(LOGDEBUG, "AddPause was called with millis: %lf", millis);
+  CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
 
   if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
   {
