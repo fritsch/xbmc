@@ -321,8 +321,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
 
     // think of something better
-    if (m_audiotrackbuffer_sec > 0.5)
-      m_audiotrackbuffer_sec = 0.5;
+    if (m_audiotrackbuffer_sec > 0.2)
+      m_audiotrackbuffer_sec = 0.2;
 
     CLog::Log(LOGDEBUG, "Created Audiotrackbuffer with playing time of %lf ms min buffer size: %u bytes", m_audiotrackbuffer_sec * 1000, m_min_buffer_size);
 
@@ -505,7 +505,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
      }
     }
     // warm up
-    if (!m_extSilenceTimer.IsTimePast() && m_raw_buffer_count_bytes + size < m_min_buffer_size / 2)
+    if (!m_extSilenceTimer.IsTimePast() && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
     {
       if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
         m_at_jni->pause();
