@@ -64,6 +64,8 @@ private:
   jni::CJNIAudioTrack  *m_at_jni;
   double                m_duration_written;
   unsigned int          m_min_buffer_size;
+  unsigned int          m_lastPlaybackHeadPosition;
+  unsigned int          m_packages_not_counted;
   int64_t               m_offset;
 
   // track raw sink delay to know if we over / underrun

@@ -182,6 +182,8 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
+  m_lastPlaybackHeadPosition = 0;
+  m_packages_not_counted = 0;
   m_extSilenceTimer.SetExpired();
   m_raw_sink_delay = 0;
   m_raw_buffer_count_bytes = 0;
@@ -206,6 +208,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_raw_buffer_count_bytes = 0;
   m_offset = -1;
   m_raw_sink_delay = 0;
+  m_lastPlaybackHeadPosition = 0;
+  m_packages_not_counted = 0;
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
   int stream = CJNIAudioManager::STREAM_MUSIC;
@@ -391,6 +395,8 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_extSilenceTimer.SetExpired();
   m_raw_sink_delay = 0;
 
+  m_lastPlaybackHeadPosition = 0;
+
   delete m_at_jni;
   m_at_jni = NULL;
 }
@@ -421,9 +427,27 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   uint32_t normHead_pos = head_pos - m_offset;
 
+  double correction = 0.0;
+  if (m_passthrough && !m_info.m_wantsIECPassthrough)
+  {
+    // if the head does not move and while we don't fill up
+    // with silence correct the buffer
+    // TODO: can be done for normal usage, too
+    if (normHead_pos == m_lastPlaybackHeadPosition && m_extSilenceTimer.IsTimePast())
+    {
+      // We added a package but HeadPos was not update
+      correction = m_packages_not_counted * m_format.m_streamInfo.GetDuration() / 1000;
+    }
+    else if (normHead_pos > m_lastPlaybackHeadPosition)
+    {
+      m_lastPlaybackHeadPosition = normHead_pos;
+      m_packages_not_counted = 0;
+    }
+  }
+
   double gone = (double)normHead_pos / (double) m_sink_sampleRate;
 
-  double delay = m_duration_written - gone;
+  double delay = m_duration_written - gone - correction;
   CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf", m_duration_written, m_sink_sampleRate, gone);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
@@ -492,6 +516,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       // reset warmup counter
       m_extSilenceTimer.SetExpired();
       m_raw_buffer_count_bytes = 0;
+      m_packages_not_counted++;
     }
     while (written < size)
     {
@@ -584,6 +609,8 @@ void CAESinkAUDIOTRACK::Drain()
   m_offset = -1;
   m_raw_buffer_count_bytes = 0;
   m_raw_sink_delay = 0;
+  m_packages_not_counted = 0;
+  m_lastPlaybackHeadPosition = 0;
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
