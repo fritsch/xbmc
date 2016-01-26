@@ -476,9 +476,12 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   // if sink is run dry without buffer time written anymore
   if (gone > m_duration_written)
-    gone = 0.0;
+    gone = m_duration_written;
 
   double delay = m_duration_written - gone - correction;
+  if (delay < 0)
+    delay = 0;
+
   CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf Correction: %lf", m_duration_written, m_sink_sampleRate, gone, correction);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
