@@ -448,7 +448,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   double gone = (double)normHead_pos / (double) m_sink_sampleRate;
 
   double delay = m_duration_written - gone - correction;
-  CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf", m_duration_written, m_sink_sampleRate, gone);
+  CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf Correction: %lf", m_duration_written, m_sink_sampleRate, gone, correction);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
   // silence timer might still running
