@@ -441,12 +441,17 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // for wrap saftey, we need to do all ops on it in 32bit integer math.
   uint32_t head_pos = (uint32_t)m_at_jni->getPlaybackHeadPosition();
   // head_pos does not necessarily start at the beginning
-  if (m_offset == -1)
+  if (m_offset == -1 && m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
   {
     CLog::Log(LOGDEBUG, "Offset update to %u", head_pos);
     m_offset = head_pos;
   }
 
+  if (m_offset > head_pos)
+  {
+      CLog::Log(LOGDEBUG, "You did it wrong man - fully wrong! offset %ld head pos %u", m_offset, head_pos);
+      m_offset = 0;
+  }
   uint32_t normHead_pos = head_pos - m_offset;
 
   double correction = 0.0;
