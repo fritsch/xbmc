@@ -450,28 +450,30 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   uint32_t normHead_pos = head_pos - m_offset;
 
   double correction = 0.0;
+
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
-
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
     {
 	CLog::Log(LOGDEBUG, "Faking Delay: %lf", GetCacheTotal());
 	status.SetDelay(GetCacheTotal());
 	return;
     }
-    // if the head does not move and while we don't fill up
-    // with silence correct the buffer
-    // TODO: can be done for normal usage, too
-    if (normHead_pos == m_lastPlaybackHeadPosition)
-    {
-      // We added a package but HeadPos was not update
+  }
+  // if the head does not move and while we don't fill up
+  // with silence correct the buffer
+  if (normHead_pos == m_lastPlaybackHeadPosition)
+  {
+    // We added a package but HeadPos was not update
+    if (m_passthrough && !m_info.m_wantsIECPassthrough)
       correction = m_packages_not_counted * m_format.m_streamInfo.GetDuration() / 1000;
-    }
-    else if (normHead_pos > m_lastPlaybackHeadPosition)
-    {
-      m_lastPlaybackHeadPosition = normHead_pos;
-      m_packages_not_counted = 0;
-    }
+    else // this works cause of new fragmentation support also for non passthrough
+      correction = m_packages_not_counted * m_sink_frameSize / m_sink_sampleRate;
+  }
+  else if (normHead_pos > m_lastPlaybackHeadPosition)
+  {
+    m_lastPlaybackHeadPosition = normHead_pos;
+    m_packages_not_counted = 0;
   }
 
   double gone = (double)normHead_pos / (double) m_sink_sampleRate;
