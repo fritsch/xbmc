@@ -330,7 +330,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
            else
              m_min_buffer_size = 5 * 1536; // 160 ms
         default:
-          m_ min_buffer_size = MAX_RAW_AUDIO_BUFFER;
+          m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
           break;
       }
       m_format.m_frames = m_min_buffer_size;
