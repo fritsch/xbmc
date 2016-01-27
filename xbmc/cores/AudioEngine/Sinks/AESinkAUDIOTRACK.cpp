@@ -302,37 +302,44 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       {
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER_HD; // 61440 * 1024 / 512 * 5
+          m_format.m_frames = m_min_buffer_size;
           break;
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           // normal frame is max  2012 bytes + 2764 sub frame
           // length min: 26 ms @ 192 khz and 106 ms @ 48 khz
           m_min_buffer_size = (2012 + 2764) * 10;
+          m_format.m_frames = 2012 + 2764;
           break;
         case CAEStreamInfo::STREAM_TYPE_DTS_512:
         case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
-        case CAEStreamInfo::STREAM_TYPE_DTS_1024:
           // max 2012 bytes
           // depending on sample rate between 106 ms and 212 ms
           m_min_buffer_size = 10 * 2012;
+          m_format.m_frames = 2 * 2012; // remove the 2 multiply later it's for testing
           break;
+        case CAEStreamInfo::STREAM_TYPE_DTS_1024:
         case CAEStreamInfo::STREAM_TYPE_DTS_2048:
           // resulting in 170 ms of audio @ 48 khz
-          m_min_buffer_size = 4 * 2012;
+          m_min_buffer_size = 4 * 5462; // at least 160 ms @ 96 khz
+          m_format.m_frames = 2 * 5462;
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
-          m_min_buffer_size = 4 * 3840; // 4 * 32 ms = minimum 140 ms
+          m_min_buffer_size = 4 * 2560; // 4 * 32 ms = minimum 140 ms
+          m_format.m_frames = 2560;
           break;
         case CAEStreamInfo::STREAM_TYPE_EAC3:
            if (m_format.m_streamInfo.m_sampleRate == 192000)
              m_min_buffer_size = 10 * 3840; // 120 ms
            else
              m_min_buffer_size = 4 * 3840; // minimum 140 ms
+
+           m_format.m_frames = 4 * 3840; // needs testing
            break;
         default:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
+          m_format.m_frames = m_min_buffer_size;
           break;
       }
-      m_format.m_frames = m_min_buffer_size;
       m_format.m_frameSize = 1;
     }
     else
