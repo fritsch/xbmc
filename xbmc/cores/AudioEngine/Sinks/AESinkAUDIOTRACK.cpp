@@ -482,6 +482,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   }
   else if (normHead_pos > m_lastPlaybackHeadPosition)
   {
+    unsigned int differencehead = normHead_pos - m_lastPlaybackHeadPosition;
+    CLog::Log(LOGDEBUG, "Sink advanced: %u", differencehead);
     m_lastPlaybackHeadPosition = normHead_pos;
     m_packages_not_counted = 0;
   }
