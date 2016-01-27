@@ -580,8 +580,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 	// error out as implementations cannot cope with with fragmented raw packages
         if (loop_written != size)
         {
+          if (m_format.m_streamInfo.m_type != CAEStreamInfo::STREAM_TYPE_AC3)
+          {
             CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets causes fragmentation of raw packages:  %d", loop_written);
             return INT_MAX;
+          }
+          CLog::Log(LOGDEBUG, "Trying AC3 fragmentation!");
         }
 
         m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
