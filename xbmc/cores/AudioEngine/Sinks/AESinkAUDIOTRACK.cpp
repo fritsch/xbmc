@@ -321,7 +321,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         case CAEStreamInfo::STREAM_TYPE_DTS_2048:
           // resulting in 170 ms of audio @ 48 khz
           m_min_buffer_size = 4 * 5462; // at least 160 ms @ 96 khz
-          m_format.m_frames = 2 * 5462;
+          m_format.m_frames = 2 * 5462; // remove the 2 multiply later it's for testing
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
           m_min_buffer_size = 4 * 2560; // 4 * 32 ms = minimum 140 ms
@@ -480,7 +480,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
       correction = m_packages_not_counted * m_format.m_streamInfo.GetDuration() / 1000;
     else // this works cause of new fragmentation support also for non passthrough
-      correction = m_packages_not_counted * m_sink_frameSize / m_sink_sampleRate;
+      correction = m_packages_not_counted * m_sink_frameSize / (double) m_sink_sampleRate;
   }
   else if (normHead_pos > m_lastPlaybackHeadPosition)
   {
