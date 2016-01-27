@@ -337,7 +337,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           break;
       }
 
-      CLog::Log(LOGDEBUG, "Opening Passthrough RAW Format: %s", CAEUtil::StreamTypeToStr(m_format.m_streamInfo.m_type));
+      CLog::Log(LOGDEBUG, "Opening Passthrough RAW Format: %s Sink SampleRate: %u", CAEUtil::StreamTypeToStr(m_format.m_streamInfo.m_type), m_sink_sampleRate);
       m_format.m_frameSize = 1;
     }
     else
