@@ -578,7 +578,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       {
 	// if we did not get a full raw package onto the sink
 	// error out as implementations cannot cope with with fragmented raw packages
-        if (loop_written != size)
+        if (loop_written < size)
         {
           CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets causes fragmentation of raw packages:  %d", loop_written);
           // let's just try again with the complete package
