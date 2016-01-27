@@ -696,7 +696,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
           CLog::Log(LOGDEBUG, "AESinkAUDIOTRACK - %d supported", test_sample[i]);
         }
       }
-      if (CJNIAudioManager::GetSDKVersion() >= 21)
+      if (CJNIAudioManager::GetSDKVersion() >= 23)
       {
         m_info.m_wantsIECPassthrough = false;
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
