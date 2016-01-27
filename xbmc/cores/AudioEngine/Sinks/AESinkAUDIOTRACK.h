@@ -61,9 +61,8 @@ private:
   unsigned int          m_min_buffer_size;
   unsigned int          m_lastPlaybackHeadPosition;
   int64_t               m_offset;
+  double                GetMovingAverageDelay(double newestdelay);
 
-  // track raw sink delay to know if we over / underrun
-  double                m_raw_sink_delay;
   // while warming up make sure we don't cache more than the number of
   // bytes we can write out - we can on paused buffer
   unsigned int          m_raw_buffer_count_bytes;
@@ -72,6 +71,8 @@ private:
   // calculate manually
   // Currently only used in passthrough mode
   unsigned int          m_packages_not_counted;
+
+  std::vector<double>   m_linearmovingaverage;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;

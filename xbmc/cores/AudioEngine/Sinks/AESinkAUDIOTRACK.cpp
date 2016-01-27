@@ -44,6 +44,7 @@ using namespace jni;
 const unsigned int MAX_RAW_AUDIO_BUFFER_HD = 61440;
 const unsigned int MAX_RAW_AUDIO_BUFFER = 16384;
 const unsigned int NUM_RAW_PACKAGES = 8;
+const unsigned int MOVING_AVERAGE_MAX_MEMBERS = 10;
 
 /*
  * ADT-1 on L preview as of 2014-10 downmixes all non-5.1/7.1 content
@@ -184,7 +185,6 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_min_buffer_size = 0;
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
-  m_raw_sink_delay = 0;
   m_raw_buffer_count_bytes = 0;
 }
 
@@ -205,9 +205,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_volume      = -1;
   m_raw_buffer_count_bytes = 0;
   m_offset = -1;
-  m_raw_sink_delay = 0;
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
+  m_linearmovingaverage.clear();
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
   int stream = CJNIAudioManager::STREAM_MUSIC;
@@ -420,9 +420,8 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_duration_written = 0;
   m_offset = -1;
 
-  m_raw_sink_delay = 0;
-
   m_lastPlaybackHeadPosition = 0;
+  m_linearmovingaverage = std::queue<double>();
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -466,7 +465,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
     {
 	CLog::Log(LOGDEBUG, "Faking Delay: %lf", GetCacheTotal());
-	status.SetDelay(GetCacheTotal());
+	status.SetDelay(GetMovingAverageDelay(GetCacheTotal()));
 	return;
     }
   }
@@ -501,16 +500,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf Correction: %lf", m_duration_written, m_sink_sampleRate, gone, correction);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
-  // silence timer might still running
-  if (m_passthrough && !m_info.m_wantsIECPassthrough)
-  {
-    // save as measurement for for real payload
-    m_raw_sink_delay = delay;
-  }
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Raw-Delay: %lf, Head Pos: %u Playing: %s", delay * 1000, m_raw_sink_delay,
+  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Playing: %s", delay * 1000,
                        normHead_pos, playing ? "yes" : "no");
 
-  status.SetDelay(delay);
+  status.SetDelay(GetMovingAverageDelay(delay));
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
@@ -620,7 +613,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
       m_raw_buffer_count_bytes = 0;
       m_packages_not_counted = 0;
       m_offset = -1;
-      m_raw_sink_delay = GetCacheTotal();
+      m_linearmovingaverage.clear();
   }
   usleep(millis * 1000);
 }
@@ -634,9 +627,9 @@ void CAESinkAUDIOTRACK::Drain()
   m_duration_written = 0;
   m_offset = -1;
   m_raw_buffer_count_bytes = 0;
-  m_raw_sink_delay = 0;
   m_packages_not_counted = 0;
   m_lastPlaybackHeadPosition = 0;
+  m_linearmovingaverage.clear();
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
@@ -716,5 +709,28 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   }
 
   list.push_back(m_info);
+}
+
+double CAESinkAUDIOTRACK::GetMovingAverageDelay(double newestdelay)
+{
+  m_linearmovingaverage.push_back(newestdelay);
+
+  // new values are in the back, old values are in the front
+  // oldest value is removed if elements > MOVING_AVERAGE_MAX_MEMBERS
+  // removing first element of a vector sucks - I know that
+  // but hey - 10 elements - not 1 million
+  size_t size = m_linearmovingaverage.size();
+  if (size > MOVING_AVERAGE_MAX_MEMBERS)
+  {
+    m_linearmovingaverage.erase(m_linearmovingaverage.begin());
+    size--;
+  }
+  // m_{LWMA}^{(n)}(t) = \frac{2}{n (n+1)} \sum_{i=1}^n i \; x(t-n+i)
+  const double denom = 2.0 / (size * (size + 1));
+  double sum = 0.0;
+  for (size_t i = 0; i < m_linearmovingaverage.size(); i++)
+    sum += (i + 1) * m_linearmovingaverage.at(i);
+
+  return sum * denom;
 }
 
