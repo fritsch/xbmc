@@ -324,8 +324,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           m_format.m_frames = 2 * 5462; // remove the 2 multiply later it's for testing
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
-          m_min_buffer_size = 4 * 2560; // 4 * 32 ms = minimum 140 ms
-          m_format.m_frames = 2560;
+          m_min_buffer_size = 2 * 24576; // max burst buffer size in bytes
+          m_format.m_frames = 24576;
           break;
         case CAEStreamInfo::STREAM_TYPE_EAC3:
            if (m_format.m_streamInfo.m_sampleRate == 192000)
