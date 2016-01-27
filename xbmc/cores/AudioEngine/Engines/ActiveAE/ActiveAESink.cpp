@@ -1004,10 +1004,7 @@ unsigned int CActiveAESink::OutputSamples(CSampleBuffer* samples)
     if (written == 0)
     {
       if (!m_needIecPack && m_requestedFormat.m_dataFormat == AE_FMT_RAW)
-      {
-        CLog::Log(LOGDEBUG, "Trying to resubmit!");
         Sleep(m_sinkFormat.m_streamInfo.GetDuration());
-      }
       else
         Sleep(500*m_sinkFormat.m_frames/m_sinkFormat.m_sampleRate);
       retry++;
