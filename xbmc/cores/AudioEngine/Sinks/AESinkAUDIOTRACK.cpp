@@ -575,37 +575,54 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       m_raw_buffer_count_bytes = 0;
       m_packages_not_counted++;
     }
+    bool retried = false;
+    int size_left = size;
     while (written < size)
     {
-      loop_written = m_at_jni->write((char*)out_buf, 0, size);
+      loop_written = m_at_jni->write((char*)out_buf, 0, size_left);
       written += loop_written;
+      size_left -= loop_written;
+
       if (loop_written < 0)
       {
         CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets write returned error:  %d", loop_written);
         return INT_MAX;
       }
+      // if we could not add any data - sleep a bit and retry
+      if (loop_written == 0)
+      {
+	if (!retried)
+	{
+          retried = true;
+          if (m_passthrough && !m_info.m_wantsIECPassthrough)
+            usleep(m_format.m_streamInfo.GetDuration() * 1000);
+          else
+            usleep((double)(m_format.m_frames / m_sink_frameSize / 4.0) / (double)m_format.m_sampleRate * 1000 * 1000);
+
+          CLog::Log(LOGDEBUG, "Retrying to write onto the sink");
+          continue;
+	}
+	else
+	{
+	  CLog::Log(LOGDEBUG, "Repeatadly tried to write onto the sink - giving up");
+	  break;
+	}
+      }
+      retried = false; // at least one time there was more than zero data written
       if (m_passthrough && !m_info.m_wantsIECPassthrough)
       {
-	// if we did not get a full raw package onto the sink
-	// error out as implementations cannot cope with with fragmented raw packages
-        if (loop_written < size)
-        {
-          CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets causes fragmentation of raw packages:  %d", loop_written);
-          // let's just try again with the complete package
-          return 0;
-        }
-
-        m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
-
+        if (written == size)
+          m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
+        else
+          CLog::Log(LOGDEBUG, "Trying RAW fragmentation with %d left", left);
       }
       else
         m_duration_written += ((double)loop_written / m_sink_frameSize) / m_format.m_sampleRate;
 
       // just try again to care for fragmentation
       if (written < size)
-      {
 	out_buf = out_buf + loop_written;
-      }
+
       loop_written = 0;
     }
   }
