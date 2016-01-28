@@ -316,7 +316,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           // length min: 26 ms @ 192 khz and 106 ms @ 48 khz
           m_min_buffer_size = (2012 + 2764) * 10;
           m_format.m_frames = 2012 + 2764;
-          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() / 1000 * 10;
+          rawlength_in_seconds = 10 * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_DTS_512:
         case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
@@ -324,23 +324,23 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           // depending on sample rate between 106 ms and 212 ms
           m_min_buffer_size = 10 * 2012;
           m_format.m_frames = 2 * 2012; // remove the 2 multiply later it's for testing
-          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() / 1000 * 10;
+          rawlength_in_seconds = 10 * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_DTS_1024:
         case CAEStreamInfo::STREAM_TYPE_DTS_2048:
           m_min_buffer_size = 4 * 5462;
           m_format.m_frames = 2 * 5462;
-          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() * 4;
+          rawlength_in_seconds = 4 * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
           m_min_buffer_size = 8 * 2560;
           m_format.m_frames = 2 * 2560;
-          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() * 8;
+          rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_EAC3:
            m_min_buffer_size = 2 * 24576; // max burst buffer size in bytes
            m_format.m_frames = 24576; // needs testing
-           rawlength_in_seconds = m_format.m_streamInfo.GetDuration() * 2;
+           rawlength_in_seconds = 2 * m_format.m_streamInfo.GetDuration() / 1000;
            break;
         default:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
