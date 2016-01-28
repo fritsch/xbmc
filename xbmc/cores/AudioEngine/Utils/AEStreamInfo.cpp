@@ -419,7 +419,7 @@ unsigned int CAEStreamParser::SyncAC3(uint8_t *data, unsigned int size)
       m_info.m_type = CAEStreamInfo::STREAM_TYPE_AC3;
       m_info.m_repeat = 1;
 
-      CLog::Log(LOGINFO, "CAEStreamParser::SyncAC3 - AC3 stream detected (%d channels, %dHz)", m_info.m_channels, m_info.m_sampleRate);
+      CLog::Log(LOGINFO, "CAEStreamParser::SyncAC3 - AC3 stream detected (%d channels, %dHz Framesize: %u)", m_info.m_channels, m_info.m_sampleRate, m_fsize);
       return skip;
     }
     else
