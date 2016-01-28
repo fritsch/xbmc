@@ -421,7 +421,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_offset = -1;
 
   m_lastPlaybackHeadPosition = 0;
-  m_linearmovingaverage = std::queue<double>();
+  m_linearmovingaverage.clear();
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -453,7 +453,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   if (m_offset > head_pos)
   {
-      CLog::Log(LOGDEBUG, "You did it wrong man - fully wrong! offset %ld head pos %u", m_offset, head_pos);
+      CLog::Log(LOGDEBUG, "You did it wrong man - fully wrong! offset %lld head pos %u", m_offset, head_pos);
       m_offset = 0;
   }
   uint32_t normHead_pos = head_pos - m_offset;
@@ -536,7 +536,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   {
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
-     if (size > MAX_RAW_AUDIO_BUFFER_HD)
+     if (size > (int) MAX_RAW_AUDIO_BUFFER_HD)
      {
        CLog::Log(LOGERROR, "Sorry We cannot cope with so much samples!");
        return INT_MAX;

@@ -24,6 +24,7 @@
 #include "threads/CriticalSection.h"
 #include "threads/Thread.h"
 
+#include <vector>
 #include <set>
 
 class AERingBuffer;
