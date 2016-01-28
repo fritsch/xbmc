@@ -614,7 +614,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         if (written == size)
           m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
         else
-          CLog::Log(LOGDEBUG, "Trying RAW fragmentation with %d left", left);
+          CLog::Log(LOGDEBUG, "Trying RAW fragmentation with %d left", size_left);
       }
       else
         m_duration_written += ((double)loop_written / m_sink_frameSize) / m_format.m_sampleRate;
