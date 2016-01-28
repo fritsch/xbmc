@@ -301,6 +301,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_min_buffer_size = CJNIAudioTrack::getMinBufferSize(m_sink_sampleRate,
                                                          atChannelMask,
                                                          m_encoding);
+    double rawlength_in_seconds = 0.0;
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
       switch (m_format.m_streamInfo.m_type)
@@ -308,12 +309,14 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER_HD; // 61440 * 1024 / 512 * 5
           m_format.m_frames = m_min_buffer_size;
+          rawlength_in_seconds = 0.05; // test me with real data
           break;
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           // normal frame is max  2012 bytes + 2764 sub frame
           // length min: 26 ms @ 192 khz and 106 ms @ 48 khz
           m_min_buffer_size = (2012 + 2764) * 10;
           m_format.m_frames = 2012 + 2764;
+          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() / 1000 * 10;
           break;
         case CAEStreamInfo::STREAM_TYPE_DTS_512:
         case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
@@ -321,24 +324,28 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           // depending on sample rate between 106 ms and 212 ms
           m_min_buffer_size = 10 * 2012;
           m_format.m_frames = 2 * 2012; // remove the 2 multiply later it's for testing
+          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() / 1000 * 10;
           break;
         case CAEStreamInfo::STREAM_TYPE_DTS_1024:
         case CAEStreamInfo::STREAM_TYPE_DTS_2048:
-          // resulting in 170 ms of audio @ 48 khz
-          m_min_buffer_size = 4 * 5462; // at least 160 ms @ 96 khz
-          m_format.m_frames = 2 * 5462; // remove the 2 multiply later it's for testing
+          m_min_buffer_size = 4 * 5462;
+          m_format.m_frames = 2 * 5462;
+          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() * 4;
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
           m_min_buffer_size = 8 * 2560;
           m_format.m_frames = 2 * 2560;
+          rawlength_in_seconds = m_format.m_streamInfo.GetDuration() * 8;
           break;
         case CAEStreamInfo::STREAM_TYPE_EAC3:
-           m_min_buffer_size = 24576; // max burst buffer size in bytes
+           m_min_buffer_size = 2 * 24576; // max burst buffer size in bytes
            m_format.m_frames = 24576; // needs testing
+           rawlength_in_seconds = m_format.m_streamInfo.GetDuration() * 2;
            break;
         default:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
           m_format.m_frames = m_min_buffer_size;
+          rawlength_in_seconds = 0.4;
           break;
       }
 
@@ -354,7 +361,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     m_sink_frameSize          = m_format.m_frameSize;
 
-    m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
+    if (m_passthrough && !m_info.m_wantsIECPassthrough)
+      m_audiotrackbuffer_sec = rawlength_in_seconds;
+    else
+     m_audiotrackbuffer_sec    = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
 
 
     CLog::Log(LOGDEBUG, "Created Audiotrackbuffer with playing time of %lf ms min buffer size: %u bytes", m_audiotrackbuffer_sec * 1000, m_min_buffer_size);
