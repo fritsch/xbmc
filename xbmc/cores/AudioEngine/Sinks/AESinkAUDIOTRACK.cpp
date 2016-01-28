@@ -467,8 +467,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   {
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
     {
-	CLog::Log(LOGDEBUG, "Faking Delay: %lf", GetCacheTotal());
-	status.SetDelay(GetMovingAverageDelay(GetCacheTotal()));
+	const double d = GetMovingAverageDelay(GetCacheTotal());
+	CLog::Log(LOGDEBUG, "Faking Delay: smooth %lf measured: %lf", d, GetCacheTotal());
+	status.SetDelay(d);
 	return;
     }
   }
@@ -500,13 +501,14 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   if (delay < 0)
     delay = 0;
 
+  const double d = GetMovingAverageDelay(delay);
   CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf Correction: %lf", m_duration_written, m_sink_sampleRate, gone, correction);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
-  CLog::Log(LOGDEBUG, "Current-Delay: %lf Head Pos: %u Playing: %s", delay * 1000,
+  CLog::Log(LOGDEBUG, "Current-Delay: smoothed: %lf measured: %lf Head Pos: %u Playing: %s", d * 1000, delay * 1000,
                        normHead_pos, playing ? "yes" : "no");
 
-  status.SetDelay(GetMovingAverageDelay(delay));
+  status.SetDelay(d);
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
@@ -716,6 +718,22 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
 
 double CAESinkAUDIOTRACK::GetMovingAverageDelay(double newestdelay)
 {
+#if defined AT_USE_EXPONENTIAL_AVERAGING
+  double old = 0.0;
+  if (m_linearmovingaverage.empty()) // just for creating one space in list
+    m_linearmovingaverage.push_back(newestdelay);
+  else
+    old = m_linearmovingaverage.front();
+
+  const double alpha = 0.3;
+  const double beta = 0.7;
+
+  double d = alpha * newestdelay + beta * old;
+  m_linearmovingaverage.at(0) = d;
+
+  return d;
+#endif
+
   m_linearmovingaverage.push_back(newestdelay);
 
   // new values are in the back, old values are in the front
