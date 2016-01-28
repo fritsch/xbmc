@@ -37,7 +37,7 @@
 
 //#define DEBUG_VERBOSE 1
 
-#define AT_USE_EXPONENTIAL_AVERAGING 1
+//#define AT_USE_EXPONENTIAL_AVERAGING 1
 
 using namespace jni;
 
