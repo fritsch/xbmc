@@ -44,7 +44,10 @@ using namespace jni;
 const unsigned int MAX_RAW_AUDIO_BUFFER_HD = 61440;
 const unsigned int MAX_RAW_AUDIO_BUFFER = 16384;
 const unsigned int NUM_RAW_PACKAGES = 8;
-const unsigned int MOVING_AVERAGE_MAX_MEMBERS = 10;
+// in AC3 case: 20 * 32 = 640 ms
+// in DTS case: 20 * 11 = 220 ms;
+// in normal PCM usescase: 1881 / 48 * 20 = 700 ms
+const unsigned int MOVING_AVERAGE_MAX_MEMBERS = 20;
 
 /*
  * ADT-1 on L preview as of 2014-10 downmixes all non-5.1/7.1 content
