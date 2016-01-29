@@ -647,16 +647,21 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
 
   if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
+  {
+    // might block buffer size long
+    double diff = CurrentHostCounter();
+    m_at_jni->stop();
+    diff = 1000 * (CurrentHostCounter() - before) / CurrentHostFrequency();
+    CLog::Log(LOGINFO, "Flush needed: %lf ms", diff);
     m_at_jni->pause();
-
-  m_at_jni->flush();
-  m_lastPlaybackHeadPosition = 0;
-  m_duration_written = 0;
-  m_raw_buffer_count_bytes = 0;
-  m_packages_not_counted = 0;
-  m_offset = -1;
-  m_linearmovingaverage.clear();
-  usleep(millis * 1000);
+    m_lastPlaybackHeadPosition = 0;
+    m_duration_written = 0;
+    m_raw_buffer_count_bytes = 0;
+    m_packages_not_counted = 0;
+    m_offset = -1;
+    m_linearmovingaverage.clear();
+  }
+  //usleep(millis * 1000);
 }
 
 void CAESinkAUDIOTRACK::Drain()
