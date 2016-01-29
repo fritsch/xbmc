@@ -662,7 +662,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
     // might block buffer size long
     double diff = CurrentHostCounter();
     m_at_jni->stop();
-    diff = 1000 * (CurrentHostCounter() - before) / CurrentHostFrequency();
+    diff = 1000 * (CurrentHostCounter() - diff) / CurrentHostFrequency();
     CLog::Log(LOGINFO, "Flush needed: %lf ms", diff);
     m_at_jni->pause();
     m_lastPlaybackHeadPosition = 0;
