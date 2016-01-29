@@ -313,10 +313,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           break;
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           // normal frame is max  2012 bytes + 2764 sub frame
-          // length min: 26 ms @ 192 khz and 106 ms @ 48 khz
-          m_min_buffer_size = (2012 + 2764) * 8;
+          m_min_buffer_size = 66432; //according to the buffer model of ISO/IEC13818-1
           m_format.m_frames = m_min_buffer_size;
-          rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000;
+          rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000; // average value
           break;
         case CAEStreamInfo::STREAM_TYPE_DTS_512:
         case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
