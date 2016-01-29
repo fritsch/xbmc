@@ -660,11 +660,13 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
   {
     // might block buffer size long
-    double diff = CurrentHostCounter();
-    m_at_jni->stop();
-    diff = 1000 * (CurrentHostCounter() - diff) / CurrentHostFrequency();
-    CLog::Log(LOGINFO, "Flush needed: %lf ms", diff);
     m_at_jni->pause();
+    while(m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
+    {
+      CLog::Log(LOGDEBUG, "Waiting for PAUSE STATE");
+      usleep(1000);
+    }
+    m_at_jni->flush();
     m_lastPlaybackHeadPosition = 0;
     m_duration_written = 0;
     m_raw_buffer_count_bytes = 0;
