@@ -216,7 +216,18 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
 
   // Get equal or lower supported sample rate
-  std::set<unsigned int>::iterator s = m_sink_sampleRates.upper_bound(m_format.m_sampleRate);
+  unsigned int samplerate = m_format.m_sampleRate;
+
+  // Workaround for EAC3
+  if (m_format.m_dataFormat == AE_FMT_RAW && !m_info.m_wantsIECPassthrough)
+  {
+    if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
+    {
+      CLog::Log(LOGDEBUG, "Got SampleRate: %u Used Raw SampleRate: %u", samplerate, m_format.m_streamInfo.m_sampleRate);
+      samplerate = m_format.m_streamInfo.m_sampleRate;
+    }
+  }
+  std::set<unsigned int>::iterator s = m_sink_sampleRates.upper_bound(samplerate);
   if (--s != m_sink_sampleRates.begin())
     m_sink_sampleRate = *s;
   else
