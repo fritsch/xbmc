@@ -672,7 +672,8 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
     m_offset = -1;
     m_linearmovingaverage.clear();
   }
-  //usleep(millis * 1000);
+  else
+    usleep(millis * 1000);
 }
 
 void CAESinkAUDIOTRACK::Drain()
