@@ -338,9 +338,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
            rawlength_in_seconds = multiplier * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_EAC3:
-           m_min_buffer_size = 2 * 24576; // max burst buffer size in bytes
+           CLog::Log(LOGDEBUG, "EAC3: Framesize: %u", m_format.m_streamInfo.m_ac3FrameSize);
+           m_min_buffer_size = 10752; // least common multiple of 1792 and 1536
            m_format.m_frames = m_min_buffer_size; // needs testing
-           rawlength_in_seconds = 2 * m_format.m_streamInfo.GetDuration() / 1000;
+           rawlength_in_seconds = 4 * m_format.m_streamInfo.GetDuration() / 1000;
            break;
         default:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
