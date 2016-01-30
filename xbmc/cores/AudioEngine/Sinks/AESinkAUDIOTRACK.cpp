@@ -604,7 +604,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         m_paused = false;
         if (m_pause_counter > 0)
         {
-          CLog::Log(LOGDEBUG, "Had to unpause - buffer full");
+          CLog::Log(LOGDEBUG, "Had to unpause %u - buffer full", m_pause_counter);
         }
         m_pause_counter = 0;
       }
