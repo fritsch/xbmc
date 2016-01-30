@@ -87,6 +87,7 @@ private:
   int64_t               m_offset;
   double                GetMovingAverageDelay(double newestdelay);
   bool                  m_paused;
+  unsigned int          m_pause_counter;
 
   // while warming up make sure we don't cache more than the number of
   // bytes we can write out - we can on paused buffer

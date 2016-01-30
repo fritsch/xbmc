@@ -211,6 +211,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_packages_not_counted = 0;
   m_linearmovingaverage.clear();
   m_paused = false;
+  m_pause_counter = 0;
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
   int stream = CJNIAudioManager::STREAM_MUSIC;
@@ -448,6 +449,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_duration_written = 0;
   m_offset = -1;
   m_paused = false;
+  m_pause_counter = 0;
 
   m_lastPlaybackHeadPosition = 0;
   m_linearmovingaverage.clear();
@@ -574,13 +576,21 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   char* intermediate_buffer = nullptr;
   if (frames)
   {
-    // warm up
+    // we already slept as long as we were told to sleep
+    if (m_paused && m_pause_counter == 0)
+    {
+      CLog::Log(LOGDEBUG, "Pause is gone as we slept long enough!");
+      m_paused = false;
+    }
+
     if (m_paused && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
     {
       // enqueue a package in blocking way
       usleep(m_format.m_streamInfo.GetDuration() * 1000);
+      m_pause_counter--;
       m_intermediateCache.push(new AT::Buffer(buffer, size));
       m_raw_buffer_count_bytes += size;
+      // This won't be added later on - so do it now
       m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
       CLog::Log(LOGDEBUG, "New raw buffer count: %u space-left: %u", m_raw_buffer_count_bytes, m_min_buffer_size - m_raw_buffer_count_bytes);
       return frames;
@@ -591,6 +601,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       {
         m_at_jni->play();
         m_paused = false;
+        if (m_pause_counter > 0)
+        {
+          CLog::Log(LOGDEBUG, "Had to unpause - buffer full");
+        }
+        m_pause_counter = 0;
       }
 
       if (!m_intermediateCache.empty())
@@ -703,6 +718,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 
   CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
   m_paused = true;
+  m_pause_counter++;
   usleep(millis * 1000);
 }
 
