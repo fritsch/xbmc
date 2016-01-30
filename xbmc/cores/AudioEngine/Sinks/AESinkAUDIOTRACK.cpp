@@ -716,7 +716,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   }
   double time_to_add_ms = 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency();
 
-  if (m_passthrough && !m_info.m_wantsIECPassthrough)
+ /* if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
       if (time_to_add_ms > 0 && time_to_add_ms < m_format.m_streamInfo.GetDuration())
       {
@@ -726,6 +726,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 	time_to_add_ms += sleep_time_ms;
       }
   }
+  */
   CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", time_to_add_ms);
   return written_frames;
 }
