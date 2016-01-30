@@ -720,10 +720,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   {
       if (time_to_add_ms > 0 && time_to_add_ms < m_format.m_streamInfo.GetDuration())
       {
-	double sleep_time_us = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) * 500;
-	CLog::Log(LOGDEBUG, "Helping our dear AT sink to sleep: %lf", sleep);
-	usleep(sleep_time_us);
-	time_to_add_ms += sleep_time_us / 1000;
+	double sleep_time_ms = (m_format.m_streamInfo.GetDuration() - time_to_add_ms);
+	CLog::Log(LOGDEBUG, "Helping our dear AT sink to sleep: %lf", sleep_time_ms);
+	usleep(sleep_time_ms * 1000);
+	time_to_add_ms += sleep_time_ms;
       }
   }
   CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", time_to_add_ms);
