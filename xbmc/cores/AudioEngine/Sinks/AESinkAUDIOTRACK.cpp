@@ -565,7 +565,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   int loop_written = 0;
   if (frames)
   {
-    if (m_pause_counter > 0 && m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
+    if (m_pause_counter > 0 && m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED && m_raw_buffer_count_bytes + size <= m_min_buffer_size - size)
     {
       usleep(m_format.m_streamInfo.GetDuration() * 1000);
       m_pause_counter--;
