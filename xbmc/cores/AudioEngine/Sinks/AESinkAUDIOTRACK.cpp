@@ -718,7 +718,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
-      if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
+      if (time_to_add_ms > 0 && time_to_add_ms < m_format.m_streamInfo.GetDuration())
       {
 	double sleep_time_us = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) * 500;
 	CLog::Log(LOGDEBUG, "Helping our dear AT sink to sleep: %lf", sleep);
