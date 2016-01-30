@@ -20,7 +20,6 @@
 
 #include "AESinkAUDIOTRACK.h"
 #include "cores/AudioEngine/Utils/AEUtil.h"
-#include "cores/AudioEngine/Utils/AERingBuffer.h"
 #include "platform/android/activity/XBMCApp.h"
 #include "settings/Settings.h"
 #include "utils/log.h"
@@ -188,6 +187,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
   m_raw_buffer_count_bytes = 0;
+  m_paused = false;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -210,6 +210,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
   m_linearmovingaverage.clear();
+  m_paused = false;
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
 
   int stream = CJNIAudioManager::STREAM_MUSIC;
@@ -446,9 +447,17 @@ void CAESinkAUDIOTRACK::Deinitialize()
 
   m_duration_written = 0;
   m_offset = -1;
+  m_paused = false;
 
   m_lastPlaybackHeadPosition = 0;
   m_linearmovingaverage.clear();
+
+  while (!m_intermediateCache.empty())
+  {
+    auto b = m_intermediateCache.front();
+    m_intermediateCache.pop();
+    delete b;
+  }
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -489,7 +498,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
-    if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
+    if (m_paused)
     {
 	const double d = GetMovingAverageDelay(GetCacheTotal());
 	CLog::Log(LOGDEBUG, "Faking Delay: smooth %lf measured: %lf", d * 1000, GetCacheTotal() * 1000);
@@ -562,23 +571,54 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   // write as many frames of audio as we can fit into our internal buffer.
   int written = 0;
   int loop_written = 0;
+  char* intermediate_buffer = nullptr;
   if (frames)
   {
     // warm up
-    if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
+    if (m_paused && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
     {
       // enqueue a package in blocking way
       usleep(m_format.m_streamInfo.GetDuration() * 1000);
+      m_intermediateCache.push(new AT::Buffer(buffer, size));
       m_raw_buffer_count_bytes += size;
+      m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
       CLog::Log(LOGDEBUG, "New raw buffer count: %u space-left: %u", m_raw_buffer_count_bytes, m_min_buffer_size - m_raw_buffer_count_bytes);
+      return frames;
     }
     else
     {
       if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
+      {
         m_at_jni->play();
+        m_paused = false;
+      }
+
+      if (!m_intermediateCache.empty())
+      {
+        intermediate_buffer = new char[m_raw_buffer_count_bytes + size];
+        unsigned int pos = 0;
+        while (!m_intermediateCache.empty())
+        {
+            AT::Buffer* buf = m_intermediateCache.front();
+            CLog::Log(LOGDEBUG, "Adding first intermediate buffer with size: %u", buf->m_size);
+            memcpy(intermediate_buffer + pos, buf->m_buffer, buf->m_size);
+            pos += buf->m_size;
+            m_intermediateCache.pop();
+            delete buf;
+        }
+        // append current package
+        memcpy(intermediate_buffer + pos, buffer, size);
+        pos += size;
+
+        // update ptr to what should be written
+        out_buf = intermediate_buffer;
+        size = pos;
+        CLog:Log(LOGDEBUG, "Writing buffer with: %u packages", size);
+      }
 
       // reset warmup counter
       m_raw_buffer_count_bytes = 0;
+      // think about that
       m_packages_not_counted++;
     }
     bool retried = false;
@@ -592,6 +632,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       if (loop_written < 0)
       {
         CLog::Log(LOGERROR, "CAESinkAUDIOTRACK::AddPackets write returned error:  %d", loop_written);
+        delete[] intermediate_buffer;
+        intermediate_buffer = nullptr;
         return INT_MAX;
       }
 
@@ -631,6 +673,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         else
         {
           CLog::Log(LOGDEBUG, "Error writing full package to sink, left: %d", size_left);
+          delete[] intermediate_buffer;
+          intermediate_buffer = nullptr;
           return INT_MAX;
         }
       }
@@ -644,7 +688,9 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       loop_written = 0;
     }
   }
-
+  // delete our intermediate buffer
+  delete[] intermediate_buffer;
+  intermediate_buffer = nullptr;
   unsigned int written_frames = (unsigned int)(written/m_format.m_frameSize);
   CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency());
   return written_frames;
@@ -656,21 +702,8 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
     return;
 
   CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
-
-  if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
-  {
-    // might block buffer size long
-    m_at_jni->pause();
-    //m_at_jni->flush();
-    m_lastPlaybackHeadPosition = 0;
-    m_duration_written = 0;
-    m_raw_buffer_count_bytes = 0;
-    m_packages_not_counted = 0;
-    m_offset = -1;
-    m_linearmovingaverage.clear();
-  }
-  else
-    usleep(millis * 1000);
+  m_paused = true;
+  usleep(millis * 1000);
 }
 
 void CAESinkAUDIOTRACK::Drain()

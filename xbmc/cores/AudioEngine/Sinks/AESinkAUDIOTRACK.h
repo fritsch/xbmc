@@ -26,8 +26,31 @@
 
 #include <vector>
 #include <set>
+#include <queue>
 
-class AERingBuffer;
+namespace AT
+{
+  class Buffer
+  {
+  private:
+    Buffer();
+  public:
+    Buffer(char* data, unsigned int size)
+    {
+      m_size = size;
+      m_buffer = new char[size];
+      memcpy(m_buffer, data, size);
+    }
+    ~Buffer()
+    {
+      delete[] m_buffer;
+      m_buffer = nullptr;
+      m_size = 0;
+    }
+    char* m_buffer = nullptr;
+    unsigned int m_size = 0;
+  };
+}
 namespace jni
 {
 class CJNIAudioTrack;
@@ -63,6 +86,7 @@ private:
   unsigned int          m_lastPlaybackHeadPosition;
   int64_t               m_offset;
   double                GetMovingAverageDelay(double newestdelay);
+  bool                  m_paused;
 
   // while warming up make sure we don't cache more than the number of
   // bytes we can write out - we can on paused buffer
@@ -74,6 +98,7 @@ private:
   unsigned int          m_packages_not_counted;
 
   std::vector<double>   m_linearmovingaverage;
+  std::queue<AT::Buffer*> m_intermediateCache;
 
   static CAEDeviceInfo m_info;
   static std::set<unsigned int>       m_sink_sampleRates;
