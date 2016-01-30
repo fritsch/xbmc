@@ -322,7 +322,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER_HD;
           m_format.m_frames = m_min_buffer_size;
-          rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000; // on average
+          rawlength_in_seconds = 4 * m_format.m_streamInfo.GetDuration() / 1000; // on average
           break;
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           // normal frame is max  2012 bytes + 2764 sub frame
@@ -584,7 +584,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       m_paused = false;
     }
 
-    if (m_paused && m_raw_buffer_count_bytes + size < m_min_buffer_size)
+    if (m_paused && m_raw_buffer_count_bytes + size < m_min_buffer_size - size) // next time we write out
     {
       // enqueue a package in blocking way
       usleep(m_format.m_streamInfo.GetDuration() * 1000);
@@ -715,18 +715,6 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     written_frames = frames;
   }
   double time_to_add_ms = 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency();
-
- /* if (m_passthrough && !m_info.m_wantsIECPassthrough)
-  {
-      if (time_to_add_ms > 0 && time_to_add_ms < m_format.m_streamInfo.GetDuration())
-      {
-	double sleep_time_ms = (m_format.m_streamInfo.GetDuration() - time_to_add_ms);
-	CLog::Log(LOGDEBUG, "Helping our dear AT sink to sleep: %lf", sleep_time_ms);
-	usleep(sleep_time_ms * 1000);
-	time_to_add_ms += sleep_time_ms;
-      }
-  }
-  */
   CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", time_to_add_ms);
   return written_frames;
 }
@@ -738,7 +726,7 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 
   CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
   m_paused = true;
-  if ((double) m_pause_counter * millis / 1000.0 < m_audiotrackbuffer_sec)
+  if ((double) m_pause_counter * millis / 1000.0 <= m_audiotrackbuffer_sec)
     m_pause_counter++;
 
   usleep(millis * 1000);
