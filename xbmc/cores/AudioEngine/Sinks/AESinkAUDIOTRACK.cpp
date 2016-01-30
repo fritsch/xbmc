@@ -573,7 +573,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   // write as many frames of audio as we can fit into our internal buffer.
   int written = 0;
   int loop_written = 0;
-  char* intermediate_buffer = nullptr;
+  uint8_t* intermediate_buffer = nullptr;
   if (frames)
   {
     // we already slept as long as we were told to sleep

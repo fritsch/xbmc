@@ -35,10 +35,10 @@ namespace AT
   private:
     Buffer();
   public:
-    Buffer(char* data, unsigned int size)
+    Buffer(uint8_t* data, unsigned int size)
     {
       m_size = size;
-      m_buffer = new char[size];
+      m_buffer = new uint8_t[size];
       memcpy(m_buffer, data, size);
     }
     ~Buffer()
@@ -47,7 +47,7 @@ namespace AT
       m_buffer = nullptr;
       m_size = 0;
     }
-    char* m_buffer = nullptr;
+    uint8_t* m_buffer = nullptr;
     unsigned int m_size = 0;
   };
 }
