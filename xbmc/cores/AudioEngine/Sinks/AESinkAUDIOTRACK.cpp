@@ -661,8 +661,8 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
-  CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
-  if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
+  CLog::Log(LOGDEBUG, "AddPause was called with millis: %u and PlayState: %d", millis, m_at_jni->getPlayState());
+  if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
   {
     CLog::Log(LOGDEBUG, "Flushing Audio data!");
     char* buffer = new char[m_min_buffer_size];
