@@ -628,7 +628,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         // update ptr to what should be written
         out_buf = intermediate_buffer;
         size = pos;
-        CLog:Log(LOGDEBUG, "Writing buffer with: %u packages", size);
+        CLog::Log(LOGDEBUG, "Writing buffer with: %u packages", size);
       }
 
       // reset warmup counter
