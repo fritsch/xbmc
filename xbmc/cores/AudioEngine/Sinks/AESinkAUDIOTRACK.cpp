@@ -322,7 +322,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER_HD;
           m_format.m_frames = m_min_buffer_size;
-          rawlength_in_seconds = 4 * m_format.m_streamInfo.GetDuration() / 1000; // on average
+          rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000; // on average
           break;
         case CAEStreamInfo::STREAM_TYPE_DTSHD:
           // normal frame is max  2012 bytes + 2764 sub frame
@@ -710,8 +710,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     delete[] intermediate_buffer;
     intermediate_buffer = nullptr;
     // fake to AE
-    written_frames = frames;
     CLog::Log(LOGDEBUG, "Intermediate Buffer succesfully written: %u", written_frames);
+    written_frames = frames;
   }
   CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency());
   return written_frames;
