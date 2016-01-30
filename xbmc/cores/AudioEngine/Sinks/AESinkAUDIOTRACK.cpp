@@ -713,7 +713,19 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     CLog::Log(LOGDEBUG, "Intermediate Buffer succesfully written: %u", written_frames);
     written_frames = frames;
   }
-  CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency());
+  double time_to_add_ms = 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency();
+
+  if (m_passthrough && !m_info.m_wantsIECPassthrough)
+  {
+      if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
+      {
+	double sleep_time_us = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) * 500;
+	CLog::Log(LOGDEBUG, "Helping our dear AT sink to sleep: %lf", sleep);
+	usleep(sleep_time_us);
+	time_to_add_ms += sleep_time_us / 1000;
+      }
+  }
+  CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", time_to_add_ms);
   return written_frames;
 }
 
