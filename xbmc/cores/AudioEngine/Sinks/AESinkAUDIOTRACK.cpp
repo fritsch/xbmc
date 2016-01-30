@@ -724,7 +724,9 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 
   CLog::Log(LOGDEBUG, "AddPause was called with millis: %u", millis);
   m_paused = true;
-  m_pause_counter++;
+  if ((double) m_pause_counter * millis / 1000.0 < m_audiotrackbuffer_sec)
+    m_pause_counter++;
+
   usleep(millis * 1000);
 }
 
