@@ -610,7 +610,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
       if (!m_intermediateCache.empty())
       {
-        intermediate_buffer = new char[m_raw_buffer_count_bytes + size];
+        intermediate_buffer = new uint8_t[m_raw_buffer_count_bytes + size];
         unsigned int pos = 0;
         while (!m_intermediateCache.empty())
         {
@@ -703,10 +703,16 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       loop_written = 0;
     }
   }
-  // delete our intermediate buffer
-  delete[] intermediate_buffer;
-  intermediate_buffer = nullptr;
   unsigned int written_frames = (unsigned int)(written/m_format.m_frameSize);
+  // delete our intermediate buffer
+  if (intermediate_buffer)
+  {
+    delete[] intermediate_buffer;
+    intermediate_buffer = nullptr;
+    // fake to AE
+    written_frames = frames;
+    CLog::Log(LOGDEBUG, "Intermediate Buffer succesfully written: %u", written_frames);
+  }
   CLog::Log(LOGDEBUG, "Time needed for add Packet: %lf ms", 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency());
   return written_frames;
 }
