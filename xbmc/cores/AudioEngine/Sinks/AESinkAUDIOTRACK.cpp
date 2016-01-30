@@ -456,7 +456,8 @@ void CAESinkAUDIOTRACK::Deinitialize()
 
   while (!m_intermediateCache.empty())
   {
-    auto b = m_intermediateCache.front();
+    CLog::Log(LOGDEBUG, "Cleaned up the intermediate cache");
+    AT::Buffer* b = m_intermediateCache.front();
     m_intermediateCache.pop();
     delete b;
   }
@@ -583,7 +584,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       m_paused = false;
     }
 
-    if (m_paused && m_raw_buffer_count_bytes + size < m_min_buffer_size - size)
+    if (m_paused && m_raw_buffer_count_bytes + size < m_min_buffer_size)
     {
       // enqueue a package in blocking way
       usleep(m_format.m_streamInfo.GetDuration() * 1000);
