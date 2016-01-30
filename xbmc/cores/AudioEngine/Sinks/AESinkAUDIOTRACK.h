@@ -26,7 +26,7 @@
 
 #include <vector>
 #include <set>
-#include <queue>
+
 namespace jni
 {
 class CJNIAudioTrack;
