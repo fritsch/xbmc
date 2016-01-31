@@ -670,19 +670,24 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
     m_at_jni->write(buffer, 0, m_min_buffer_size);
     delete[] buffer;
     buffer = nullptr;
+    usleep(millis * 1000);
     m_at_jni->pause();
-    m_at_jni->flush();
+  //  m_at_jni->flush();
     m_lastPlaybackHeadPosition = 0;
     m_duration_written = 0;
     m_raw_buffer_count_bytes = 0;
     m_packages_not_counted = 0;
     m_offset = -1;
     m_linearmovingaverage.clear();
-  }
-  if ((double) m_pause_counter * millis / 1000.0 <= m_audiotrackbuffer_sec)
     m_pause_counter++;
+  }
+  else
+  {
+    if ((double) m_pause_counter * millis / 1000.0 <= m_audiotrackbuffer_sec)
+      m_pause_counter++;
 
-  usleep(millis * 1000);
+    usleep(millis * 1000);
+  }
 }
 
 void CAESinkAUDIOTRACK::Drain()
