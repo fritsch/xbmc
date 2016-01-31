@@ -938,9 +938,9 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
           {
             if (s->m_inputBuffers)
             {
-              CLog::Log(LOGDEBUG, "Input Samples (all): %s", s->m_inputBuffers->m_allSamples.size());
-              CLog::Log(LOGDEBUG, "Input Samples (free): %s", s->m_inputBuffers->m_freeSamples.size());
-              CLog::Log(LOGDEBUG, "Processing Samples: %s", s->m_processingSamples.size());
+              CLog::Log(LOGDEBUG, "Input Samples (all): %u", s->m_inputBuffers->m_allSamples.size());
+              CLog::Log(LOGDEBUG, "Input Samples (free): %u", s->m_inputBuffers->m_freeSamples.size());
+              CLog::Log(LOGDEBUG, "Processing Samples: %u", s->m_processingSamples.size());
             }
           }
           return;
