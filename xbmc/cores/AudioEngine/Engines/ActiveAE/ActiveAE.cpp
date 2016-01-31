@@ -1904,6 +1904,7 @@ bool CActiveAE::RunStages()
     }
   }
 
+  CLog::Log(LOGDEBUG, "Waterlevel: %lf", m_stats.GetWaterLevel());
   if (m_stats.GetWaterLevel() < MAX_WATER_LEVEL &&
      (m_mode != MODE_TRANSCODE || (m_encoderBuffers && !m_encoderBuffers->m_freeSamples.empty())))
   {
