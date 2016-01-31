@@ -731,7 +731,8 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       if (CJNIAudioManager::GetSDKVersion() >= 21)
       {
         m_info.m_wantsIECPassthrough = false;
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+        // here only 5.1 would work but we cannot correctly distinguish
+        // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
 
         if (CJNIAudioManager::GetSDKVersion() >= 23)
         {
