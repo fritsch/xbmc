@@ -164,6 +164,9 @@ bool CActiveAESink::SupportsFormat(const std::string &device, AEAudioFormat &for
             AEDataTypeList::iterator iit3;
             iit3 = find(info.m_streamTypes.begin(), info.m_streamTypes.end(), format.m_streamInfo.m_type);
             formatExists = (iit3 != info.m_streamTypes.end());
+            // EAC3 > 5.1 is not supported as of now
+            if (format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3 && format.m_streamInfo.m_channels > 6)
+              formatExists = false;
           }
           else // PCM case
           {
