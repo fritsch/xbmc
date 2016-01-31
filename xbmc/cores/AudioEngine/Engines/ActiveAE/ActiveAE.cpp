@@ -933,7 +933,13 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
           }
           m_extTimeout = 0;
           m_state = AE_TOP_CONFIGURED_IDLE;
-          CLog::Log(LOGDEBUG, "Playing Samples: %u Input Samples: %u Output Samples: %u", m_sounds_playing.size(),m_sinkBuffers->m_inputSamples.size(), m_sinkBuffers->m_outputSamples.size());
+          CLog::Log(LOGDEBUG, "Input Samples: %u Output Samples: %u" ,m_sinkBuffers->m_inputSamples.size(), m_sinkBuffers->m_outputSamples.size());
+          for (auto s : m_streams)
+          {
+            CLog::Log(LOGDEBUG, "Input Samples (all): %s", s->m_inputBuffers->m_allSamples.size());
+            CLog::Log(LOGDEBUG, "Input Samples (free): %s", s->m_inputBuffers->m_freeSamples.size());
+            CLog::Log(LOGDEBUG, "Processing Samples: %s", s->m_processingSamples.size());
+          }
           return;
         default:
           break;
