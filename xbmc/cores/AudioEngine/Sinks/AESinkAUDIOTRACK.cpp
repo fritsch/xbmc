@@ -573,8 +573,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
       m_at_jni->play();
 
-      m_packages_not_counted++;
-    }
+    m_packages_not_counted++;
+
     bool retried = false;
     int size_left = size;
     while (written < size)
