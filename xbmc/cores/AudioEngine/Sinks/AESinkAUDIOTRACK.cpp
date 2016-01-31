@@ -312,6 +312,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     CLog::Log(LOGDEBUG, "Minimum size we need for stream: %u", m_min_buffer_size);
     double rawlength_in_seconds = 0.0;
     int multiplier = 1;
+    unsigned int ac3FrameSize = 1;
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
       switch (m_format.m_streamInfo.m_type)
@@ -342,7 +343,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           rawlength_in_seconds = 4 * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
-           unsigned int ac3FrameSize = m_format.m_streamInfo.m_ac3FrameSize;
+           ac3FrameSize = m_format.m_streamInfo.m_ac3FrameSize;
            if (ac3FrameSize == 0)
              ac3FrameSize = 1536; // fallback if not set, e.g. Transcoding
            m_min_buffer_size = std::max(m_min_buffer_size * 4, ac3FrameSize * 6);
