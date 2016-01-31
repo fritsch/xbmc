@@ -64,12 +64,6 @@ private:
   double                GetMovingAverageDelay(double newestdelay);
   unsigned int          m_pause_counter;
 
-  // AT's head position does not change immediately
-  // track the packages it did not account for and
-  // calculate manually
-  // Currently only used in passthrough mode
-  unsigned int          m_packages_not_counted;
-
   std::vector<double>   m_linearmovingaverage;
 
   static CAEDeviceInfo m_info;

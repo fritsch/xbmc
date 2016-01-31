@@ -185,7 +185,6 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_passthrough = false;
   m_min_buffer_size = 0;
   m_lastPlaybackHeadPosition = 0;
-  m_packages_not_counted = 0;
   m_pause_counter = 0;
 }
 
@@ -206,7 +205,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_volume      = -1;
   m_offset = -1;
   m_lastPlaybackHeadPosition = 0;
-  m_packages_not_counted = 0;
   m_linearmovingaverage.clear();
   m_pause_counter = 0;
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
@@ -488,8 +486,6 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   }
   uint32_t normHead_pos = head_pos - m_offset;
 
-  double correction = 0.0;
-
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
     if (m_pause_counter > 0)
@@ -500,22 +496,11 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 	return;
     }
   }
-  // if the head does not move and while we don't fill up
-  // with silence correct the buffer
-  if (normHead_pos == m_lastPlaybackHeadPosition)
-  {
-    // We added a package but HeadPos was not update
-    if (m_passthrough && !m_info.m_wantsIECPassthrough)
-      correction = m_packages_not_counted * m_format.m_streamInfo.GetDuration() / 1000;
-    else // this works cause of new fragmentation support also for non passthrough
-      correction = m_packages_not_counted * m_sink_frameSize / (double) m_sink_sampleRate;
-  }
-  else if (normHead_pos > m_lastPlaybackHeadPosition)
+  if (normHead_pos > m_lastPlaybackHeadPosition)
   {
     unsigned int differencehead = normHead_pos - m_lastPlaybackHeadPosition;
     CLog::Log(LOGDEBUG, "Sink advanced: %u", differencehead);
     m_lastPlaybackHeadPosition = normHead_pos;
-    m_packages_not_counted = 0;
   }
 
   double gone = (double)normHead_pos / (double) m_sink_sampleRate;
@@ -524,12 +509,12 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   if (gone > m_duration_written)
     gone = m_duration_written;
 
-  double delay = m_duration_written - gone - correction;
+  double delay = m_duration_written - gone;
   if (delay < 0)
     delay = 0;
 
   const double d = GetMovingAverageDelay(delay);
-  CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf Correction: %lf", m_duration_written, m_sink_sampleRate, gone, correction);
+  CLog::Log(LOGDEBUG, "Calculations duration written: %lf sampleRate: %u gone: %lf", m_duration_written, m_sink_sampleRate, gone);
   bool playing = m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING;
 
   CLog::Log(LOGDEBUG, "Current-Delay: smoothed: %lf measured: %lf Head Pos: %u Playing: %s", d * 1000, delay * 1000,
@@ -575,8 +560,6 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     }
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
       m_at_jni->play();
-
-    m_packages_not_counted++;
 
     bool retried = false;
     int size_left = size;
@@ -669,7 +652,6 @@ void CAESinkAUDIOTRACK::Drain()
   m_duration_written = 0;
   m_offset = -1;
   m_pause_counter = 0;
-  m_packages_not_counted = 0;
   m_lastPlaybackHeadPosition = 0;
   m_linearmovingaverage.clear();
 }
