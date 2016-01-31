@@ -217,22 +217,25 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   // Get equal or lower supported sample rate
   unsigned int samplerate = m_format.m_sampleRate;
 
-  // Workaround for EAC3
-  if (m_format.m_dataFormat == AE_FMT_RAW && !m_info.m_wantsIECPassthrough)
-  {
-    if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
-    {
-      CLog::Log(LOGDEBUG, "Got SampleRate: %u Used Raw SampleRate: %u", samplerate, m_format.m_streamInfo.m_sampleRate);
-      samplerate = m_format.m_streamInfo.m_sampleRate;
-    }
-  }
   std::set<unsigned int>::iterator s = m_sink_sampleRates.upper_bound(samplerate);
   if (--s != m_sink_sampleRates.begin())
     m_sink_sampleRate = *s;
   else
     m_sink_sampleRate = CJNIAudioTrack::getNativeOutputSampleRate(CJNIAudioManager::STREAM_MUSIC);
 
-  if (m_format.m_dataFormat == AE_FMT_RAW && !CXBMCApp::IsHeadsetPlugged())
+  // EAC3 7.1 is not yet supported
+  bool eac371 = false;
+  if (m_format.m_dataFormat == AE_FMT_RAW && m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
+  {
+    if (m_format.m_streamInfo.m_channels > 6)
+    {
+      eac371 = true;
+      // this will allow us to open float format and get away from passthrough
+      m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
+    }
+  }
+
+  if (!eac371 && m_format.m_dataFormat == AE_FMT_RAW && !CXBMCApp::IsHeadsetPlugged())
   {
     m_passthrough = true;
 
