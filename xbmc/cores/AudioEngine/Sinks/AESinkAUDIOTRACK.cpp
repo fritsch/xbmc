@@ -665,14 +665,10 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
   {
     CLog::Log(LOGDEBUG, "Flushing Audio data!");
-    char* buffer = new char[m_min_buffer_size];
-    memset(buffer, 0, m_min_buffer_size);
-    m_at_jni->write(buffer, 0, m_min_buffer_size);
-    delete[] buffer;
-    buffer = nullptr;
-    usleep(millis * 1000);
+    usleep(millis * 500);
     m_at_jni->pause();
-  //  m_at_jni->flush();
+    m_at_jni->flush();
+    usleep(millis * 500);
     m_lastPlaybackHeadPosition = 0;
     m_duration_written = 0;
     m_raw_buffer_count_bytes = 0;
