@@ -933,6 +933,7 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
           }
           m_extTimeout = 0;
           m_state = AE_TOP_CONFIGURED_IDLE;
+          CLog::Log(LOGDEBUG, "Playing Samples: %u Input Samples: %u Output Samples: %u", m_sounds_playing.size(),m_sinkBuffers->m_inputSamples.size(), m_sinkBuffers->m_outputSamples.size());
           return;
         default:
           break;
