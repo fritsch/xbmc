@@ -64,9 +64,6 @@ private:
   double                GetMovingAverageDelay(double newestdelay);
   unsigned int          m_pause_counter;
 
-  // while warming up make sure we don't cache more than the number of
-  // bytes we can write out - we can on paused buffer
-  unsigned int          m_raw_buffer_count_bytes;
   // AT's head position does not change immediately
   // track the packages it did not account for and
   // calculate manually

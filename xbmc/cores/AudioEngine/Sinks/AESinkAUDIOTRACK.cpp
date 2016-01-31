@@ -186,7 +186,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_min_buffer_size = 0;
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
-  m_raw_buffer_count_bytes = 0;
+  m_pause_counter = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -204,7 +204,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 {
   m_format      = format;
   m_volume      = -1;
-  m_raw_buffer_count_bytes = 0;
   m_offset = -1;
   m_lastPlaybackHeadPosition = 0;
   m_packages_not_counted = 0;
@@ -490,7 +489,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
-    if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
+    if (m_pause_counter > 0)
     {
 	const double d = GetMovingAverageDelay(GetCacheTotal());
 	CLog::Log(LOGDEBUG, "Faking Delay: smooth %lf measured: %lf", d * 1000, GetCacheTotal() * 1000);
@@ -565,26 +564,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   int loop_written = 0;
   if (frames)
   {
-    if (m_pause_counter > 0 && m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED && m_raw_buffer_count_bytes + size <= m_min_buffer_size - size)
+    if (m_pause_counter > 0)
     {
       usleep(m_format.m_streamInfo.GetDuration() * 1000);
+      CLog::Log(LOGDEBUG, "Slept: %u", m_pause_counter);
       m_pause_counter--;
-      m_raw_buffer_count_bytes += size;
-      CLog::Log(LOGDEBUG, "New raw buffer count: %u space-left: %u", m_raw_buffer_count_bytes, m_min_buffer_size - m_raw_buffer_count_bytes);
     }
-    else
-    {
-      if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
-        m_at_jni->play();
+    if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
+      m_at_jni->play();
 
-      if (m_pause_counter > 0)
-      {
-	CLog::Log(LOGDEBUG, "Had to zero out the pause counter %u", m_pause_counter);
-	m_pause_counter = 0;
-      }
-
-      // reset warmup counter
-      m_raw_buffer_count_bytes = 0;
       m_packages_not_counted++;
     }
     bool retried = false;
@@ -662,28 +650,11 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
     return;
 
   CLog::Log(LOGDEBUG, "AddPause was called with millis: %u and PlayState: %d", millis, m_at_jni->getPlayState());
-  if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
-  {
-    CLog::Log(LOGDEBUG, "Flushing Audio data!");
-    usleep(millis * 500);
-    m_at_jni->pause();
-    m_at_jni->flush();
-    usleep(millis * 500);
-    m_lastPlaybackHeadPosition = 0;
-    m_duration_written = 0;
-    m_raw_buffer_count_bytes = 0;
-    m_packages_not_counted = 0;
-    m_offset = -1;
-    m_linearmovingaverage.clear();
+
+  if ((double) m_pause_counter * millis / 1000.0 <= m_audiotrackbuffer_sec)
     m_pause_counter++;
-  }
-  else
-  {
-    if ((double) m_pause_counter * millis / 1000.0 <= m_audiotrackbuffer_sec)
-      m_pause_counter++;
 
     usleep(millis * 1000);
-  }
 }
 
 void CAESinkAUDIOTRACK::Drain()
@@ -694,7 +665,7 @@ void CAESinkAUDIOTRACK::Drain()
   m_at_jni->stop();
   m_duration_written = 0;
   m_offset = -1;
-  m_raw_buffer_count_bytes = 0;
+  m_pause_counter = 0;
   m_packages_not_counted = 0;
   m_lastPlaybackHeadPosition = 0;
   m_linearmovingaverage.clear();
