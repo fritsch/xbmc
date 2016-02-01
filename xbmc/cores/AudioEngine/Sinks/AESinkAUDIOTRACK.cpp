@@ -554,11 +554,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   {
     if (m_pause_counter > 0)
     {
-      if (m_format.m_streamInfo.m_type != CAEStreamInfo::STREAM_TYPE_TRUEHD)
-      {
-        usleep(m_format.m_streamInfo.GetDuration() * 1000);
-        CLog::Log(LOGDEBUG, "Slept: %u", m_pause_counter);
-      }
+      usleep(m_format.m_streamInfo.GetDuration() * 1000);
+      CLog::Log(LOGDEBUG, "Slept: %u", m_pause_counter);
       m_pause_counter--;
     }
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
