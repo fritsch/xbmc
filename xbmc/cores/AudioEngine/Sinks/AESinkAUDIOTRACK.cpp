@@ -67,6 +67,12 @@ static bool Has71Support()
   return CJNIAudioManager::GetSDKVersion() >= 21;
 }
 
+// AMLogic helper for HD Audio
+bool CAESinkAUDIOTRACK::HasAmlHD()
+{
+  return ((CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1) && (CJNIAudioFormat::ENCODING_DTS_HD != -1));
+}
+
 static int AEStreamFormatToATFormat(const CAEStreamInfo::DataType& dt)
 {
   switch (dt)
@@ -247,24 +253,23 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   if (m_format.m_dataFormat == AE_FMT_RAW && !CXBMCApp::IsHeadsetPlugged())
   {
     m_passthrough = true;
+    m_encoding = AEStreamFormatToATFormat(m_format.m_streamInfo.m_type);
+    m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
 
-    if (!m_info.m_wantsIECPassthrough)
+    if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
+        m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
     {
-      m_encoding = AEStreamFormatToATFormat(m_format.m_streamInfo.m_type);
-      m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
-      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
-          m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
-      {
-        m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
-        // Shield v5 workaround
-        if (CJNIAudioManager::GetSDKVersion() == 22 && m_sink_sampleRate > 48000)
-          m_sink_sampleRate = 48000;
-      }
+      m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
+      // Shield v5 workaround
+      if (!m_info.m_wantsIECPassthrough && CJNIAudioManager::GetSDKVersion() == 22 && m_sink_sampleRate > 48000)
+        m_sink_sampleRate = 48000;
     }
-    else
+    if (m_info.m_wantsIECPassthrough)
     {
       m_format.m_dataFormat     = AE_FMT_S16LE;
       m_format.m_sampleRate     = m_sink_sampleRate;
+      if (m_encoding == -1)
+        m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
     }
   }
   else
@@ -731,6 +736,13 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       // passthrough
       m_info.m_wantsIECPassthrough = true;
       m_sink_sampleRates.insert(48000);
+      if (HasAmlHD())
+      {
+        m_sink_sampleRates.insert(192000);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+      }
     }
     else
 #endif
