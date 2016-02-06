@@ -267,9 +267,19 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     if (m_info.m_wantsIECPassthrough)
     {
       m_format.m_dataFormat     = AE_FMT_S16LE;
-      m_format.m_sampleRate     = m_sink_sampleRate;
+      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
+          m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+        m_sink_sampleRate = 192000;
+
+      // we are running on an old android version
+      // that does neither know AC3, DTS or whatever
+      // we will fallback to 16BIT passthrough
       if (m_encoding == -1)
+      {
+        m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
+        m_format.m_sampleRate     = m_sink_sampleRate;
         m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
+      }
     }
   }
   else
@@ -366,15 +376,18 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
       CLog::Log(LOGDEBUG, "Opening Passthrough RAW Format: %s Sink SampleRate: %u", CAEUtil::StreamTypeToStr(m_format.m_streamInfo.m_type), m_sink_sampleRate);
       m_format.m_frameSize = 1;
+      m_sink_frameSize = m_format.m_frameSize;
     }
     else
     {
-      m_min_buffer_size           *= 2;
-      m_format.m_frameSize    = m_format.m_channelLayout.Count() *
-        (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
-      m_format.m_frames         = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
+      m_min_buffer_size *= 2;
+      m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
+      if (m_passthrough)
+        m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
+      else
+        m_sink_frameSize = m_format.m_frameSize;
+      m_format.m_frames = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
     }
-    m_sink_frameSize          = m_format.m_frameSize;
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
       m_audiotrackbuffer_sec = rawlength_in_seconds;
@@ -490,6 +503,14 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     m_offset = 0;
   }
   uint32_t normHead_pos = head_pos - m_offset;
+
+#if defined(HAS_LIBAMCODEC)
+  if (aml_present() &&
+      (m_encoding == CJNIAudioFormat::ENCODING_DTS_HD ||
+       m_encoding == CJNIAudioFormat::ENCODING_E_AC3 ||
+       m_encoding == CJNIAudioFormat::ENCODING_DOLBY_TRUEHD))
+    normHead_pos /= m_sink_frameSize;  // AML wants sink in 48k but returns pos in 192k
+#endif
 
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
@@ -626,7 +647,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         }
       }
       else
-        m_duration_written += ((double) loop_written / m_sink_frameSize) / m_format.m_sampleRate;
+        m_duration_written += ((double) loop_written / m_format.m_frameSize) / m_format.m_sampleRate;
 
       // just try again to care for fragmentation
       if (written < size)
