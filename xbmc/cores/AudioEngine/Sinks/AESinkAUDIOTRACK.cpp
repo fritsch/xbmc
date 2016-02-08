@@ -271,6 +271,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
         m_sink_sampleRate = 192000;
 
+      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
+        m_sink_sampleRate = m_format.m_streamInfo.m_sampleRate;
+
       // we are running on an old android version
       // that does neither know AC3, DTS or whatever
       // we will fallback to 16BIT passthrough
@@ -380,7 +383,17 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     else
     {
-      m_min_buffer_size *= 2;
+      if (m_passthrough)
+      {
+        m_min_buffer_size *= 2;
+        if (m_sink_sampleRate > 48000)
+          m_min_buffer_size *= (m_sink_sampleRate / 48000); // same amount of buffer in seconds as for 48 khz
+        else if (m_sink_sampleRate < m_format.m_sampleRate) // eac3
+          m_min_buffer_size *= (m_format.m_sampleRate / m_sink_sampleRate);
+      }
+      else
+        m_min_buffer_size *= 2;
+
       m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
       if (m_passthrough)
         m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
@@ -676,7 +689,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   }
   else
   {
-    double time_should_ms = written_frames / (double) m_sink_sampleRate * 1000.0;
+    double time_should_ms = written_frames / (double) m_format.m_sampleRate * 1000.0;
     double time_off = time_should_ms - time_to_add_ms;
     if (time_off > 0 && time_off > time_should_ms / 2.0)
     {
