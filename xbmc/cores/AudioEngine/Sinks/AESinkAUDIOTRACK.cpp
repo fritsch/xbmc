@@ -274,6 +274,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
         m_sink_sampleRate = m_format.m_streamInfo.m_sampleRate;
 
+      CLog::Log(LOGDEBUG, "Opening %s with encoding: %d", CAEUtil::StreamTypeToStr(m_format.m_streamInfo.m_type), m_encoding);
       // we are running on an old android version
       // that does neither know AC3, DTS or whatever
       // we will fallback to 16BIT passthrough
