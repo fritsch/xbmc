@@ -176,9 +176,13 @@ static int AEChannelMapToAUDIOTRACKChannelMask(CAEChannelInfo info)
   return atMask;
 }
 
-static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int channelMask, int encoding, int bufferSize)
+static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int channelMask, int encoding, int bufferSize, bool passthrough)
 {
   jni::CJNIAudioTrack *jniAt = NULL;
+
+  int mode = CJNIAudioTrack::MODE_STREAM;
+  if (passthrough)
+    mode |= 0x400;
 
   try
   {
@@ -187,7 +191,7 @@ static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int cha
                                channelMask,
                                encoding,
                                bufferSize,
-                               CJNIAudioTrack::MODE_STREAM);
+                               mode);
   }
   catch (const std::invalid_argument& e)
   {
@@ -416,7 +420,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
                          m_audiotrackbuffer_sec * 1000, m_min_buffer_size);
 
     m_at_jni = CreateAudioTrack(stream, m_sink_sampleRate, atChannelMask,
-                                m_encoding, m_min_buffer_size);
+                                m_encoding, m_min_buffer_size, m_passthrough);
 
     if (!IsInitialized())
     {
