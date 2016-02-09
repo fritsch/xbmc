@@ -396,9 +396,12 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_min_buffer_size *= 2;
 
       m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
-      if (m_passthrough)
+
+#if defined(HAS_LIBAMCODEC)
+      if (aml_present() && m_passthrough)
         m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
       else
+#endif
         m_sink_frameSize = m_format.m_frameSize;
       m_format.m_frames = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
     }
@@ -799,7 +802,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       }
       if (CJNIAudioManager::GetSDKVersion() >= 21)
       {
-        m_info.m_wantsIECPassthrough = false;
+        m_info.m_wantsIECPassthrough = true;
         // here only 5.1 would work but we cannot correctly distinguish
         // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
 
