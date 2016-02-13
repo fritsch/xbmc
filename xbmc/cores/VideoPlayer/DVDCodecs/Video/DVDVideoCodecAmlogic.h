@@ -24,6 +24,7 @@
 #include "threads/CriticalSection.h"
 
 #include <set>
+#include <atomic>
 
 class CAMLCodec;
 struct frame_queue;
@@ -32,7 +33,6 @@ class CBitstreamParser;
 class CBitstreamConverter;
 
 class CDVDVideoCodecAmlogic;
-class IVPClockCallback;
 
 class CDVDAmlogicInfo
 {
@@ -47,8 +47,8 @@ public:
   void invalidate();
 
 protected:
-  long m_refs;
-  CCriticalSection    m_section;
+  std::atomic<long> m_refs;
+  CCriticalSection  m_section;
 
   CDVDVideoCodecAmlogic* m_codec;
   CAMLCodec* m_amlCodec;
@@ -59,7 +59,7 @@ class CDVDVideoCodecAmlogic : public CDVDVideoCodec
   friend class CDVDAmlogicInfo;
 
 public:
-  CDVDVideoCodecAmlogic(IVPClockCallback* clock);
+  CDVDVideoCodecAmlogic();
   virtual ~CDVDVideoCodecAmlogic();
 
   // Required overrides
@@ -81,7 +81,6 @@ protected:
   void            FrameRateTracking(uint8_t *pData, int iSize, double dts, double pts);
   void            RemoveInfo(CDVDAmlogicInfo* info);
 
-  IVPClockCallback* m_clock;
   CAMLCodec      *m_Codec;
   std::set<CDVDAmlogicInfo*> m_inflight;
   const char     *m_pFormatName;
@@ -91,7 +90,6 @@ protected:
   double          m_last_pts;
   frame_queue    *m_frame_queue;
   int32_t         m_queue_depth;
-  pthread_mutex_t m_queue_mutex;
   double          m_framerate;
   int             m_video_rate;
   float           m_aspect_ratio;
@@ -101,5 +99,6 @@ protected:
   CBitstreamParser *m_bitparser;
   CBitstreamConverter *m_bitstream;
 private:
-  CCriticalSection    m_secure;
+  CCriticalSection  m_secure;
+  CCriticalSection  m_FrameQueueSection;
 };

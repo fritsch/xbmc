@@ -21,7 +21,6 @@
 #include <math.h>
 
 #include "DVDVideoCodecAmlogic.h"
-#include "DVDClock.h"
 #include "DVDStreamInfo.h"
 #include "AMLCodec.h"
 #include "utils/AMLUtils.h"
@@ -39,8 +38,7 @@ typedef struct frame_queue {
   struct frame_queue *nextframe;
 } frame_queue;
 
-CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic(IVPClockCallback* clock) :
-  m_clock(clock),
+CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic() :
   m_Codec(NULL),
   m_pFormatName("amcodec"),
   m_last_pts(0.0),
@@ -50,15 +48,14 @@ CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic(IVPClockCallback* clock) :
   m_video_rate(0),
   m_mpeg2_sequence(NULL),
   m_bitparser(NULL),
-  m_bitstream(NULL)
+  m_bitstream(NULL),
+  m_opened(false)
 {
-  pthread_mutex_init(&m_queue_mutex, NULL);
 }
 
 CDVDVideoCodecAmlogic::~CDVDVideoCodecAmlogic()
 {
   Dispose();
-  pthread_mutex_destroy(&m_queue_mutex);
 }
 
 bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
@@ -85,7 +82,7 @@ bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
     case AV_CODEC_ID_MPEG2VIDEO:
     case AV_CODEC_ID_MPEG2VIDEO_XVMC:
       m_mpeg2_sequence_pts = 0;
-      m_mpeg2_sequence = new mpeg2_sequence;
+      m_mpeg2_sequence = new mpeg2_sequence();
       m_mpeg2_sequence->width  = m_hints.width;
       m_mpeg2_sequence->height = m_hints.height;
       m_mpeg2_sequence->ratio  = m_hints.aspect;
@@ -116,12 +113,11 @@ bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
         m_hints.extradata = malloc(m_hints.extrasize);
         memcpy(m_hints.extradata, m_bitstream->GetExtraData(), m_hints.extrasize);
       }
-      //m_bitparser = new CBitstreamParser();
-      //m_bitparser->Open();
       break;
     case AV_CODEC_ID_MPEG4:
     case AV_CODEC_ID_MSMPEG4V2:
     case AV_CODEC_ID_MSMPEG4V3:
+      // find out why - most likely some ugly old xvid files
       if (hints.width <= 800)
         return false;
       m_pFormatName = "am-mpeg4";
@@ -154,13 +150,16 @@ bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
       m_pFormatName = "am-avs";
       break;
     case AV_CODEC_ID_HEVC:
-      if (aml_support_hevc()) {
+      if (aml_support_hevc())
+      {
         if (!aml_support_hevc_4k2k() && ((m_hints.width > 1920) || (m_hints.height > 1088)))
         {
           // 4K HEVC is supported only on Amlogic S812 chip
           return false;
         }
-      } else {
+      }
+      else
+      {
         // HEVC supported only on S805 and S812.
         return false;
       }
@@ -180,12 +179,13 @@ bool CDVDVideoCodecAmlogic::Open(CDVDStreamInfo &hints, CDVDCodecOptions &option
   }
 
   m_aspect_ratio = m_hints.aspect;
-  m_Codec = new CAMLCodec(m_clock);
+  m_Codec = new CAMLCodec();
   if (!m_Codec)
   {
     CLog::Log(LOGERROR, "%s: Failed to create Amlogic Codec", __MODULE_NAME__);
     return false;
   }
+  // Decode is set up in first call to Decode
   m_opened = false;
 
   // allocate a dummy DVDVideoPicture buffer.
@@ -239,12 +239,15 @@ void CDVDVideoCodecAmlogic::Dispose(void)
   if (m_bitparser)
     delete m_bitparser, m_bitparser = NULL;
 
+  // FrameQueuePop will take the lock
   while (m_queue_depth)
     FrameQueuePop();
 }
 
 int CDVDVideoCodecAmlogic::Decode(uint8_t *pData, int iSize, double dts, double pts)
 {
+
+  CLog::Log(LOGDEBUG, "Got PTS from Player: %lf", pts);
   // Handle Input, add demuxer packet to input queue, we must accept it or
   // it will be discarded as VideoPlayerVideo has no concept of "try again".
   if (pData)
@@ -357,12 +360,13 @@ void CDVDVideoCodecAmlogic::FrameQueuePop(void)
   if (!m_frame_queue || m_queue_depth == 0)
     return;
 
-  pthread_mutex_lock(&m_queue_mutex);
-  // pop the top frame off the queue
-  frame_queue *top = m_frame_queue;
-  m_frame_queue = top->nextframe;
-  m_queue_depth--;
-  pthread_mutex_unlock(&m_queue_mutex);
+  {
+    CSingleLock lock(m_FrameQueueSection);
+    // pop the top frame off the queue
+    frame_queue *top = m_frame_queue;
+    m_frame_queue = top->nextframe;
+    m_queue_depth--;
+  }
 
   // and release it
   free(top);
@@ -383,7 +387,7 @@ void CDVDVideoCodecAmlogic::FrameQueuePush(double dts, double pts)
       newframe->sort_time = newframe->pts;
   }
 
-  pthread_mutex_lock(&m_queue_mutex);
+  CSingleLock lock(m_FrameQueueSection);
   frame_queue *queueWalker = m_frame_queue;
   if (!queueWalker || (newframe->sort_time < queueWalker->sort_time))
   {
@@ -411,7 +415,6 @@ void CDVDVideoCodecAmlogic::FrameQueuePush(double dts, double pts)
     }
   }
   m_queue_depth++;
-  pthread_mutex_unlock(&m_queue_mutex);	
 }
 
 void CDVDVideoCodecAmlogic::FrameRateTracking(uint8_t *pData, int iSize, double dts, double pts)
@@ -486,13 +489,13 @@ void CDVDVideoCodecAmlogic::FrameRateTracking(uint8_t *pData, int iSize, double 
   // so make sure we wait for at least 8 values in sorted queue.
   if (m_queue_depth > 16)
   {
-    pthread_mutex_lock(&m_queue_mutex);
+    {
+      CSingleLock lock(m_FrameQueueSection);
 
-    float cur_pts = m_frame_queue->pts;
-    if (cur_pts == DVD_NOPTS_VALUE)
-      cur_pts = m_frame_queue->dts;
-
-    pthread_mutex_unlock(&m_queue_mutex);	
+      float cur_pts = m_frame_queue->pts;
+      if (cur_pts == DVD_NOPTS_VALUE)
+        cur_pts = m_frame_queue->dts;
+    }
 
     float duration = cur_pts - m_last_pts;
     m_last_pts = cur_pts;
@@ -582,21 +585,21 @@ CDVDAmlogicInfo::CDVDAmlogicInfo(CDVDVideoCodecAmlogic *codec, CAMLCodec *amlcod
 
 CDVDAmlogicInfo *CDVDAmlogicInfo::Retain()
 {
-  AtomicIncrement(&m_refs);
+  m_refs++;
   return this;
 }
 
 long CDVDAmlogicInfo::Release()
 {
-  long count = AtomicDecrement(&m_refs);
-  if (count == 0)
+  m_refs--;
+  if (m_refs == 0)
   {
     if (m_codec)
       m_codec->RemoveInfo(this);
     delete this;
   }
 
-  return count;
+  return m_refs;
 }
 
 CAMLCodec *CDVDAmlogicInfo::getAmlCodec() const

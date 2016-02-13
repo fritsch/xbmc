@@ -1381,14 +1381,13 @@ int set_header_info(am_private_t *para)
 }
 
 /*************************************************************************/
-CAMLCodec::CAMLCodec(IVPClockCallback* clock)
+CAMLCodec::CAMLCodec()
   : CThread("CAMLCodec")
-  , m_clock(clock)
 {
   m_opened = false;
   am_private = new am_private_t;
   memset(am_private, 0, sizeof(am_private_t));
-  m_dll = new DllLibAmCodec;
+  m_dll = new DllLibAmCodec();
   if(!m_dll->Load())
   {
     CLog::Log(LOGWARNING, "CAMLCodec::CAMLCodec libamplayer.so not found, trying libamcodec.so instead");
@@ -1637,17 +1636,6 @@ bool CAMLCodec::OpenDecoder(CDVDStreamInfo &hints)
   if (strScaler.find("enabled") == std::string::npos)     // Scaler not enabled, use screen size
     m_display_rect = CRect(0, 0, CDisplaySettings::GetInstance().GetCurrentResolutionInfo().iScreenWidth, CDisplaySettings::GetInstance().GetCurrentResolutionInfo().iScreenHeight);
 
-/*
-  // if display is set to 1080xxx, then disable deinterlacer for HD content
-  // else bandwidth usage is too heavy and it will slow down video decoder.
-  char display_mode[256] = {0};
-  SysfsUtils::GetString("/sys/class/display/mode", display_mode, 255);
-  if (strstr(display_mode,"1080"))
-    SysfsUtils::SetInt("/sys/module/di/parameters/bypass_all", 1);
-  else
-    SysfsUtils::SetInt("/sys/module/di/parameters/bypass_all", 0);
-*/
-
   m_opened = true;
   // vcodec is open, update speed if it was
   // changed before VideoPlayer called OpenDecoder.
@@ -1715,6 +1703,7 @@ void CAMLCodec::Reset()
   // reset some interal vars
   m_1st_pts = 0;
   m_cur_pts = 0;
+  m_player_pts = 0;
   m_cur_pictcnt = 0;
   m_old_pictcnt = 0;
   SetSpeed(m_speed);
@@ -1727,6 +1716,7 @@ int CAMLCodec::Decode(uint8_t *pData, size_t iSize, double dts, double pts)
 
   if (pData)
   {
+    m_player_pts = pts;
     am_private->am_pkt.data = pData;
     am_private->am_pkt.data_size = iSize;
 
@@ -1843,22 +1833,12 @@ bool CAMLCodec::GetPicture(DVDVideoPicture *pDvdVideoPicture)
   pDvdVideoPicture->iDuration = (double)(am_private->video_rate * DVD_TIME_BASE) / UNIT_FREQ;
 
   pDvdVideoPicture->dts = DVD_NOPTS_VALUE;
-  if (m_speed == DVD_PLAYSPEED_NORMAL)
-  {
-    pDvdVideoPicture->pts = GetPlayerPtsSeconds() * (double)DVD_TIME_BASE;
-    // video pts cannot be late or VideoPlayer goes nuts,
-    // so run it one frame ahead
-    pDvdVideoPicture->pts += 1 * pDvdVideoPicture->iDuration;
-  }
+  if (m_cur_pts == 0)
+    pDvdVideoPicture->pts = (double)m_1st_pts / PTS_FREQ * DVD_TIME_BASE;
   else
-  {
-    // We are FF/RW; Do not use the Player clock or it just doesn't work
-    if (m_cur_pts == 0)
-      pDvdVideoPicture->pts = (double)m_1st_pts / PTS_FREQ * DVD_TIME_BASE;
-    else
-      pDvdVideoPicture->pts = (double)m_cur_pts / PTS_FREQ * DVD_TIME_BASE;
-  }
+    pDvdVideoPicture->pts = (double)m_cur_pts / PTS_FREQ * DVD_TIME_BASE;
 
+  CLog::Log(LOGDEBUG, "My PTS foobar: %lf", pDvdVideoPicture->pts);
   return true;
 }
 
@@ -1952,46 +1932,9 @@ void CAMLCodec::Process()
       pts_video = get_pts_video();
       if (m_cur_pts != pts_video)
       {
-        //CLog::Log(LOGDEBUG, "CAMLCodec::Process: pts_video(%lld), pts_video/PTS_FREQ(%f), duration(%f)",
-        //  pts_video, (double)pts_video/PTS_FREQ, 1.0/((double)(pts_video - m_cur_pts)/PTS_FREQ));
-
-        // other threads look at these, do them first
         m_cur_pts = pts_video;
         m_cur_pictcnt++;
         m_ready_event.Set();
-
-        // correct video pts by starting pts.
-        if (m_start_pts != 0)
-          pts_video += m_start_pts;
-        else if (m_start_dts != 0)
-          pts_video += m_start_dts;
-
-        double app_pts = GetPlayerPtsSeconds();
-        // add in audio delay/display latency contribution
-        // FIXME: Replace Video latency?
-        double offset  = 0 - CMediaSettings::GetInstance().GetCurrentVideoSettings().m_AudioDelay;
-        // correct video pts by user set delay and rendering delay
-        app_pts += offset;
-
-        //CLog::Log(LOGDEBUG, "CAMLCodec::Process: app_pts(%f), pts_video/PTS_FREQ(%f)",
-        //  app_pts, (double)pts_video/PTS_FREQ);
-
-        double error = app_pts - (double)pts_video/PTS_FREQ;
-        double abs_error = fabs(error);
-        if (abs_error > 0.125)
-        {
-          //CLog::Log(LOGDEBUG, "CAMLCodec::Process pts diff = %f", error);
-          if (abs_error > 0.150)
-          {
-            // big error so try to reset pts_pcrscr
-            SetVideoPtsSeconds(app_pts);
-          }
-          else
-          {
-            // small error so try to avoid a frame jump
-            SetVideoPtsSeconds((double)pts_video/PTS_FREQ + error/4);
-          }
-        }
       }
     }
     else
@@ -2001,20 +1944,6 @@ void CAMLCodec::Process()
   }
   SetPriority(THREAD_PRIORITY_NORMAL);
   CLog::Log(LOGDEBUG, "CAMLCodec::Process Stopped");
-}
-
-double CAMLCodec::GetPlayerPtsSeconds()
-{
-  double clock_pts = 0.0;
-  if (m_clock)
-    clock_pts = m_clock->GetInterpolatedClock() / DVD_TIME_BASE;
-  else
-  {
-    CLog::Log(LOGWARNING, "CAMLCodec::GetPlayerPtsSeconds: cannot get player clock");
-    clock_pts = CDVDClock::GetAbsoluteClock() / DVD_TIME_BASE;
-  }
-
-  return clock_pts;
 }
 
 void CAMLCodec::SetVideoPtsSeconds(const double pts)
