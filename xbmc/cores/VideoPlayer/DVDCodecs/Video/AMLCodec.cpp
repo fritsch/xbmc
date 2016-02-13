@@ -1805,10 +1805,12 @@ int CAMLCodec::Decode(uint8_t *pData, size_t iSize, double dts, double pts)
   // we must return VC_BUFFER or VC_PICTURE,
   // default to VC_BUFFER.
   int rtn = VC_BUFFER;
+  m_player_pts = DVD_NOPTS_VALUE;
   if (m_old_pictcnt != m_cur_pictcnt)
   {
     m_old_pictcnt++;
     rtn = VC_PICTURE;
+    m_player_pts = pts;
     // we got a new pict, try and keep hw buffered demux above 2 seconds.
     // this, combined with the above 1 second check, keeps hw buffered demux between 1 and 2 seconds.
     // we also check to make sure we keep from filling hw buffer.
@@ -1833,10 +1835,17 @@ bool CAMLCodec::GetPicture(DVDVideoPicture *pDvdVideoPicture)
   pDvdVideoPicture->iDuration = (double)(am_private->video_rate * DVD_TIME_BASE) / UNIT_FREQ;
 
   pDvdVideoPicture->dts = DVD_NOPTS_VALUE;
-  if (m_cur_pts == 0)
-    pDvdVideoPicture->pts = (double)m_1st_pts / PTS_FREQ * DVD_TIME_BASE;
+  if (m_speed == DVD_PLAYSPEED_NORMAL)
+  {
+    pDvdVideoPicture->pts = m_player_pts;
+  }
   else
-    pDvdVideoPicture->pts = (double)m_cur_pts / PTS_FREQ * DVD_TIME_BASE;
+  {
+    if (m_cur_pts == 0)
+      pDvdVideoPicture->pts = (double)m_1st_pts / PTS_FREQ * DVD_TIME_BASE;
+    else
+      pDvdVideoPicture->pts = (double)m_cur_pts / PTS_FREQ * DVD_TIME_BASE;
+  }
 
   CLog::Log(LOGDEBUG, "My PTS foobar: %lf", pDvdVideoPicture->pts);
   return true;

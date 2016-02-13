@@ -146,7 +146,7 @@ CDVDVideoCodec* CDVDFactoryCodec::CreateVideoCodec(CDVDStreamInfo &hint, const C
 #if defined(HAS_LIBAMCODEC)
     // Amlogic can be present on multiple platforms (Linux, Android)
     // try this first. if it does not open, we still try other hw decoders
-    pCodec = OpenCodec(new CDVDVideoCodecAmlogic(clock), hint, options);
+    pCodec = OpenCodec(new CDVDVideoCodecAmlogic(), hint, options);
     if (pCodec)
       return pCodec;
 #endif

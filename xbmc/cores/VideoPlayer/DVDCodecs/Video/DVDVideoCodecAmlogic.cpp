@@ -28,6 +28,7 @@
 #include "utils/log.h"
 #include "threads/Atomics.h"
 #include "settings/Settings.h"
+#include "DVDClock.h"
 
 #define __MODULE_NAME__ "DVDVideoCodecAmlogic"
 
@@ -49,7 +50,8 @@ CDVDVideoCodecAmlogic::CDVDVideoCodecAmlogic() :
   m_mpeg2_sequence(NULL),
   m_bitparser(NULL),
   m_bitstream(NULL),
-  m_opened(false)
+  m_opened(false),
+  m_dropState(false)
 {
 }
 
@@ -331,6 +333,7 @@ bool CDVDVideoCodecAmlogic::ClearPicture(DVDVideoPicture *pDvdVideoPicture)
 
 void CDVDVideoCodecAmlogic::SetDropState(bool bDrop)
 {
+  m_dropState = bDrop;
 }
 
 void CDVDVideoCodecAmlogic::SetSpeed(int iSpeed)
@@ -360,10 +363,11 @@ void CDVDVideoCodecAmlogic::FrameQueuePop(void)
   if (!m_frame_queue || m_queue_depth == 0)
     return;
 
+  frame_queue *top = nullptr;
   {
     CSingleLock lock(m_FrameQueueSection);
     // pop the top frame off the queue
-    frame_queue *top = m_frame_queue;
+    top = m_frame_queue;
     m_frame_queue = top->nextframe;
     m_queue_depth--;
   }
@@ -489,10 +493,11 @@ void CDVDVideoCodecAmlogic::FrameRateTracking(uint8_t *pData, int iSize, double 
   // so make sure we wait for at least 8 values in sorted queue.
   if (m_queue_depth > 16)
   {
+    float cur_pts = 0.0;
     {
       CSingleLock lock(m_FrameQueueSection);
 
-      float cur_pts = m_frame_queue->pts;
+      cur_pts = m_frame_queue->pts;
       if (cur_pts == DVD_NOPTS_VALUE)
         cur_pts = m_frame_queue->dts;
     }
