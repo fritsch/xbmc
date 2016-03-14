@@ -31,6 +31,7 @@ int CJNIAudioFormat::ENCODING_E_AC3                    = 0x00000006;
 int CJNIAudioFormat::ENCODING_DTS                      = 0x00000007;
 int CJNIAudioFormat::ENCODING_DTS_HD                   = 0x00000008;
 int CJNIAudioFormat::ENCODING_DOLBY_TRUEHD             = 0x00000009;
+int CJNIAudioFormat::ENCODING_IEC61937                 = -1;
 
 int CJNIAudioFormat::CHANNEL_OUT_STEREO                = 0x0000000c;
 int CJNIAudioFormat::CHANNEL_OUT_5POINT1               = 0x000000fc;
@@ -94,6 +95,7 @@ void CJNIAudioFormat::PopulateStaticFields()
         GetStaticValue(c, CJNIAudioFormat::ENCODING_DTS, "ENCODING_DTS");
         GetStaticValue(c, CJNIAudioFormat::ENCODING_DTS_HD, "ENCODING_DTS_HD");
         GetStaticValue(c, CJNIAudioFormat::ENCODING_DOLBY_TRUEHD, "ENCODING_DOLBY_TRUEHD");
+        GetStaticValue(c, CJNIAudioFormat::ENCODING_IEC61937, "ENCODING_IEC61937");
 
         // This is ugly and a nicer solution is needed
         int value = -1;
