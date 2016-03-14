@@ -791,6 +791,12 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
         if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
         {
           m_info.m_wantsIECPassthrough = false;
+          if (StringUtils::StartsWithNoCase(CJNIBuild::DEVICE, "foster")) // SATV is ahead of API
+            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+
+          // here only 5.1 would work but we cannot correctly distinguish
+          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
         }
         else
         {
@@ -798,9 +804,6 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
         }
-        // here only 5.1 would work but we cannot correctly distinguish
-        // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
       }
     }
     std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
