@@ -288,17 +288,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   else
   {
     m_passthrough = false;
-    m_format.m_sampleRate     = m_sink_sampleRate;
-    if (CJNIAudioManager::GetSDKVersion() >= 21 && m_format.m_channelLayout.Count() == 2)
-    {
-      m_encoding = CJNIAudioFormat::ENCODING_PCM_FLOAT;
-      m_format.m_dataFormat     = AE_FMT_FLOAT;
-    }
-    else
-    {
-      m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
-      m_format.m_dataFormat     = AE_FMT_S16LE;
-    }
+    m_format.m_sampleRate = m_sink_sampleRate;
+    m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
+    m_format.m_dataFormat = AE_FMT_S16LE;
   }
 
   int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(m_format.m_channelLayout);
@@ -771,8 +763,6 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       int test_sample[] = { 32000, 44100, 48000, 96000, 192000 };
       int test_sample_sz = sizeof(test_sample) / sizeof(int);
       int encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
-      if (CJNIAudioManager::GetSDKVersion() >= 21)
-        encoding = CJNIAudioFormat::ENCODING_PCM_FLOAT;
       for (int i=0; i<test_sample_sz; ++i)
       {
         if (IsSupported(test_sample[i], CJNIAudioFormat::CHANNEL_OUT_STEREO, encoding))
