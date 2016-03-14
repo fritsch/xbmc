@@ -77,6 +77,8 @@ static int AEStreamFormatToATFormat(const CAEStreamInfo::DataType& dt)
 {
   switch (dt)
   {
+    if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
+      return CJNIAudioFormat::ENCODING_IEC61937;
     case CAEStreamInfo::STREAM_TYPE_AC3:
       return CJNIAudioFormat::ENCODING_AC3;
     case CAEStreamInfo::STREAM_TYPE_DTS_512:
@@ -266,7 +268,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     if (m_info.m_wantsIECPassthrough)
     {
-      m_format.m_dataFormat     = AE_FMT_S16LE;
+      m_format.m_dataFormat = AE_FMT_S16LE;
+      // The new IEC API wants to be opened with 2 channels only
+      m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
       if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
           m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
         m_sink_sampleRate = 192000;
@@ -783,17 +787,20 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       }
       if (CJNIAudioManager::GetSDKVersion() >= 23)
       {
-        m_info.m_wantsIECPassthrough = false;
+        // old Wrapper IEC API that wants non IEC frames
+        if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
+        {
+          m_info.m_wantsIECPassthrough = false;
+        }
+        else
+        {
+          m_info.m_wantsIECPassthrough = true;
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+        }
         // here only 5.1 would work but we cannot correctly distinguish
         // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-      }
-      if (StringUtils::StartsWithNoCase(CJNIBuild::DEVICE, "foster")) // SATV is ahead of API
-      {
-        m_info.m_wantsIECPassthrough = false;
-        if (CJNIAudioManager::GetSDKVersion() == 22)
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
       }
     }
     std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
