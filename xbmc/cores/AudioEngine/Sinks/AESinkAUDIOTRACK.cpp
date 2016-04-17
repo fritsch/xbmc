@@ -743,11 +743,30 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   {
     m_info.m_deviceType = AE_DEVTYPE_HDMI;
     m_info.m_dataFormats.push_back(AE_FMT_RAW);
-    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+    // Since API level 22 at least AC3 is supported by the API
+    if (CJNIAudioManager::GetSDKVersion() > 21)
+    {
+      m_info.m_wantsIECPassthrough = false;
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+      if (CJNIAudioFormat::ENCODING_DTS != -1)
+      {
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+      }
+      else
+        CLog::Log(LOGNOTICE, "Your Android version does not support DTS - please upgrade to v23 of the API");
+    }
+    else // old API throw out everything as PCM
+    {
+      m_info.m_wantsIECPassthrough = true;
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+    }
 
 #if defined(HAS_LIBAMCODEC)
     if (aml_present())
@@ -756,6 +775,12 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       m_info.m_wantsIECPassthrough = true;
       m_sink_sampleRates.insert(44100);
       m_sink_sampleRates.insert(48000);
+      m_info.m_streamTypes.clear();
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
       if (HasAmlHD())
       {
         m_sink_sampleRates.insert(96000);
@@ -783,7 +808,6 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       }
       if (CJNIAudioManager::GetSDKVersion() >= 23)
       {
-        m_info.m_wantsIECPassthrough = false;
         // here only 5.1 would work but we cannot correctly distinguish
         // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
