@@ -625,6 +625,10 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
     // this is only used internally for PA to use EAC3
     samplerate = format.m_streamInfo.m_sampleRate;
   }
+  else if (m_passthrough && (info[0]->encoding == PA_ENCODING_ANY))
+  {
+    samplerate = 192000;
+  }
 
   pa_format_info_set_rate(info[0], samplerate);
 
