@@ -113,6 +113,9 @@ static pa_encoding AEStreamFormatToPulseEncoding(CAEStreamInfo::DataType type)
     case CAEStreamInfo::STREAM_TYPE_DTS_2048:
     case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
       return PA_ENCODING_DTS_IEC61937;
+    case CAEStreamInfo::STREAM_TYPE_DTSHD:
+    case CAEStreamInfo::STREAM_TYPE_TRUEHD:
+      return PA_ENCODING_ANY;
 
     case CAEStreamInfo::STREAM_TYPE_EAC3:
       return PA_ENCODING_EAC3_IEC61937;
@@ -415,7 +418,7 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
       device.m_displayNameExtra = std::string((i->active_port->description)).append(" (PULSEAUDIO)");
     else
       device.m_displayNameExtra = std::string((i->description)).append(" (PULSEAUDIO)");
-    unsigned int device_type = AE_DEVTYPE_PCM; //0
+    AEDeviceType device_type = AE_DEVTYPE_PCM; //0
 
     device.m_channels = PAChannelToAEChannelMap(i->channel_map);
 
@@ -432,6 +435,8 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
         case PA_ENCODING_AC3_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
           device_type = device.m_channels.Count() > 2 ? AE_DEVTYPE_HDMI : AE_DEVTYPE_IEC958;
+          if (device_type == AE_DEVTYPE_HDMI)
+            device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
           break;
         case PA_ENCODING_DTS_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
@@ -439,6 +444,8 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
           device_type = device.m_channels.Count() > 2 ? AE_DEVTYPE_HDMI : AE_DEVTYPE_IEC958;
+          if (device_type == AE_DEVTYPE_HDMI)
+            device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
           break;
         case PA_ENCODING_EAC3_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
@@ -543,8 +550,16 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
 
   if(m_passthrough)
   {
-    map.channels = 2;
-    format.m_channelLayout = AE_CH_LAYOUT_2_0;
+    if (format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD || format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+    {
+      map.channels = 8;
+      format.m_channelLayout = AE_CH_LAYOUT_7_1;
+    }
+    else
+    {
+       map.channels = 2;
+       format.m_channelLayout = AE_CH_LAYOUT_2_0;
+    }
   }
   else
   {
