@@ -431,18 +431,18 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
       {
         case PA_ENCODING_AC3_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-          device_type = AE_DEVTYPE_IEC958;
+          device_type = device.m_channels.Count() > 2 ? AE_DEVTYPE_HDMI : AE_DEVTYPE_IEC958;
           break;
         case PA_ENCODING_DTS_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-          device_type = AE_DEVTYPE_IEC958;
+          device_type = device.m_channels.Count() > 2 ? AE_DEVTYPE_HDMI : AE_DEVTYPE_IEC958;
           break;
         case PA_ENCODING_EAC3_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-          device_type = AE_DEVTYPE_IEC958;
+          device_type = device.m_channels.Count() > 2 ? AE_DEVTYPE_HDMI : AE_DEVTYPE_IEC958;
           break;
         case PA_ENCODING_PCM:
           device.m_dataFormats.insert(device.m_dataFormats.end(), defaultDataFormats, defaultDataFormats + ARRAY_SIZE(defaultDataFormats));
@@ -451,15 +451,7 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
           break;
       }
     }
-    // passthrough is only working when device has Stereo channel config
-    if (device_type > AE_DEVTYPE_PCM && device.m_channels.Count() == 2)
-    {
-      device.m_deviceType = AE_DEVTYPE_IEC958;
-      device.m_dataFormats.push_back(AE_FMT_RAW);
-    }
-    else
-      device.m_deviceType = AE_DEVTYPE_PCM;
-
+    device.m_deviceType = device_type;
     device.m_wantsIECPassthrough = true;
 
     if(valid)
@@ -691,6 +683,9 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
   // 1:1 remapping is allowed though
   if (!m_passthrough && m_Channels <= sinkStruct.map.channels)
     flags |= PA_STREAM_NO_REMIX_CHANNELS;
+
+  if (m_passthrough)
+    flags |= PA_STREAM_PASSTHROUGH;
 
   if (pa_stream_connect_playback(m_Stream, isDefaultDevice ? NULL : device.c_str(), &buffer_attr, (pa_stream_flags) flags, NULL, NULL) < 0)
   {
