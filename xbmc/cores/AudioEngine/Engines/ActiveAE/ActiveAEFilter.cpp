@@ -150,6 +150,7 @@ bool CActiveAEFilter::CreateAtempoFilter()
 
   m_hasData = false;
   m_needData = true;
+  m_filterEof = false;
 
   return true;
 }
