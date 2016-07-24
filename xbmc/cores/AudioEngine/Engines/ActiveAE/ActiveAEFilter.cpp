@@ -263,6 +263,8 @@ int CActiveAEFilter::ProcessFilter(uint8_t **dst_buffer, int dst_samples, uint8_
     }
 
     m_bufferedSamples -= samples * m_tempo;
+    if (m_bufferedSamples < 0)
+      m_bufferedSamples = 0;
     return samples;
   }
 
