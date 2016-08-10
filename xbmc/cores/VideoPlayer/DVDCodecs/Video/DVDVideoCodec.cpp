@@ -72,3 +72,13 @@ bool CDVDVideoCodec::IsCodecDisabled(const std::map<AVCodecID, std::string> &map
   }
   return false; // don't disable what we don't have
 }
+
+bool CDVDVideoCodec::ShouldUseLimitedRange()
+{
+  // check if we are running on intel hardware
+  std::string gpuvendor = g_Windowing.GetRenderVendor();
+  std::transform(gpuvendor.begin(), gpuvendor.end(), gpuvendor.begin(), ::tolower);
+  bool isIntel = (gpuvendor.compare(0, 5, "intel") == 0);
+
+  return isIntel;
+}

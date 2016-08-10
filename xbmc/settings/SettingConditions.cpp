@@ -336,6 +336,9 @@ void CSettingConditions::Initialize()
   if(CAEFactory::SupportsQualitySetting())
     m_simpleConditions.insert("has_ae_quality_levels");
 
+  if(CDVDVideoCodec::ShouldUseLimitedRange())
+    m_simpleConditions.insert("shoulduselimitedrange");
+
   // add complex conditions
   m_complexConditions.insert(std::pair<std::string, SettingConditionCheck>("addonhassettings",              AddonHasSettings));
   m_complexConditions.insert(std::pair<std::string, SettingConditionCheck>("checkmasterlock",               CheckMasterLock));

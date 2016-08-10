@@ -257,6 +257,11 @@ public:
   static bool IsSettingVisible(const std::string &condition, const std::string &value, const CSetting *setting, void *data);
 
   /**
+   * Enable or disable limited range setting
+   */
+  static bool ShouldUseLimitedRange();
+
+  /**
    * Interact with user settings so that user disabled codecs are disabled
    */
   static bool IsCodecDisabled(const std::map<AVCodecID, std::string> &map, AVCodecID id);
