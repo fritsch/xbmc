@@ -22,6 +22,7 @@
 #include "settings/Settings.h"
 #include "settings/lib/Setting.h"
 #include "windowing/WindowingFactory.h"
+#include "utils/SysfsUtils.h"
 
 bool CDVDVideoCodec::IsSettingVisible(const std::string &condition, const std::string &value, const CSetting *setting, void *data)
 {
@@ -76,9 +77,12 @@ bool CDVDVideoCodec::IsCodecDisabled(const std::map<AVCodecID, std::string> &map
 bool CDVDVideoCodec::ShouldUseLimitedRange()
 {
   // check if we are running on intel hardware
-  std::string gpuvendor = g_Windowing.GetRenderVendor();
-  std::transform(gpuvendor.begin(), gpuvendor.end(), gpuvendor.begin(), ::tolower);
-  bool isIntel = (gpuvendor.compare(0, 5, "intel") == 0);
+  std::string gpuvendor;
+  SysfsUtils::GetString("/proc/fb", gpuvendor);
+  // todo use stringutils to remove the '0 ' in front
+  // currently in a hurry to get the tram
+  printf("Vendor: %s", gpuvendor.c_str());
+  bool isIntel = (gpuvendor == "0 inteldrmfb");
 
   return isIntel;
 }
