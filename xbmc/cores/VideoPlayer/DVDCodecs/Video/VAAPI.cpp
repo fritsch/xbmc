@@ -2646,6 +2646,7 @@ bool CVppPostproc::PreInit(CVaapiConfig &config, SDiMethods *methods)
 
   if (methods)
   {
+    std::list<EINTERLACEMETHOD> deintMethods;
     for (unsigned int i = 0; i < numFilters; i++)
     {
       if (filters[i] == VAProcFilterDeinterlacing)
@@ -2655,18 +2656,22 @@ bool CVppPostproc::PreInit(CVaapiConfig &config, SDiMethods *methods)
           if (deinterlacingCaps[j].type == VAProcDeinterlacingBob)
           {
             methods->diMethods[methods->numDiMethods++] = VS_INTERLACEMETHOD_VAAPI_BOB;
+            deintMethods.push_back(VS_INTERLACEMETHOD_VAAPI_BOB);
           }
           else if (deinterlacingCaps[j].type == VAProcDeinterlacingMotionAdaptive)
           {
             methods->diMethods[methods->numDiMethods++] = VS_INTERLACEMETHOD_VAAPI_MADI;
+            deintMethods.push_back(VS_INTERLACEMETHOD_VAAPI_MADI);
           }
           else if (deinterlacingCaps[j].type == VAProcDeinterlacingMotionCompensated)
           {
             methods->diMethods[methods->numDiMethods++] = VS_INTERLACEMETHOD_VAAPI_MACI;
+            deintMethods.push_back(VS_INTERLACEMETHOD_VAAPI_MACI);
           }
         }
       }
     }
+    m_config.processInfo->UpdateDeinterlacingMethods(deintMethods);
   }
   return true;
 }
