@@ -2348,6 +2348,33 @@ void CMixer::Flush()
   }
 }
 
+std::string CMixer::GetDeintStrFromInterlaceMethod(EINTERLACEMETHOD method)
+{
+  switch (method)
+  {
+    case VS_INTERLACEMETHOD_NONE:
+      return "none";
+    case VS_INTERLACEMETHOD_AUTO:
+      return "vdpau-auto";
+    case VS_INTERLACEMETHOD_VDPAU_BOB:
+      return "vdpau-bob";
+    case VS_INTERLACEMETHOD_VDPAU_TEMPORAL:
+      return "vdpau-temp";
+    case VS_INTERLACEMETHOD_VDPAU_TEMPORAL_HALF:
+      return "vdpau-temp-half";
+    case VS_INTERLACEMETHOD_VDPAU_TEMPORAL_SPATIAL:
+      return "vdpau-temp-spat";
+    case VS_INTERLACEMETHOD_VDPAU_TEMPORAL_SPATIAL_HALF:
+      return "vdpau-temp-spat-half";
+    case VS_INTERLACEMETHOD_VDPAU_INVERSE_TELECINE:
+      return "vdpau-inv-tele";
+    case VS_INTERLACEMETHOD_RENDER_BOB:
+      return "bob";
+    default:
+      return "unknown";
+  }
+}
+
 void CMixer::InitCycle()
 {
   CheckFeatures();
@@ -2364,6 +2391,8 @@ void CMixer::InitCycle()
   EINTERLACEMETHOD method = GetDeinterlacingMethod();
   bool interlaced = m_mixerInput[1].DVDPic.iFlags & DVP_FLAG_INTERLACED;
   m_SeenInterlaceFlag |= interlaced;
+
+  std::string deintStr = GetDeintStrFromInterlaceMethod(method);
 
   if (!(flags & DVD_CODEC_CTRL_NO_POSTPROC) &&
       interlaced &&
