@@ -243,16 +243,34 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   if (m_format.m_dataFormat == AE_FMT_RAW && !CXBMCApp::IsHeadsetPlugged())
   {
     m_passthrough = true;
-    m_encoding = AEStreamFormatToATFormat(m_format.m_streamInfo.m_type);
-    m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
 
-    if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
-        m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+    // for IEC passthrough we use a special encoding and just two channels internally while signalling 8 channels to AE
+    if (m_info.m_wantsIECPassthrough)
     {
-      m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
-      // Shield v5 workaround
-      if (!m_info.m_wantsIECPassthrough && CJNIAudioManager::GetSDKVersion() == 22 && m_sink_sampleRate > 48000)
-        m_sink_sampleRate = 48000;
+      m_encoding = CJNIAudioFormat::ENCODING_IEC61937;
+      m_sink_sampleRate = m_format.m_sampleRate;
+      m_format.m_dataFormat     = AE_FMT_S16LE;
+      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
+          m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+      {
+        m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
+      }
+      else
+       m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
+    }
+    else
+    {
+      m_encoding = AEStreamFormatToATFormat(m_format.m_streamInfo.m_type);
+      m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
+
+      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
+          m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
+      {
+        m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
+        // Shield v5 workaround
+        if (!m_info.m_wantsIECPassthrough && CJNIAudioManager::GetSDKVersion() == 22 && m_sink_sampleRate > 48000)
+          m_sink_sampleRate = 48000;
+      }
     }
   }
   else
@@ -271,8 +289,16 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
   }
 
-  int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(m_format.m_channelLayout);
-  m_format.m_channelLayout  = AUDIOTRACKChannelMaskToAEChannelMap(atChannelMask);
+  int atChannelMask = -1;
+  if (m_passthrough && m_info.m_wantsIECPassthrough)
+  {
+    atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
+  }
+  else
+  {
+    atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(m_format.m_channelLayout);
+    m_format.m_channelLayout  = AUDIOTRACKChannelMaskToAEChannelMap(atChannelMask);
+  }
 
   while (!m_at_jni)
   {
@@ -679,32 +705,52 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   m_sink_sampleRates.insert(CJNIAudioTrack::getNativeOutputSampleRate(CJNIAudioManager::STREAM_MUSIC));
 
   // we only support Android's RAW non IEC PT starting with API v21
-  m_info.m_wantsIECPassthrough = false;
+  // on Android v24 we use the IEC passthrough
+  if (CJNIAudioManager::GetSDKVersion() >= 24 && CJNIAudioFormat::ENCODING_IEC61937 != -1)
+    m_info.m_wantsIECPassthrough = true;
+  else
+    m_info.m_wantsIECPassthrough = false;
+
   if (!CXBMCApp::IsHeadsetPlugged())
   {
     m_info.m_deviceType = AE_DEVTYPE_HDMI;
-    if (CJNIAudioManager::GetSDKVersion() >= 21)
+    // we support everything and just route it out via 2 channels raw mode
+    if (m_info.m_wantsIECPassthrough)
     {
-      m_info.m_dataFormats.push_back(AE_FMT_RAW);
-      if (CJNIAudioFormat::ENCODING_AC3 != -1)
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+       m_info.m_dataFormats.push_back(AE_FMT_RAW);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
     }
-    if (CJNIAudioManager::GetSDKVersion() >= 23)
+    else
     {
-      if (CJNIAudioFormat::ENCODING_DTS != -1)
+      if (CJNIAudioManager::GetSDKVersion() >= 21)
       {
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+        m_info.m_dataFormats.push_back(AE_FMT_RAW);
+        if (CJNIAudioFormat::ENCODING_AC3 != -1)
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
       }
-      // here only 5.1 would work but we cannot correctly distinguish
-      // if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
-      //   m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-      if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-      if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+      if (CJNIAudioManager::GetSDKVersion() >= 23)
+      {
+        if (CJNIAudioFormat::ENCODING_DTS != -1)
+        {
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+        }
+        // here only 5.1 would work but we cannot correctly distinguish
+        // if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
+        //   m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+        if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+        if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+      }
     }
   }
 
