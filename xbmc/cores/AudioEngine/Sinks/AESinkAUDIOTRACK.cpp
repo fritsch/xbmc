@@ -355,10 +355,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
            multiplier = m_min_buffer_size / ac3FrameSize; // int division is wanted
            rawlength_in_seconds = multiplier * m_format.m_streamInfo.GetDuration() / 1000;
           break;
-          // EAC3 is currently not supported
         case CAEStreamInfo::STREAM_TYPE_EAC3:
            m_min_buffer_size = 10752; // least common multiple of 1792 and 1536
            m_format.m_frames = m_min_buffer_size; // needs testing
+           m_sink_sampleRate = m_format.m_streamInfo.m_sampleRate;
            rawlength_in_seconds = 4 * m_format.m_streamInfo.GetDuration() / 1000;
            break;
         default:
@@ -743,9 +743,8 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
         }
-        // here only 5.1 would work but we cannot correctly distinguish
-        // if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
-        //   m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+        if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
+           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
         if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
         if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
