@@ -685,6 +685,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
     if (m_info.m_wantsIECPassthrough)
     {
        m_info.m_dataFormats.push_back(AE_FMT_RAW);
+       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
