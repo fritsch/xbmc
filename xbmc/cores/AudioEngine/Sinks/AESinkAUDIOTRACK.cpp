@@ -254,26 +254,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       if (!m_info.m_wantsIECPassthrough && CJNIAudioManager::GetSDKVersion() == 22 && m_sink_sampleRate > 48000)
         m_sink_sampleRate = 48000;
     }
-    if (m_info.m_wantsIECPassthrough)
-    {
-      m_format.m_dataFormat     = AE_FMT_S16LE;
-      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
-          m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
-        m_sink_sampleRate = 192000;
-
-      if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
-        m_sink_sampleRate = m_format.m_streamInfo.m_sampleRate;
-
-      // we are running on an old android version
-      // that does neither know AC3, DTS or whatever
-      // we will fallback to 16BIT passthrough
-      if (m_encoding == -1)
-      {
-        m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
-        m_format.m_sampleRate     = m_sink_sampleRate;
-        m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
-      }
-    }
   }
   else
   {
@@ -368,16 +348,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     else
     {
-      if (m_passthrough)
-      {
-        m_min_buffer_size *= 2;
-        if (m_sink_sampleRate > 48000)
-          m_min_buffer_size *= (m_sink_sampleRate / 48000); // same amount of buffer in seconds as for 48 khz
-        else if (m_sink_sampleRate < m_format.m_sampleRate) // eac3
-          m_min_buffer_size *= (m_format.m_sampleRate / m_sink_sampleRate);
-      }
-      else
-        m_min_buffer_size *= 2;
+      m_min_buffer_size *= 2;
 
       m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
       if (m_passthrough)
@@ -424,14 +395,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize returned: m_sampleRate %u; format:%s; min_buffer_size %u; m_frames %u; m_frameSize %u; channels: %d", m_sink_sampleRate, CAEUtil::DataFormatToStr(m_format.m_dataFormat), m_min_buffer_size, m_format.m_frames, m_format.m_frameSize, m_format.m_channelLayout.Count());
   }
   format = m_format;
-
-  // Force volume to 100% for IEC passthrough
-  if (m_passthrough && m_info.m_wantsIECPassthrough)
-  {
-    CXBMCApp::AcquireAudioFocus();
-    m_volume = CXBMCApp::GetSystemVolume();
-    CXBMCApp::SetSystemVolume(1.0);
-  }
 
   return true;
 }
