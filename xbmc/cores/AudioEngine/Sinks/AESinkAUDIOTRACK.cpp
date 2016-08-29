@@ -690,9 +690,11 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+//       // needs hardware testing that supports it
+//       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+//       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+//       needs upto 192 khz at 2 channels to be used
+//       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
     }
     else
     {
