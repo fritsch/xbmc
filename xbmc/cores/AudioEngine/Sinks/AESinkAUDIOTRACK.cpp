@@ -31,10 +31,6 @@
 #include "platform/android/jni/Build.h"
 #include "utils/TimeUtils.h"
 
-#if defined(HAS_LIBAMCODEC)
-#include "utils/AMLUtils.h"
-#endif
-
 //#define DEBUG_VERBOSE 1
 
 // This is an alternative to the linear weighted delay smoothing
@@ -65,12 +61,6 @@ static bool Has71Support()
 {
   /* Android 5.0 introduced side channels */
   return CJNIAudioManager::GetSDKVersion() >= 21;
-}
-
-// AMLogic helper for HD Audio
-bool CAESinkAUDIOTRACK::HasAmlHD()
-{
-  return ((CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1) && (CJNIAudioFormat::ENCODING_DTS_HD != -1));
 }
 
 static int AEStreamFormatToATFormat(const CAEStreamInfo::DataType& dt)
@@ -530,14 +520,6 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   }
   uint32_t normHead_pos = head_pos - m_offset;
 
-#if defined(HAS_LIBAMCODEC)
-  if (aml_present() &&
-      (m_encoding == CJNIAudioFormat::ENCODING_DTS_HD ||
-       m_encoding == CJNIAudioFormat::ENCODING_E_AC3 ||
-       m_encoding == CJNIAudioFormat::ENCODING_DOLBY_TRUEHD))
-    normHead_pos /= m_sink_frameSize;  // AML wants sink in 48k but returns pos in 192k
-#endif
-
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
     if (m_extTimer.MillisLeft() > 0)
@@ -756,41 +738,15 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   if (!CXBMCApp::IsHeadsetPlugged())
   {
     m_info.m_deviceType = AE_DEVTYPE_HDMI;
-    m_info.m_wantsIECPassthrough = false;
+    m_info.m_wantsIECPassthrough = true;
     m_info.m_dataFormats.push_back(AE_FMT_RAW);
-    if (CJNIAudioFormat::ENCODING_AC3 != -1)
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
 
-    // EAC3 working on shield, broken on FireTV
-    if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-
-    if (CJNIAudioFormat::ENCODING_DTS != -1)
-    {
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-    }
-
-#if defined(HAS_LIBAMCODEC)
-    if (aml_present())
-    {
-      // passthrough
-      m_info.m_wantsIECPassthrough = true;
-      m_sink_sampleRates.insert(44100);
-      m_sink_sampleRates.insert(48000);
-      if (HasAmlHD())
-      {
-        m_sink_sampleRates.insert(96000);
-        m_sink_sampleRates.insert(192000);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-      }
-    }
-    else
-#endif
     {
       bool supports_192khz = false;
       int test_sample[] = { 32000, 44100, 48000, 96000, 192000 };
@@ -806,36 +762,6 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
           if (test_sample[i] == 192000)
             supports_192khz = true;
           CLog::Log(LOGDEBUG, "AESinkAUDIOTRACK - %d supported", test_sample[i]);
-        }
-      }
-      if (CJNIAudioManager::GetSDKVersion() >= 23)
-      {
-        if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-        if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-      }
-      // Android v24 can do real IEC API
-      if (CJNIAudioManager::GetSDKVersion() >= 24)
-      {
-        if (false && CJNIAudioFormat::ENCODING_IEC61937 != -1)
-        {
-          m_info.m_wantsIECPassthrough = true;
-          m_info.m_streamTypes.clear();
-          m_info.m_dataFormats.push_back(AE_FMT_RAW);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-
-          if (supports_192khz)
-          {
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-            // not working yet
-            // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-            // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-          }
         }
       }
     }
