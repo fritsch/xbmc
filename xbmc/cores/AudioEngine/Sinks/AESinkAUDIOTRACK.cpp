@@ -308,11 +308,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
   m_format.m_channelLayout  = AUDIOTRACKChannelMaskToAEChannelMap(atChannelMask);
 
-#if defined(HAS_LIBAMCODEC)
-  if (aml_present() && m_passthrough)
-    atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
-#endif
-
   while (!m_at_jni)
   {
     int min_buffer = CJNIAudioTrack::getMinBufferSize(m_sink_sampleRate,
