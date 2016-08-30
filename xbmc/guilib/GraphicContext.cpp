@@ -979,8 +979,8 @@ void CGraphicContext::SetMediaDir(const std::string &strMediaDir)
 
 void CGraphicContext::Flip(bool rendered, bool videoLayer)
 {
-  if (IsFullScreenVideo() && CServiceBroker::GetDataCacheCore().IsRenderClockSync())
-    g_Windowing.FinishPipeline();
+  //if (IsFullScreenVideo() && CServiceBroker::GetDataCacheCore().IsRenderClockSync())
+    //g_Windowing.FinishPipeline();
 
   g_Windowing.PresentRender(rendered, videoLayer);
 
