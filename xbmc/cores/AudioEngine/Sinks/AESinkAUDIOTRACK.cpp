@@ -211,11 +211,11 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_at_jni = NULL;
   m_duration_written = 0;
   m_offset = -1;
+  m_headPos = 0;
   m_volume = -1;
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
-  m_lastPlaybackHeadPosition = 0;
   m_extTimer.SetExpired();
 }
 
@@ -235,7 +235,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_format      = format;
   m_volume      = -1;
   m_offset = -1;
-  m_lastPlaybackHeadPosition = 0;
+  m_headPos = 0;
   m_linearmovingaverage.clear();
   m_extTimer.SetExpired();
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Initialize requested: sampleRate %u; format: %s; channels: %d", format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat), format.m_channelLayout.Count());
@@ -489,8 +489,8 @@ void CAESinkAUDIOTRACK::Deinitialize()
 
   m_duration_written = 0;
   m_offset = -1;
+  m_headPos = 0;
 
-  m_lastPlaybackHeadPosition = 0;
   m_extTimer.SetExpired();
   m_linearmovingaverage.clear();
 
@@ -517,18 +517,30 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   uint32_t head_pos = (uint32_t)m_at_jni->getPlaybackHeadPosition();
 
+  // care for wraparound
+  if (m_headPos <= head_pos)
+    m_headPos = head_pos;
+  else
+  {
+    uint32_t before_wrap32 = (uint32_t) (m_headPos & ((uint64_t) UINT32_MAX));
+    if (before_wrap32 > head_pos) // need to compute wraparound
+      m_headPos += (UINT32_MAX - before_wrap32) + head_pos;
+    else 
+      m_headPos += (head_pos - before_wrap32);
+  }
+
   // head_pos does not necessarily start at the beginning
   if (m_offset == -1 && m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
   {
-    m_offset = head_pos;
+    m_offset = m_headPos;
   }
 
-  if (m_offset > head_pos)
+  if (m_offset > m_headPos)
   {
     CLog::Log(LOGDEBUG, "You did it wrong man - fully wrong! offset %lld head pos %u", m_offset, head_pos);
     m_offset = 0;
   }
-  uint32_t normHead_pos = head_pos - m_offset;
+  uint64_t normHead_pos = m_headPos - m_offset;
 
 #if defined(HAS_LIBAMCODEC)
   if (aml_present() &&
@@ -546,11 +558,6 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
       status.SetDelay(d);
       return;
     }
-  }
-  if (normHead_pos > m_lastPlaybackHeadPosition)
-  {
-    unsigned int differencehead = normHead_pos - m_lastPlaybackHeadPosition;
-    m_lastPlaybackHeadPosition = normHead_pos;
   }
 
   double gone = (double) normHead_pos / (double) m_sink_sampleRate;
@@ -724,8 +731,8 @@ void CAESinkAUDIOTRACK::Drain()
   m_at_jni->stop();
   m_duration_written = 0;
   m_offset = -1;
+  m_headPos = 0;
   m_extTimer.SetExpired();
-  m_lastPlaybackHeadPosition = 0;
   m_linearmovingaverage.clear();
 }
 
