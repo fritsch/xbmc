@@ -820,27 +820,24 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
         if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
       }
-      // Android v24 can do real IEC API
-      if (CJNIAudioManager::GetSDKVersion() >= 24)
+      // Android v24 and backports can do real IEC API
+      if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
       {
-        if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
-        {
-          m_info.m_wantsIECPassthrough = true;
-          m_info.m_streamTypes.clear();
-          m_info.m_dataFormats.push_back(AE_FMT_RAW);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+        m_info.m_wantsIECPassthrough = true;
+        m_info.m_streamTypes.clear();
+        m_info.m_dataFormats.push_back(AE_FMT_RAW);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
 
-          if (supports_192khz)
-          {
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-            // not working yet
-            // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-            // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-          }
+        if (supports_192khz)
+        {
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+          // not working yet
+          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
         }
       }
     }
