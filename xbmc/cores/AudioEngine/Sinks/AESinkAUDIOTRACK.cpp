@@ -24,6 +24,7 @@
 #include "settings/Settings.h"
 #include "utils/log.h"
 #include "utils/StringUtils.h"
+#include "utils/SysfsUtils.h"
 
 #include "platform/android/jni/AudioFormat.h"
 #include "platform/android/jni/AudioManager.h"
@@ -846,6 +847,12 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
     std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
   }
 
+// Take care for old AML devices when they run official API they do
+// really strange things as they define passthrough formats
+#if !defined(HAS_LIBAMCODEC)
+  if (SysfsUtils::Has("/sys/class/audiodsp/digital_raw") && CJNIAudioManager::GetSDKVersion() < 23)
+    m_info.m_wantsIECPassthrough = true;
+#endif
   list.push_back(m_info);
 }
 
