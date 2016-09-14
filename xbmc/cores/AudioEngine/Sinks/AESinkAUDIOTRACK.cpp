@@ -847,7 +847,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
 // Take care for old AML devices when they run official API they do
 // really strange things as they define passthrough formats
 #if !defined(HAS_LIBAMCODEC)
-  if (SysfsUtils::Has("/sys/class/audiodsp/digital_raw") && CJNIAudioManager::GetSDKVersion() < 23)
+  if (SysfsUtils::Has("/sys/class/audiodsp/digital_raw") && CJNIAudioManager::GetSDKVersion() < 25)
     m_info.m_wantsIECPassthrough = true;
 #endif
   list.push_back(m_info);
