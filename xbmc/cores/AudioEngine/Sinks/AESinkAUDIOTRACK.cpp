@@ -405,7 +405,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     else
     {
-      if (m_passthrough)
+      if (m_passthrough && m_encoding != CJNIAudioFormat::ENCODING_PCM_16BIT)
       {
         m_min_buffer_size *= 2;
         if (m_sink_sampleRate > 48000)
@@ -417,7 +417,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_min_buffer_size *= 2;
 
       m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
-      if (m_passthrough)
+      // AML and IEC only want two channels - PCM16 via 8 channels not :-(
+      if (m_passthrough && m_encoding != CJNIAudioFormat::ENCODING_PCM_16BIT)
         m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
       else
         m_sink_frameSize = m_format.m_frameSize;
