@@ -1,6 +1,7 @@
 set(SOURCES ActorProtocol.cpp
             AlarmClock.cpp
             AliasShortcutUtils.cpp
+            AMLUtils.cpp
             Archive.cpp
             auto_buffer.cpp
             Base64.cpp
@@ -76,6 +77,7 @@ set(SOURCES ActorProtocol.cpp
 set(HEADERS ActorProtocol.h
             AlarmClock.h
             AliasShortcutUtils.h
+  	    AMLUtils.h
             Archive.h
             auto_buffer.h
             Base64.h
@@ -179,10 +181,8 @@ if(NOT CORE_SYSTEM_NAME STREQUAL windows)
 endif()
 
 if(AML_FOUND)
-  list(APPEND SOURCES AMLUtils.cpp
-                      ScreenshotAML.cpp)
-  list(APPEND HEADERS AMLUtils.h
-                      ScreenshotAML.h)
+  list(APPEND SOURCES ScreenshotAML.cpp)
+  list(APPEND HEADERS ScreenshotAML.h)
 endif()
 
 core_add_library(utils)
