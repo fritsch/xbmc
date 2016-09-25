@@ -295,6 +295,16 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_format.m_sampleRate     = m_sink_sampleRate;
         m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
       }
+      // no support for HD Audio with the default API on N
+      if (m_encoding == CJNIAudioFormat::ENCODING_IEC61937 &&
+          (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD ||
+           m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD))
+        {
+          m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
+          m_sink_sampleRate = 192000;
+          m_format.m_sampleRate = m_sink_sampleRate;
+          m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
+        }
     }
   }
   else
@@ -827,9 +837,9 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
         if (supports_192khz)
         {
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-          // not working yet
-          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+          // we tunnel them via good old PCM :-(
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
         }
       }
     }
