@@ -558,7 +558,14 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, const enum A
     }
     case AV_CODEC_ID_HEVC:
     {
-      profile = VAProfileHEVCMain;
+      if (avctx->profile == FF_PROFILE_HEVC_MAIN_10)
+#if VA_CHECK_VERSION(0,38,1)
+        profile = VAProfileHEVCMain10;
+#else
+      return false;
+#endif
+      else
+        profile = VAProfileHEVCMain;
       if (!m_vaapiConfig.context->SupportsProfile(profile))
         return false;
       break;
