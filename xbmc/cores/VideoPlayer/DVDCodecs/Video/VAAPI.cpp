@@ -564,8 +564,13 @@ bool CDecoder::Open(AVCodecContext* avctx, AVCodecContext* mainctx, const enum A
 #else
       return false;
 #endif
-      else
+      else if (avctx->profile == FF_PROFILE_HEVC_MAIN)
         profile = VAProfileHEVCMain;
+      else
+      {
+        CLog::Log(LOGDEBUG, "VAAPI does not support hevc format: %d", avctx->profile);
+        return false;
+      }
       if (!m_vaapiConfig.context->SupportsProfile(profile))
         return false;
       break;
