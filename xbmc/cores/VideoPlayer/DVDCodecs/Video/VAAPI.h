@@ -113,6 +113,7 @@ struct CVaapiConfig
   int vidHeight;
   int outWidth;
   int outHeight;
+  bool is10bit;
   AVRational aspect;
   VAConfigID configId;
   VAContextID contextId;
