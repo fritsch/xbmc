@@ -1348,7 +1348,7 @@ bool CVaapiRenderPicture::GLMapSurface()
       *attrib++ = EGL_WIDTH;
       *attrib++ = (glInterop.vaImage.width + 1); // tunnel the 16 bit via two 8 bit values
       *attrib++ = EGL_HEIGHT;
-      *attrib++ = (glInterop.vaImage.height + 1);
+      *attrib++ = (glInterop.vaImage.height + 1) >> 1;
       *attrib++ = EGL_DMA_BUF_PLANE0_FD_EXT;
       *attrib++ = (intptr_t)glInterop.vBufInfo.handle;
       *attrib++ = EGL_DMA_BUF_PLANE0_OFFSET_EXT;
