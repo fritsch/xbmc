@@ -34,6 +34,7 @@ int CJNIAudioFormat::ENCODING_DTS_HD                   = 0x00000008;
 int CJNIAudioFormat::ENCODING_DOLBY_TRUEHD             = 0x00000009;
 int CJNIAudioFormat::ENCODING_IEC61937                 = 0x0000000d;
 
+int CJNIAudioFormat::CHANNEL_OUT_MONO                  = 0x00000004;
 int CJNIAudioFormat::CHANNEL_OUT_STEREO                = 0x0000000c;
 int CJNIAudioFormat::CHANNEL_OUT_5POINT1               = 0x000000fc;
 
