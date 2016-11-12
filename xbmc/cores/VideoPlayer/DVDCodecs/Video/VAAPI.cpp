@@ -32,11 +32,13 @@
 #include "guilib/GraphicContext.h"
 #include "settings/MediaSettings.h"
 #include "settings/AdvancedSettings.h"
-#include <va/va_x11.h>
+#include <va/va_drm.h>
 #include <va/va_drmcommon.h>
 #include <drm_fourcc.h>
 #include "linux/XTimeUtils.h"
 #include "linux/XMemUtils.h"
+
+#include <xf86drm.h>
 
 extern "C" {
 #include "libavutil/avutil.h"
@@ -55,7 +57,6 @@ using namespace VAAPI;
 
 CVAAPIContext *CVAAPIContext::m_context = 0;
 CCriticalSection CVAAPIContext::m_section;
-Display *CVAAPIContext::m_X11dpy = 0;
 
 CVAAPIContext::CVAAPIContext()
 {
@@ -64,6 +65,7 @@ CVAAPIContext::CVAAPIContext()
   m_attributes = NULL;
   m_profiles = NULL;
   m_display = NULL;
+  m_fd = 0;
 }
 
 void CVAAPIContext::Release(CDecoder *decoder)
@@ -125,16 +127,26 @@ bool CVAAPIContext::EnsureContext(CVAAPIContext **ctx, CDecoder *decoder)
 
 bool CVAAPIContext::CreateContext()
 {
-  { CSingleLock lock(g_graphicsContext);
-    if (!m_X11dpy)
-      m_X11dpy = XOpenDisplay(NULL);
+  m_fd = open("/dev/dri/renderD128", O_RDWR);
+  if (m_fd < 0)
+  {
+    CLog::Log(LOGERROR, "FAILED To find a module FD %i\n", m_fd);
+    m_display = NULL;
+    return false;
+  }
+  else
+  {
+    CLog::Log(LOGNOTICE, "Found module FD: %i\n", m_fd);
   }
 
-  m_display = vaGetDisplay(m_X11dpy);
+  CLog::Log(LOGNOTICE, "FD: %i - %i\n", m_fd, drmAvailable());
+  m_display = vaGetDisplayDRM(m_fd);
 
   int major_version, minor_version;
-  if (!CheckSuccess(vaInitialize(m_display, &major_version, &minor_version)))
+  auto ret = vaInitialize(m_display, &major_version, &minor_version);
+  if (!CheckSuccess(ret))
   {
+    CLog::Log(LOGERROR, "FAILED to acquire DRM handle %i\n", ret);
     m_display = NULL;
     return false;
   }
@@ -161,6 +173,11 @@ void CVAAPIContext::DestroyContext()
   delete[] m_profiles;
   if (m_display)
     CheckSuccess(vaTerminate(m_display));
+  if (m_fd)
+  {
+    if (close(m_fd))
+      CLog::Log(LOGERROR, "Could not close drm handle: %d", m_fd));
+  }
 }
 
 void CVAAPIContext::QueryCaps()
@@ -248,11 +265,6 @@ bool CVAAPIContext::CheckSuccess(VAStatus status)
 VADisplay CVAAPIContext::GetDisplay()
 {
   return m_display;
-}
-
-Display *CVAAPIContext::GetX11Display()
-{
-  return m_X11dpy;
 }
 
 bool CVAAPIContext::IsValidDecoder(CDecoder *decoder)
@@ -1011,7 +1023,6 @@ bool CDecoder::ConfigVAAPI()
   memset(&m_hwContext, 0, sizeof(vaapi_context));
 
   m_vaapiConfig.dpy = m_vaapiConfig.context->GetDisplay();
-  m_vaapiConfig.x11dsp = m_vaapiConfig.context->GetX11Display();
   m_vaapiConfig.attrib = m_vaapiConfig.context->GetAttrib(m_vaapiConfig.profile);
   if ((m_vaapiConfig.attrib.value & VA_RT_FORMAT_YUV420) == 0)
   {
@@ -2397,7 +2408,6 @@ bool COutput::CheckSuccess(VAStatus status)
 
 bool COutput::CreateEGLContext()
 {
-  m_Display = g_Windowing.GetDisplay();
   EGLDisplay eglDisplay = g_Windowing.GetEGLDisplay();
   EGLContext eglMainContext = g_Windowing.GetEGLContext();
   EGLConfig eglMainConfig = g_Windowing.GetEGLConfig();
