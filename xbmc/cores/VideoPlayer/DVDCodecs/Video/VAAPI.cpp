@@ -32,7 +32,7 @@
 #include "guilib/GraphicContext.h"
 #include "settings/MediaSettings.h"
 #include "settings/AdvancedSettings.h"
-#include <va/va_x11.h>
+#include <va/va_drm.h>
 #include <va/va_drmcommon.h>
 #include <drm_fourcc.h>
 #include "linux/XTimeUtils.h"
@@ -46,6 +46,7 @@ extern "C" {
 }
 
 #include <va/va_vpp.h>
+#include <xf86drm.h>
 
 using namespace VAAPI;
 #define NUM_RENDER_PICS 7
@@ -55,7 +56,6 @@ using namespace VAAPI;
 
 CVAAPIContext *CVAAPIContext::m_context = 0;
 CCriticalSection CVAAPIContext::m_section;
-Display *CVAAPIContext::m_X11dpy = 0;
 
 CVAAPIContext::CVAAPIContext()
 {
@@ -86,6 +86,11 @@ void CVAAPIContext::Release(CDecoder *decoder)
 void CVAAPIContext::Close()
 {
   CLog::Log(LOGNOTICE, "VAAPI::Close - closing decoder context");
+  if (m_fd >= 0)
+  {
+    close(m_fd);
+  }
+
   DestroyContext();
 }
 
@@ -123,14 +128,44 @@ bool CVAAPIContext::EnsureContext(CVAAPIContext **ctx, CDecoder *decoder)
   return true;
 }
 
-bool CVAAPIContext::CreateContext()
+namespace
 {
-  { CSingleLock lock(g_graphicsContext);
-    if (!m_X11dpy)
-      m_X11dpy = XOpenDisplay(NULL);
+int find_open_render_node_fd()
+{
+  int const buf_size{128};
+  char name[buf_size];
+  int fd{-1};
+
+  for (int i = 128; i < (128 + 16); i++)
+  {
+    snprintf(name, buf_size, "/dev/dri/renderD%u", i);
+
+    fd = open(name, O_RDWR);
+
+    if (fd < 0)
+    {
+      continue;
+    }
+
+    return fd;
   }
 
-  m_display = vaGetDisplay(m_X11dpy);
+  return -1;
+}
+}
+
+bool CVAAPIContext::CreateContext()
+{
+  // Render nodes depends on kernel >= 3.15
+  m_fd = find_open_render_node_fd();
+  if (m_fd < 0)
+  {
+    CLog::Log(LOGERROR, "FAILED To find any open render nodes in /dev/dri/renderD<num>\n");
+    m_display = NULL;
+    return false;
+  }
+
+  m_display = vaGetDisplayDRM(m_fd);
 
   int major_version, minor_version;
   if (!CheckSuccess(vaInitialize(m_display, &major_version, &minor_version)))
@@ -248,11 +283,6 @@ bool CVAAPIContext::CheckSuccess(VAStatus status)
 VADisplay CVAAPIContext::GetDisplay()
 {
   return m_display;
-}
-
-Display *CVAAPIContext::GetX11Display()
-{
-  return m_X11dpy;
 }
 
 bool CVAAPIContext::IsValidDecoder(CDecoder *decoder)
@@ -1011,7 +1041,6 @@ bool CDecoder::ConfigVAAPI()
   memset(&m_hwContext, 0, sizeof(vaapi_context));
 
   m_vaapiConfig.dpy = m_vaapiConfig.context->GetDisplay();
-  m_vaapiConfig.x11dsp = m_vaapiConfig.context->GetX11Display();
   m_vaapiConfig.attrib = m_vaapiConfig.context->GetAttrib(m_vaapiConfig.profile);
   if ((m_vaapiConfig.attrib.value & VA_RT_FORMAT_YUV420) == 0)
   {
@@ -2397,7 +2426,6 @@ bool COutput::CheckSuccess(VAStatus status)
 
 bool COutput::CreateEGLContext()
 {
-  m_Display = g_Windowing.GetDisplay();
   EGLDisplay eglDisplay = g_Windowing.GetEGLDisplay();
   EGLContext eglMainContext = g_Windowing.GetEGLContext();
   EGLConfig eglMainConfig = g_Windowing.GetEGLConfig();
