@@ -303,6 +303,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
         m_format.m_sampleRate     = m_sink_sampleRate;
         m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
+        CLog::Log(LOGDEBUG, "Fallback to PCM passthrough mode - this might not work!");
       }
     }
   }
@@ -325,9 +326,14 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(m_format.m_channelLayout);
   m_format.m_channelLayout  = AUDIOTRACKChannelMaskToAEChannelMap(atChannelMask);
   if (m_encoding == CJNIAudioFormat::ENCODING_IEC61937)
-    atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
+  {
+    // keep above channel output if we do IEC61937 and got DTSHD or TrueHD by AudioEngine
+    if (m_format.m_streamInfo.m_type != CAEStreamInfo::STREAM_TYPE_DTSHD && m_format.m_streamInfo.m_type != CAEStreamInfo::STREAM_TYPE_TRUEHD)
+      atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
+  }
 
-  if (aml_present() && m_passthrough && m_info.m_wantsIECPassthrough)
+  // old aml without IEC61937 passes everything via 2 channels
+  if (aml_present() && m_passthrough && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
     atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
 
   while (!m_at_jni)
@@ -408,16 +414,21 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       if (m_passthrough)
       {
         m_min_buffer_size *= 2;
-        if (m_sink_sampleRate > 48000)
-          m_min_buffer_size *= (m_sink_sampleRate / 48000); // same amount of buffer in seconds as for 48 khz
-        else if (m_sink_sampleRate < m_format.m_sampleRate) // eac3
-          m_min_buffer_size *= (m_format.m_sampleRate / m_sink_sampleRate);
+        // AML in old mode needs more buffer or it stutters when faking PT
+        if (aml_present() && m_passthrough && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
+        {
+          if (m_sink_sampleRate > 48000)
+            m_min_buffer_size *= (m_sink_sampleRate / 48000); // same amount of buffer in seconds as for 48 khz
+          else if (m_sink_sampleRate < m_format.m_sampleRate) // eac3
+            m_min_buffer_size *= (m_format.m_sampleRate / m_sink_sampleRate);
+        }
       }
       else
         m_min_buffer_size *= 2;
 
       m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
-      if (m_passthrough)
+      // again a workaround for AML old code
+      if (m_passthrough && aml_present() && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
         m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
       else
         m_sink_frameSize = m_format.m_frameSize;
@@ -837,13 +848,19 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+        CLog::Log(LOGDEBUG, "AESinkAUDIOTrack: Using IEC PT mode: %d", CJNIAudioFormat::ENCODING_IEC61937);
 
         if (supports_192khz)
         {
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-          // not working yet
-          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-          // m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+          // Check for IEC 8 channel 192 khz PT
+          int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
+          if (IsSupported(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
+          {
+            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+            CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
+          }
         }
       }
     }
