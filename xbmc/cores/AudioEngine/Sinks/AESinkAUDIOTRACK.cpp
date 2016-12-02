@@ -783,14 +783,21 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
     m_info.m_wantsIECPassthrough = false;
     m_info.m_dataFormats.push_back(AE_FMT_RAW);
     if (CJNIAudioFormat::ENCODING_AC3 != -1)
+    {
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+      CLog::Log(LOGDEBUG, "Firmware implements AC3 RAW");
+    }
 
     // EAC3 working on shield, broken on FireTV
     if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
+    {
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+      CLog::Log(LOGDEBUG, "Firmware implements EAC3 RAW");
+    }
 
     if (CJNIAudioFormat::ENCODING_DTS != -1)
     {
+      CLog::Log(LOGDEBUG, "Firmware implements DTS RAW");
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
@@ -833,9 +840,15 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       if (CJNIAudioManager::GetSDKVersion() >= 23)
       {
         if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
+        {
+          CLog::Log(LOGDEBUG, "Firmware implements DTS-HD RAW");
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+        }
         if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
+        {
+          CLog::Log(LOGDEBUG, "Firmware implements TrueHD RAW");
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+        }
       }
       // Android v24 and backports can do real IEC API
       if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
