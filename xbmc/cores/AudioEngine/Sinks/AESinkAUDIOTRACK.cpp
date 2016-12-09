@@ -336,6 +336,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   if (aml_present() && m_passthrough && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
     atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
 
+  // yet another hack to give flinger a bit time to come back alive
+  int pt_retries = 4;
   while (!m_at_jni)
   {
     CLog::Log(LOGNOTICE, "Trying to open: %u samplerate %d channelMask %d encoding", m_sink_sampleRate, atChannelMask, m_encoding);
@@ -464,6 +466,13 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           CLog::Log(LOGDEBUG, "AESinkAUDIOTRACK - Retrying with a stereo layout");
           continue;
         }
+      }
+      else if (pt_retries > 0)
+      {
+        CLog::Log(LOGERROR, "Failed to AESinkAUDIOTRACK in PT mode - retries left: %d", pt_retries);
+        --pt_retries;
+        usleep(500 * 1000);
+        continue;
       }
       CLog::Log(LOGERROR, "AESinkAUDIOTRACK - Unable to create AudioTrack");
       Deinitialize();
