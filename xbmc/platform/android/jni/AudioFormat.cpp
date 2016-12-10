@@ -116,6 +116,9 @@ void CJNIAudioFormat::PopulateStaticFields()
           CJNIAudioFormat::ENCODING_DOLBY_TRUEHD = value;
 
         GetStaticValue(c, CJNIAudioFormat::ENCODING_IEC61937, "ENCODING_IEC61937");
+        // Forced by user pressure / don't break existing DTS-HD functionality, e.g. AML
+        if (sdk < 23 && CJNIAudioFormat::ENCODING_IEC61937 == -1 && CJNIAudioFormat::ENCODING_DTS_HD == -1)
+          CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
       }
     }
   }
