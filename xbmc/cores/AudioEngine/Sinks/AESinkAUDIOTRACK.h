@@ -65,6 +65,7 @@ private:
   // Moving Average computes the weighted average delay over
   // a fixed size of delay values - current size: 20 values
   double                GetMovingAverageDelay(double newestdelay);
+  void HardcoreRecover();
   // When AddPause is called the m_pause_time is increased
   // by the package duration. This is only used for non IEC passthrough
   XbmcThreads::EndTime  m_extTimer;

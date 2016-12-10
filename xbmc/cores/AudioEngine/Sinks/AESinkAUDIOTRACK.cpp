@@ -465,6 +465,11 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           continue;
         }
       }
+      else
+      {
+        HardcoreRecover();
+        continue;
+      }
       CLog::Log(LOGERROR, "AESinkAUDIOTRACK - Unable to create AudioTrack");
       Deinitialize();
       return false;
@@ -880,6 +885,30 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
     std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
   }
   list.push_back(m_info);
+}
+
+void CAESinkAUDIOTRACK::HardcoreRecover()
+{
+  // jni might already be there remove it, recreate it
+  Deinitialize();
+  // this is the most ugly workaround ever seen
+  // shortly switch to stereo layout
+  int min_buffer_size = CJNIAudioTrack::getMinBufferSize(48000,
+                                                         CJNIAudioFormat::CHANNEL_OUT_STEREO,
+                                                         CJNIAudioFormat::ENCODING_PCM_16BIT);
+  int retries = 20;
+  while ((m_at_jni == nullptr || !IsInitialized()) && retries > 0)
+  {
+    // wait a bit
+    Deinitialize();
+    usleep(100 * 1000);
+    m_at_jni = CreateAudioTrack(CJNIAudioManager::STREAM_MUSIC, 48000, CJNIAudioFormat::CHANNEL_OUT_STEREO,
+                                CJNIAudioFormat::ENCODING_PCM_16BIT, min_buffer_size * 2);
+    --retries;
+    CLog::Log(LOGDEBUG, "Retrying to open AESinkAUDIOTRACK in PT mode - retries left: %d", retries);
+  }
+  // and destroy it again
+  Deinitialize();
 }
 
 double CAESinkAUDIOTRACK::GetMovingAverageDelay(double newestdelay)
