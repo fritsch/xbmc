@@ -35,6 +35,9 @@ CAESinkNULL::CAESinkNULL()
     m_sinkbuffer_level(0),
     m_sinkbuffer_sec_per_byte(0)
 {
+#if defined(TARGET_ANDROID)
+  m_resetTimer.Set(10000);
+#endif
 }
 
 CAESinkNULL::~CAESinkNULL()
@@ -96,6 +99,11 @@ unsigned int CAESinkNULL::AddPackets(uint8_t **data, unsigned int frames, unsign
     m_sinkbuffer_level += frames * m_sink_frameSize;
     m_wake.Set();
   }
+#if defined(TARGET_ANDROID)
+  // ugly Android workaround to get out of the NULL sink
+  if (m_resetTimer.IsTimePast())
+    return INT_MAX;
+#endif
 
   return frames;
 }

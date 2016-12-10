@@ -51,4 +51,8 @@ private:
   unsigned int         m_sinkbuffer_size;  ///< total size of the buffer
   unsigned int         m_sinkbuffer_level; ///< current level in the buffer
   double               m_sinkbuffer_sec_per_byte;
+#if defined(TARGET_ANDROID)
+  XbmcThreads::EndTime m_resetTimer;
+#endif
+
 };
