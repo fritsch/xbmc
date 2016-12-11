@@ -336,6 +336,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   if (aml_present() && m_passthrough && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
     atChannelMask = CJNIAudioFormat::CHANNEL_OUT_STEREO;
 
+  bool tried_recovery = false;
   while (!m_at_jni)
   {
     CLog::Log(LOGNOTICE, "Trying to open: %u samplerate %d channelMask %d encoding", m_sink_sampleRate, atChannelMask, m_encoding);
@@ -465,9 +466,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           continue;
         }
       }
-      else
+      else if(!tried_recovery)
       {
         HardcoreRecover();
+        tried_recovery = true;
         continue;
       }
       CLog::Log(LOGERROR, "AESinkAUDIOTRACK - Unable to create AudioTrack");
