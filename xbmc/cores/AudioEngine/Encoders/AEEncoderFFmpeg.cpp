@@ -18,7 +18,7 @@
  *
  */
 
-#define AC3_ENCODE_BITRATE 640000
+#define AC3_ENCODE_BITRATE 384000
 #define DTS_ENCODE_BITRATE 1411200
 
 #include "cores/AudioEngine/Encoders/AEEncoderFFmpeg.h"
