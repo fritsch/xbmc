@@ -108,6 +108,12 @@ void CJNIMediaCodec::start()
     "start", "()V");
 }
 
+void CJNIMediaCodec::reset()
+{
+  call_method<void>(m_object,
+    "reset", "()V");
+}
+
 void CJNIMediaCodec::stop()
 {
   call_method<void>(m_object,

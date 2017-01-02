@@ -42,6 +42,7 @@ public:
   void  start();
   void  stop();
   void  flush();
+  void  reset();
   void  queueInputBuffer(int index, int offset, int size, int64_t presentationTimeUs, int flags);
   void  queueSecureInputBuffer(int index, int offset, const CJNIMediaCodecCryptoInfo &info, int64_t presentationTimeUs, int flags);
   int   dequeueInputBuffer(int64_t timeoutUs);
