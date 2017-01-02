@@ -107,6 +107,7 @@ public:
   virtual bool    GetPicture(DVDVideoPicture *pDvdVideoPicture);
   virtual bool    ClearPicture(DVDVideoPicture* pDvdVideoPicture);
   virtual void    SetDropState(bool bDrop);
+  virtual bool Reconfigure(CDVDStreamInfo &hints) override;
   virtual void    SetCodecControl(int flags);
   virtual int     GetDataSize(void);
   virtual double  GetTimeSize(void);

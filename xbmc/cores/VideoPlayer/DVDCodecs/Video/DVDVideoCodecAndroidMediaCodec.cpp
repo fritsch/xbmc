@@ -919,6 +919,12 @@ void CDVDVideoCodecAndroidMediaCodec::SetDropState(bool bDrop)
     m_videobuffer.iFlags &= ~DVP_FLAG_DROPPED;
 }
 
+bool Reconfigure(CDVDStreamInfo &hints)
+{
+  CLog::Log(LOGNOTICE, "Implement me properly and reconfigure me to save us from open / close");
+  return false;
+}
+
 void CDVDVideoCodecAndroidMediaCodec::SetCodecControl(int flags)
 {
   if (m_codecControlFlags != flags)
