@@ -426,6 +426,7 @@ void CRenderManager::FrameMove()
   }
 
   ManageCaptures();
+  CLog::Log(LOGNOTICE, "Queued: %d, Discard: %d, Free: %d", (int)m_queued.size(), (int)m_discard.size(), (int)m_free.size());
 }
 
 void CRenderManager::PreInit()
