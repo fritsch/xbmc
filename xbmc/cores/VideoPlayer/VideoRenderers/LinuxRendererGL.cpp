@@ -2513,6 +2513,13 @@ bool CLinuxRendererGL::Supports(ESCALINGMETHOD method)
     if (scaleX < minScale && scaleY < minScale)
       return false;
 
+    /* we are too slow rendering this */
+    if (m_sourceHeight > 2560)
+      return false;
+
+    if (m_destRect.Width() > 2560)
+      return false;
+
     if (g_Windowing.IsExtSupported("GL_EXT_framebuffer_object") && (m_renderMethod & RENDER_GLSL))
     {
       // spline36 and lanczos3 are only allowed through advancedsettings.xml
