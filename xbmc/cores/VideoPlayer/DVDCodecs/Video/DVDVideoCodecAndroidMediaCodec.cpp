@@ -362,9 +362,6 @@ CDVDVideoCodecAndroidMediaCodec::~CDVDVideoCodecAndroidMediaCodec()
 bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options)
 {
 
-  if (s_instances > 0)
-    return false;
-
   // mediacodec crashes with null size. Trap this...
   if (!hints.width || !hints.height)
   {
@@ -675,7 +672,8 @@ void CDVDVideoCodecAndroidMediaCodec::Dispose()
       xbmc_jnienv()->ExceptionClear();
   }
   ReleaseSurfaceTexture();
-  if (m_render_surface)
+  // only clear if no other decoder is running in parallel
+  if (s_instances == 1 && m_render_surface)
     CXBMCApp::get()->clearVideoView();
 
   SAFE_DELETE(m_bitstream);
