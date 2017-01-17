@@ -34,9 +34,6 @@ CAEEncoderFFmpeg::CAEEncoderFFmpeg():
   m_CodecCtx      (NULL ),
   m_SwrCtx        (NULL ),
   m_BufferSize    (0    ),
-  m_OutputSize    (0    ),
-  m_OutputRatio   (0.0  ),
-  m_SampleRateMul (0.0  ),
   m_NeededFrames  (0    ),
   m_NeedConversion(false)
 {
@@ -215,8 +212,6 @@ bool CAEEncoderFFmpeg::Initialize(AEAudioFormat &format, bool allow_planar_input
 
   m_CurrentFormat = format;
   m_NeededFrames = format.m_frames;
-  m_OutputRatio   = (double)m_NeededFrames / m_OutputSize;
-  m_SampleRateMul = 1.0 / (double)m_CodecCtx->sample_rate;
 
   if (m_NeedConversion)
   {
@@ -317,13 +312,7 @@ int CAEEncoderFFmpeg::GetData(uint8_t **data)
 
 double CAEEncoderFFmpeg::GetDelay(unsigned int bufferSize)
 {
-  if (!m_CodecCtx)
-    return 0;
-
-  int frames = m_CodecCtx->delay;
-  if (m_BufferSize)
-    frames += m_NeededFrames;
-
-  return ((double)frames + ((double)bufferSize * m_OutputRatio)) * m_SampleRateMul;
+  // this is never called
+  return 0.0;
 }
 
