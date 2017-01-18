@@ -853,6 +853,14 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
         }
       }
+
+      // PCM HACK
+      if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
+      {
+        CLog::Log(LOGWARNING, "You are using PCM passthrough - you were warned!");
+        CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
+      }
+
       // Android v24 and backports can do real IEC API
       if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
       {
