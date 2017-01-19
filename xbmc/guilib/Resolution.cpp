@@ -224,13 +224,24 @@ RESOLUTION CResolutionUtils::FindClosestResolution(float fps, int width, bool is
       // evaluate all higher modes and evaluate them
       // concerning dimension and refreshrate weight
       // skip lower resolutions
-      if ((width < orig.iScreenWidth) || // orig res large enough
+      // don't change resolutions when 3D is wanted
+      if (((width < orig.iScreenWidth) || // orig res large enough
          (info.iScreenWidth < orig.iScreenWidth) || // new res is smaller
          (info.iScreenHeight < orig.iScreenHeight) || // new height would be smaller
          (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK) || // don't switch to interlaced modes
-         (info.iScreen != curr.iScreen)) // skip not current displays
+         (info.iScreen != curr.iScreen)) && // skip not current displays
+         !is3D) // only change res up the moment we are not 3D
       {
         continue;
+      }
+      else if (is3D)
+      {
+        // daanda said 3D must be done in a 1080p mode
+        if ((info.iScreen != curr.iScreen) ||
+           (info.iScreenWidth > 1920) ||
+           (info.iScreenHeight > 1080) ||
+           (info.dwFlags & D3DPRESENTFLAG_MODEMASK) != (curr.dwFlags & D3DPRESENTFLAG_MODEMASK))
+          continue;
       }
     }
 
