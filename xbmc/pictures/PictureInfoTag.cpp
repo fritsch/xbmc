@@ -27,6 +27,7 @@
 #include "utils/CharsetConverter.h"
 #include "utils/StringUtils.h"
 #include "utils/Archive.h"
+#include "utils/TimeUtils.h"
 
 void CPictureInfoTag::Reset()
 {
@@ -51,6 +52,7 @@ const CPictureInfoTag& CPictureInfoTag::operator=(const CPictureInfoTag& right)
 bool CPictureInfoTag::Load(const std::string &path)
 {
   m_isLoaded = false;
+  auto start = CurrentHostCounter();
 
   DllLibExif exifDll;
   if (path.empty() || !exifDll.Load())
@@ -60,7 +62,7 @@ bool CPictureInfoTag::Load(const std::string &path)
     m_isLoaded = true;
 
   ConvertDateTime();
-
+  CLog::Log(LOGNOTICE, "Time needed to load exif data of %s: %lf ms", path.c_str(), ((CurrentHostCounter() - start) * 1000.0) / CurrentHostFrequency());
   return m_isLoaded;
 }
 
