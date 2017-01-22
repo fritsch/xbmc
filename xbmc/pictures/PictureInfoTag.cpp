@@ -28,6 +28,7 @@
 #include "utils/StringUtils.h"
 #include "utils/Archive.h"
 #include "utils/TimeUtils.h"
+#include "utils/log.h"
 
 void CPictureInfoTag::Reset()
 {
