@@ -53,8 +53,6 @@ struct REFRESHRATE
   int   ResInfo_Index;
 };
 
-class CVideoSync;
-
 class CWinSystemBase
 {
 public:
