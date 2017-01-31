@@ -1,5 +1,6 @@
 set(SOURCES DVDAudio.cpp
             DVDClock.cpp
+            VideoReferenceClock.cpp
             DVDDemuxSPU.cpp
             DVDFileInfo.cpp
             DVDMessage.cpp
@@ -17,6 +18,7 @@ set(SOURCES DVDAudio.cpp
 
 set(HEADERS DVDAudio.h
             DVDClock.h
+            VideoReferenceClock.h
             DVDDemuxSPU.h
             DVDFileInfo.h
             DVDMessage.h

@@ -21,8 +21,10 @@
 #ifndef WINDOW_SYSTEM_BASE_H
 #define WINDOW_SYSTEM_BASE_H
 
+#include "VideoSync.h"
 #include "WinEvents.h"
 #include "guilib/Resolution.h"
+#include <memory>
 #include <vector>
 
 typedef enum _WindowSystemType
@@ -50,6 +52,8 @@ struct REFRESHRATE
   float RefreshRate;
   int   ResInfo_Index;
 };
+
+class CVideoSync;
 
 class CWinSystemBase
 {
@@ -83,6 +87,9 @@ public:
   virtual bool Restore() { return false; }
   virtual bool Hide() { return false; }
   virtual bool Show(bool raise = true) { return false; }
+
+  // videosync
+  virtual std::unique_ptr<CVideoSync> GetVideoSync(void *clock) { return nullptr; }
 
   // notifications
   virtual void OnMove(int x, int y) {}
