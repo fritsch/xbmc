@@ -855,7 +855,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
       }
 
       // PCM HACK
-      if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
+      //if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
       {
         CLog::Log(LOGWARNING, "You are using PCM passthrough - you were warned!");
         CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
