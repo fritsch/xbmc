@@ -76,32 +76,57 @@ bool CWinSystemX11GLContext::IsExtSupported(const char* extension)
 
 GLXWindow CWinSystemX11GLContext::GetWindow() const
 {
-  return static_cast<CGLContextGLX*>(m_pGLContext)->m_glxWindow;
+  CGLContextGLX* ctx = dynamic_cast<CGLContextGLX*>(m_pGLContext);
+  if (ctx)
+   return ctx->m_glxWindow;
+
+  return 0;
+
 }
 
 GLXContext CWinSystemX11GLContext::GetGlxContext() const
 {
-  return static_cast<CGLContextGLX*>(m_pGLContext)->m_glxContext;
+  CGLContextGLX* ctx = dynamic_cast<CGLContextGLX*>(m_pGLContext);
+  if (ctx)
+   return ctx->m_glxContext;
+
+  return NULL;
 }
 
 EGLDisplay CWinSystemX11GLContext::GetEGLDisplay() const
 {
-  return static_cast<CGLContextEGL*>(m_pGLContext)->m_eglDisplay;
+  CGLContextEGL* ctx = dynamic_cast<CGLContextEGL*>(m_pGLContext);
+  if (ctx)
+   return ctx->m_eglDisplay;
+
+  return NULL;
 }
 
 EGLSurface CWinSystemX11GLContext::GetEGLSurface() const
 {
-  return static_cast<CGLContextEGL*>(m_pGLContext)->m_eglSurface;
+  CGLContextEGL* ctx = dynamic_cast<CGLContextEGL*>(m_pGLContext);
+  if (ctx)
+   return ctx->m_eglSurface;
+
+  return NULL;
 }
 
 EGLContext CWinSystemX11GLContext::GetEGLContext() const
 {
-  return static_cast<CGLContextEGL*>(m_pGLContext)->m_eglContext;
+  CGLContextEGL* ctx = dynamic_cast<CGLContextEGL*>(m_pGLContext);
+  if (ctx)
+   return ctx->m_eglContext;
+
+  return NULL;
 }
 
 EGLConfig CWinSystemX11GLContext::GetEGLConfig() const
 {
-  return static_cast<CGLContextEGL*>(m_pGLContext)->m_eglConfig;
+  CGLContextEGL* ctx = dynamic_cast<CGLContextEGL*>(m_pGLContext);
+  if (ctx)
+   return ctx->m_eglConfig;
+
+  return NULL;
 }
 
 bool CWinSystemX11GLContext::SetWindow(int width, int height, bool fullscreen, const std::string &output, int *winstate)
@@ -210,10 +235,14 @@ bool CWinSystemX11GLContext::RefreshGLContext(bool force)
     const char* vend = (const char*) glGetString(GL_VENDOR);
     if (vend)
       gpuvendor = vend;
+
+    auto it = std::find(m_egl_vendors.begin(), m_egl_vendors.end(), gpuvendor);
+    if (it != m_egl_vendors.end())
+      m_IsUsingEGL = true;
   }
-  std::transform(gpuvendor.begin(), gpuvendor.end(), gpuvendor.begin(), ::tolower);
-  if (firstrun && (!ret || gpuvendor.compare(0, 5, "intel") != 0))
+  if (firstrun && (!ret || !m_IsUsingEGL))
   {
+    CLog::Log(LOGNOTICE, "Creating GLX");
     delete m_pGLContext;
     m_pGLContext = new CGLContextGLX(m_dpy);
     ret = m_pGLContext->Refresh(force, m_nScreen, m_glWindow, m_newGlContext);
@@ -225,14 +254,11 @@ std::unique_ptr<CVideoSync> CWinSystemX11GLContext::GetVideoSync(void *clock)
 {
   std::unique_ptr<CVideoSync> pVSync;
 
-  if (dynamic_cast<CGLContextEGL*>(m_pGLContext))
-  {
+  if (m_IsUsingEGL)
     pVSync.reset(new CVideoSyncDRM(clock));
-  }
-  else if (dynamic_cast<CGLContextGLX*>(m_pGLContext))
-  {
+  else
     pVSync.reset(new CVideoSyncGLX(clock));
-  }
+
   return pVSync;
 }
 

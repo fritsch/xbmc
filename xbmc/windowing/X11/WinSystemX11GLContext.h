@@ -27,6 +27,7 @@
 #include "EGL/egl.h"
 #include "rendering/gl/RenderSystemGL.h"
 #include "utils/GlobalsHandling.h"
+#include <vector>
 
 class CGLContext;
 
@@ -62,6 +63,11 @@ protected:
 
   CGLContext *m_pGLContext = nullptr;
   bool m_newGlContext;
+private:
+  // provide easy functionality to add other vendors later on
+  std::vector<std::string> m_egl_vendors {"Intel Open Source Technology Center"};
+  bool m_IsUsingEGL = false;
+
 };
 
 XBMC_GLOBAL_REF(CWinSystemX11GLContext,g_Windowing);
