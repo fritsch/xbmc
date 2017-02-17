@@ -400,8 +400,6 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
       m_formatname = "amc-mpeg2";
       break;
     case AV_CODEC_ID_MPEG4:
-      if (hints.width <= 800)
-        return false;
       m_mime = "video/mp4v-es";
       m_formatname = "amc-mpeg4";
       break;
