@@ -1021,14 +1021,6 @@ unsigned int CActiveAESink::OutputSamples(CSampleBuffer* samples)
 
   int framesOrPackets;
 
-
-  // overwrite PAUSE bursts just for testing
-  if (m_requestedFormat.m_dataFormat == AE_FMT_RAW && samples->pkt->pause_burst_ms > 0)
-  {
-    CLog::Log(LOGNOTICE, "Overwriting pause frame of size: %d length: %d ms", (int) m_packer->GetSize(), samples->pkt->pause_burst_ms);
-    memset(*buffer, 0, m_packer->GetSize());
-  }
-
   while (frames > 0)
   {
     maxFrames = std::min(frames, m_sinkFormat.m_frames);
