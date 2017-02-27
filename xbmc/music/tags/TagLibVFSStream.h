@@ -20,6 +20,7 @@
  */
 #include "filesystem/File.h"
 #include <taglib/tiostream.h>
+#include "threads/SystemClock.h"
 
 namespace MUSIC_INFO
 {
@@ -30,7 +31,7 @@ namespace MUSIC_INFO
      * Construct a File object and opens the \a file.  \a file should be a
      * be an XBMC Vfile.
      */
-    TagLibVFSStream(const std::string& strFileName, bool readOnly);
+    TagLibVFSStream(const std::string& strFileName, bool readOnly, bool isInternetStream = false);
 
     /*!
      * Destroys this ByteVectorStream instance.
@@ -126,6 +127,8 @@ namespace MUSIC_INFO
     XFILE::CFile  m_file;
     bool          m_bIsReadOnly;
     bool          m_bIsOpen;
+    XbmcThreads::EndTime  m_extTimer;
+    bool m_isInternetStream = false;
   };
 }
 

@@ -25,14 +25,21 @@
 using namespace XFILE;
 using namespace TagLib;
 using namespace MUSIC_INFO;
+#define TAGLIB_INET_STREAM_TIMEOUT 2000
 
 /*!
  * Construct a File object and opens the \a file.  \a file should be a
  * be an XBMC Vfile.
  */
-TagLibVFSStream::TagLibVFSStream(const std::string& strFileName, bool readOnly)
+TagLibVFSStream::TagLibVFSStream(const std::string& strFileName, bool readOnly, bool isInternetStream)
 {
   m_bIsOpen = true;
+
+  // Construct a timer for internet streams
+  m_isInternetStream = isInternetStream;
+  if (m_isInternetStream)
+    m_extTimer.SetInfinite();
+
   if (readOnly)
   {
     if (!m_file.Open(strFileName))
@@ -73,6 +80,9 @@ ByteVector TagLibVFSStream::readBlock(TagLib::ulong length)
   if (read > 0)
     byteVector.resize(read);
   else
+    byteVector.clear();
+
+  if (m_isInternetStream && m_extTimer.IsTimePast())
     byteVector.clear();
 
   return byteVector;
@@ -248,6 +258,10 @@ bool TagLibVFSStream::isOpen() const
  */
 void TagLibVFSStream::seek(long offset, Position p)
 {
+  // set once
+  if (m_isInternetStream && m_extTimer.IsInfinite())
+    m_extTimer.Set(TAGLIB_INET_STREAM_TIMEOUT);
+
   const long fileLen = length();
   if (m_bIsReadOnly && fileLen > 0)
   {
