@@ -82,7 +82,7 @@ CVideoReferenceClock::~CVideoReferenceClock()
 void CVideoReferenceClock::Start()
 {
   m_ClockOffset = CurrentHostCounter();
-  if(CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_USEDISPLAYASCLOCK) && !IsRunning())
+  if(false && !IsRunning())
     Create();
 }
 

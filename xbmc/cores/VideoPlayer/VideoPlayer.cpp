@@ -842,15 +842,7 @@ bool CVideoPlayer::OpenInputStream()
   m_errorCount = 0;
   m_ChannelEntryTimeOut.SetInfinite();
 
-  if (CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_USEDISPLAYASCLOCK) &&
-      !m_pInputStream->IsRealtime())
-  {
-    m_canTempo = true;
-  }
-  else
-  {
-    m_canTempo = false;
-  }
+  m_canTempo = false;
 
   return true;
 }
