@@ -124,6 +124,13 @@ MsgQueueReturnCode CDVDMessageQueue::Put(CDVDMsg* pMsg, int priority, bool front
   }
   else
   {
+    if (m_messages.empty())
+    {
+      m_iDataSize = 0;
+      m_TimeBack = DVD_NOPTS_VALUE;
+      m_TimeFront = DVD_NOPTS_VALUE;
+    }
+
     if (front)
       m_messages.emplace_front(pMsg, priority);
     else
@@ -271,7 +278,9 @@ int CDVDMessageQueue::GetLevel() const
     return 0;
 
   if (IsDataBased())
+  {
     return std::min(100, 100 * m_iDataSize / m_iMaxDataSize);
+  }
 
   int level = std::min(100.0, ceil(100.0 * m_TimeSize * (m_TimeFront - m_TimeBack) / DVD_TIME_BASE ));
 
