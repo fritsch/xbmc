@@ -64,6 +64,7 @@ bool CActiveAEFilter::SetTempo(float tempo)
   int bufferSamples = GetBufferedSamples();
 
   m_tempo = tempo;
+  CLog::Log(LOGNOTICE, "atempo: %lf", m_tempo);
   if (m_tempo == 1.0)
   {
     CloseFilter();
