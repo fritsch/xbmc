@@ -26,6 +26,7 @@
 #include "cores/AudioEngine/Utils/AEUtil.h"
 #include "cores/AudioEngine/AEResampleFactory.h"
 #include "cores/AudioEngine/Engines/ActiveAE/ActiveAE.h"
+#include "utils/log.h"
 
 using namespace ActiveAE;
 
@@ -646,6 +647,7 @@ bool CActiveAEBufferPoolAtempo::ProcessBuffers()
         else
           m_outputSamples.push_back(m_procSample);
 
+        CLog::Log(LOGNOTICE,"----------- procSampe: %d", m_procSample->pkt->nb_samples);
         m_procSample = nullptr;
 
         if (m_changeFilter)
