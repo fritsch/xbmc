@@ -239,7 +239,7 @@ int CAEPackIEC61937::PackPause(uint8_t *dest, unsigned int millis, unsigned int 
     memcpy(dest+i*periodInBytes, dest, periodInBytes);
   }
 
-  packet->m_data[1] = (gap & 0x00FF) << 8;
-  packet->m_data[0] = (gap & 0xFF00) >> 8;
+//  packet->m_data[1] = (gap & 0x00FF) << 8;
+//  packet->m_data[0] = (gap & 0xFF00) >> 8;
   return periodsNeeded * periodInBytes;
 }
