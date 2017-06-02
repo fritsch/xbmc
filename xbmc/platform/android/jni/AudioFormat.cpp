@@ -32,7 +32,7 @@ int CJNIAudioFormat::ENCODING_E_AC3                    = 0x00000006;
 int CJNIAudioFormat::ENCODING_DTS                      = 0x00000007;
 int CJNIAudioFormat::ENCODING_DTS_HD                   = 0x00000008;
 int CJNIAudioFormat::ENCODING_DOLBY_TRUEHD             = 0x00000009;
-int CJNIAudioFormat::ENCODING_IEC61937                 = 0x0000000d;
+int CJNIAudioFormat::ENCODING_IEC61937                 = -1;
 
 int CJNIAudioFormat::CHANNEL_OUT_MONO                  = 0x00000004;
 int CJNIAudioFormat::CHANNEL_OUT_STEREO                = 0x0000000c;
@@ -115,7 +115,7 @@ void CJNIAudioFormat::PopulateStaticFields()
         if (value != -1)
           CJNIAudioFormat::ENCODING_DOLBY_TRUEHD = value;
 
-        GetStaticValue(c, CJNIAudioFormat::ENCODING_IEC61937, "ENCODING_IEC61937");
+//        GetStaticValue(c, CJNIAudioFormat::ENCODING_IEC61937, "ENCODING_IEC61937");
       }
     }
   }
