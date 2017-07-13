@@ -873,7 +873,7 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field, bool weave /*= false*
       return;
     }
     //if (!m_fbo.fbo.CreateAndBindToTexture(GL_TEXTURE_2D, m_sourceWidth, m_sourceHeight, GL_RGBA))
-    if (!m_fbo.fbo.CreateAndBindToTexture(GL_TEXTURE_2D, m_sourceWidth, m_sourceHeight, GL_RGBA, GL_SHORT))
+    if (!m_fbo.fbo.CreateAndBindToTexture(GL_TEXTURE_2D, m_sourceWidth, m_sourceHeight, GL_RGBA16_EXT, GL_SHORT))
     {
       CLog::Log(LOGERROR, "GL: Error creating texture and binding to FBO");
       return;
@@ -1072,14 +1072,14 @@ void CLinuxRendererGLES::RenderFromFBO()
   float imgheight = m_fbo.height / m_sourceHeight;
 
   GLubyte idx[4] = {0, 1, 3, 2};        //determines order of triangle strip
-  GLfloat m_vert[4][3];
-  GLfloat m_tex[4][2];
+  GLfloat vert[4][3];
+  GLfloat tex[4][2];
 
   GLint vertLoc = m_pVideoFilterShader->GetVertexLoc();
   GLint loc     = m_pVideoFilterShader->GetcoordLoc();
 
-  glVertexAttribPointer(vertLoc, 3, GL_FLOAT, 0, 0, m_vert);
-  glVertexAttribPointer(loc, 2, GL_FLOAT, 0, 0, m_tex);
+  glVertexAttribPointer(vertLoc, 3, GL_FLOAT, 0, 0, vert);
+  glVertexAttribPointer(loc, 2, GL_FLOAT, 0, 0, tex);
 
   glEnableVertexAttribArray(vertLoc);
   glEnableVertexAttribArray(loc);
@@ -1087,16 +1087,16 @@ void CLinuxRendererGLES::RenderFromFBO()
   // Setup vertex position values
   for(int i = 0; i < 4; i++)
   {
-    m_vert[i][0] = m_rotatedDestCoords[i].x;
-    m_vert[i][1] = m_rotatedDestCoords[i].y;
-    m_vert[i][2] = 0.0f;// set z to 0
+    vert[i][0] = m_rotatedDestCoords[i].x;
+    vert[i][1] = m_rotatedDestCoords[i].y;
+    vert[i][2] = 0.0f;// set z to 0
   }
 
   // Setup texture coordinates
-  m_tex[0][0] = m_tex[3][0] = 0.0f;
-  m_tex[0][1] = m_tex[1][1] = 0.0f;
-  m_tex[1][0] = m_tex[2][0] = imgwidth;
-  m_tex[2][1] = m_tex[3][1] = imgheight;
+  tex[0][0] = tex[3][0] = 0.0f;
+  tex[0][1] = tex[1][1] = 0.0f;
+  tex[1][0] = tex[2][0] = imgwidth;
+  tex[2][1] = tex[3][1] = imgheight;
 
   glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_BYTE, idx);
 

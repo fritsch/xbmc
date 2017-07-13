@@ -144,40 +144,57 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
   std::string shadername;
   std::string defines;
 
-#if defined(HAS_GL)
-  m_floattex = g_Windowing.IsExtSupported("GL_ARB_texture_float");
-#elif HAS_GLES >= 2
-  m_floattex = false;
-#endif
+  if (g_Windowing.IsExtSupported("GL_ARB_texture_float"))
+  {
+    m_floattex = true;
+  }
+  else if (g_Windowing.IsExtSupported("GL_EXT_color_buffer_float"))
+  {
+    m_floattex = true;
+  }
+  else
+  {
+    m_floattex = false;
+  }
 
   if (m_method == VS_SCALINGMETHOD_CUBIC ||
       m_method == VS_SCALINGMETHOD_LANCZOS2 ||
       m_method == VS_SCALINGMETHOD_SPLINE36_FAST ||
       m_method == VS_SCALINGMETHOD_LANCZOS3_FAST)
   {
-    shadername = "convolution-4x4.glsl";
-#if defined(HAS_GL)
     if (m_floattex)
-      m_internalformat = GL_RGBA16F_ARB;
+    {
+      // OpenGL   = GL_RGBA16F_ARB
+      // OpenGLES = GL_RGBA16F_EXT
+      m_internalformat = 0x881A;
+    }
     else
+    {
       m_internalformat = GL_RGBA;
+    }
+#if defined(HAS_GL)
+    shadername = "convolution-4x4.glsl";
 #elif HAS_GLES >= 2
     shadername = "convolution-4x4_gles.glsl";
-    m_internalformat = GL_RGBA;
 #endif
   }
   else if (m_method == VS_SCALINGMETHOD_SPLINE36 ||
            m_method == VS_SCALINGMETHOD_LANCZOS3)
   {
-    shadername = "convolution-6x6.glsl";
-#if defined(HAS_GL)
     if (m_floattex)
-      m_internalformat = GL_RGB16F_ARB;
+    {
+      // OpenGL   = GL_RGB16F_ARB
+      // OpenGLES = GL_RGB16F_EXT
+      m_internalformat = 0x881B;
+    }
     else
+    {
       m_internalformat = GL_RGB;
+    }
+#if defined(HAS_GL)
+    shadername = "convolution-6x6.glsl";
 #elif HAS_GLES >= 2
     shadername = "convolution-6x6_gles.glsl";
-    m_internalformat = GL_RGB;
 #endif
   }
 
