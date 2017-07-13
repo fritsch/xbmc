@@ -1013,6 +1013,8 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field, bool weave /*= false*
   glDisableVertexAttribArray(Uloc);
   glDisableVertexAttribArray(Vloc);
 
+  g_Windowing.SetViewPort(viewport);
+
   m_fbo.fbo.EndRender();
 
   glActiveTexture(GL_TEXTURE1);
