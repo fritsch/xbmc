@@ -50,9 +50,6 @@ public:
   // Constructor
   CFrameBufferObject();
 
-  // returns true if FBO support is detected
-  bool IsSupported();
-
   // returns true if FBO has been initialized
   bool IsValid() const { return m_valid; }
 

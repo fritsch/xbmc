@@ -51,24 +51,8 @@ CFrameBufferObject::CFrameBufferObject()
   m_texid = 0;
 }
 
-bool CFrameBufferObject::IsSupported()
-{
-#if HAS_GLES >= 2
-  m_supported = true;
-#else
-  if(g_Windowing.IsExtSupported("GL_EXT_framebuffer_object"))
-    m_supported = true;
-  else
-    m_supported = false;
-#endif
-  return m_supported;
-}
-
 bool CFrameBufferObject::Initialize()
 {
-  if (!IsSupported())
-    return false;
-
   Cleanup();
 
   glGenFramebuffersEXT(1, &m_fbo);
