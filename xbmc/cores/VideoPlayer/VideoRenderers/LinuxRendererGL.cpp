@@ -1107,14 +1107,14 @@ void CLinuxRendererGL::RenderToFBO(int index, int field, bool weave /*= false*/)
     LoadShaders(m_currentField);
   }
 
+  if (!g_Windowing.IsExtSupported("GL_EXT_framebuffer_object"))
+  {
+    CLog::Log(LOGERROR, "GL: Extension GL_EXT_framebuffer_object not supported");
+    return;
+  }
+
   if (!m_fbo.fbo.IsValid())
   {
-    if (!g_Windowing.IsExtSupported("GL_EXT_framebuffer_object"))
-    {
-      CLog::Log(LOGERROR, "GL: Extension GL_EXT_framebuffer_object not supported");
-      return;
-    }
-
     if (!m_fbo.fbo.Initialize())
     {
       CLog::Log(LOGERROR, "GL: Error initializing FBO");
