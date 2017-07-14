@@ -872,7 +872,6 @@ void CLinuxRendererGLES::RenderToFBO(int index, int field, bool weave /*= false*
       CLog::Log(LOGERROR, "GL: Error initializing FBO");
       return;
     }
-    //if (!m_fbo.fbo.CreateAndBindToTexture(GL_TEXTURE_2D, m_sourceWidth, m_sourceHeight, GL_RGBA))
     if (!m_fbo.fbo.CreateAndBindToTexture(GL_TEXTURE_2D, m_sourceWidth, m_sourceHeight, GL_RGBA, GL_SHORT))
     {
       CLog::Log(LOGERROR, "GL: Error creating texture and binding to FBO");

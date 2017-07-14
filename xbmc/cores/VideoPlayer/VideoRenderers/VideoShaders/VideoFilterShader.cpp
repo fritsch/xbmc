@@ -162,16 +162,6 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
       m_method == VS_SCALINGMETHOD_SPLINE36_FAST ||
       m_method == VS_SCALINGMETHOD_LANCZOS3_FAST)
   {
-    if (m_floattex)
-    {
-      // OpenGL   = GL_RGBA16F_ARB
-      // OpenGLES = GL_RGBA16F_EXT
-      m_internalformat = 0x881A;
-    }
-    else
-    {
-      m_internalformat = GL_RGBA;
-    }
 #if defined(HAS_GL)
     shadername = "convolution-4x4.glsl";
 #elif HAS_GLES >= 2
@@ -181,16 +171,6 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
   else if (m_method == VS_SCALINGMETHOD_SPLINE36 ||
            m_method == VS_SCALINGMETHOD_LANCZOS3)
   {
-    if (m_floattex)
-    {
-      // OpenGL   = GL_RGB16F_ARB
-      // OpenGLES = GL_RGB16F_EXT
-      m_internalformat = 0x881B;
-    }
-    else
-    {
-      m_internalformat = GL_RGB;
-    }
 #if defined(HAS_GL)
     shadername = "convolution-6x6.glsl";
 #elif HAS_GLES >= 2
@@ -199,9 +179,17 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
   }
 
   if (m_floattex)
+  {
+    // OpenGL   = GL_RGBA16F_ARB
+    // OpenGLES = GL_RGBA16F_EXT
+    m_internalformat = 0x881A;
     defines = "#define HAS_FLOAT_TEXTURE 1\n";
+  }
   else
+  {
+    m_internalformat = GL_RGBA;
     defines = "#define HAS_FLOAT_TEXTURE 0\n";
+  }
 
   //don't compile in stretch support when it's not needed
   if (stretch)
