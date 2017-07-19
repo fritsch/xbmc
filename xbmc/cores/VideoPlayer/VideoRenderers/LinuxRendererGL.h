@@ -41,7 +41,7 @@ class CRenderCapture;
 
 class CBaseTexture;
 namespace Shaders { class BaseYUV2RGBShader; }
-namespace Shaders { class BaseVideoFilterShader; }
+namespace Shaders { class BaseVideoFilterShaderGL; }
 
 struct DRAWRECT
 {

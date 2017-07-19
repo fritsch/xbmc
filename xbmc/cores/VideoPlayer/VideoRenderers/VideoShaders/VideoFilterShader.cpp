@@ -44,7 +44,7 @@ using namespace Shaders;
 // BaseVideoFilterShader - base class for video filter shaders
 //////////////////////////////////////////////////////////////////////
 
-BaseVideoFilterShader::BaseVideoFilterShader()
+BaseVideoFilterShaderGL::BaseVideoFilterShaderGL()
 {
   m_width = 1;
   m_height = 1;
@@ -56,7 +56,6 @@ BaseVideoFilterShader::BaseVideoFilterShader()
 
   m_stretch = 0.0f;
 
-#if defined (HAS_GL)
   std::string shaderv =
     "varying vec2 cord;"
     "void main()"
@@ -76,7 +75,10 @@ BaseVideoFilterShader::BaseVideoFilterShader()
     "gl_FragColor.a = gl_Color.a;"
     "}";
   PixelShader()->SetSource(shaderp);
-#elif HAS_GLES >= 2
+}
+
+BaseVideoFilterShaderGLES::BaseVideoFilterShaderGLES()
+{
   m_hVertex = -1;
   m_hcoord = -1;
   m_hProj   = -1;
@@ -111,27 +113,22 @@ BaseVideoFilterShader::BaseVideoFilterShader()
     "  gl_FragColor = texture2D(img, cord);"
     "}";
   PixelShader()->SetSource(shaderp);
-#endif
 }
 
-void BaseVideoFilterShader::OnCompiledAndLinked()
+void BaseVideoFilterShaderGLES::OnCompiledAndLinked()
 {
-#if HAS_GLES >= 2
   m_hVertex = glGetAttribLocation(ProgramHandle(),  "m_attrpos");
   m_hcoord = glGetAttribLocation(ProgramHandle(),  "m_attrcord");
   m_hAlpha  = glGetUniformLocation(ProgramHandle(), "m_alpha");
   m_hProj  = glGetUniformLocation(ProgramHandle(), "m_proj");
   m_hModel = glGetUniformLocation(ProgramHandle(), "m_model");
-#endif
 }
 
-bool BaseVideoFilterShader::OnEnabled()
+bool BaseVideoFilterShaderGLES::OnEnabled()
 {
-#if HAS_GLES >= 2
   glUniformMatrix4fv(m_hProj,  1, GL_FALSE, m_proj);
   glUniformMatrix4fv(m_hModel, 1, GL_FALSE, m_model);
   glUniform1f(m_hAlpha, m_alpha);
-#endif
   return true;
 }
 

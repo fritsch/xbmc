@@ -39,7 +39,7 @@ class CRenderCapture;
 
 class CBaseTexture;
 namespace Shaders { class BaseYUV2RGBShader; }
-namespace Shaders { class BaseVideoFilterShader; }
+namespace Shaders { class BaseVideoFilterShaderGLES; }
 
 struct DRAWRECT
 {
@@ -231,7 +231,7 @@ protected:
 
   Shaders::BaseYUV2RGBShader     *m_pYUVProgShader;
   Shaders::BaseYUV2RGBShader     *m_pYUVBobShader;
-  Shaders::BaseVideoFilterShader *m_pVideoFilterShader;
+  Shaders::BaseVideoFilterShaderGLES *m_pVideoFilterShader;
   ESCALINGMETHOD m_scalingMethod;
   ESCALINGMETHOD m_scalingMethodGui;
 

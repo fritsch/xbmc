@@ -32,25 +32,17 @@
 
 namespace Shaders {
 
-  class BaseVideoFilterShader : public CGLSLShaderProgram
+  class BaseVideoFilterShaderGL : public CGLSLShaderProgram
   {
   public:
-    BaseVideoFilterShader();
-    virtual void OnCompiledAndLinked();
-    virtual bool OnEnabled();
-    virtual void Free() { CGLSLShaderProgram::Free(); }
+    BaseVideoFilterShaderGL();
+    virtual void OnCompiledAndLinked() {};
+    virtual bool OnEnabled() { return true; };
     virtual void SetSourceTexture(GLint ytex) { m_sourceTexUnit = ytex; }
     virtual void SetWidth(int w) { m_width  = w; m_stepX = w>0?1.0f/w:0; }
     virtual void SetHeight(int h) { m_height = h; m_stepY = h>0?1.0f/h:0; }
     virtual void SetNonLinStretch(float stretch) { m_stretch = stretch; }
     virtual bool GetTextureFilter(GLint& filter) { return false; }
-#if HAS_GLES >= 2
-    virtual GLint GetVertexLoc() { return m_hVertex; }
-    virtual GLint GetcoordLoc() { return m_hcoord; }
-    virtual void SetMatrices(GLfloat *p, GLfloat *m) { m_proj = p; m_model = m; }
-    virtual void SetAlpha(GLfloat alpha)             { m_alpha = alpha; }
-#endif
-
   protected:
     int m_width;
     int m_height;
@@ -63,8 +55,21 @@ namespace Shaders {
     GLint m_hSourceTex;
     GLint m_hStepXY;
     GLint m_hStretch = 0;
+  };
 
-#if HAS_GLES >= 2
+  class BaseVideoFilterShaderGLES : public BaseVideoFilterShaderGL
+  {
+  public:
+    BaseVideoFilterShaderGLES();
+    virtual ~BaseVideoFilterShaderGLES() = default;
+    virtual void OnCompiledAndLinked() override;
+    virtual bool OnEnabled() override;
+    virtual GLint GetVertexLoc() { return m_hVertex; }
+    virtual GLint GetcoordLoc() { return m_hcoord; }
+    virtual void SetMatrices(GLfloat *p, GLfloat *m) { m_proj = p; m_model = m; }
+    virtual void SetAlpha(GLfloat alpha)             { m_alpha = alpha; }
+
+  protected:
     GLint m_hVertex;
     GLint m_hcoord;
     GLint m_hProj;
@@ -74,14 +79,19 @@ namespace Shaders {
     GLfloat *m_proj;
     GLfloat *m_model;
     GLfloat  m_alpha;
-#endif
   };
+
+#if HAS_GLES >= 2
+  using BaseVideoFilterShader = BaseVideoFilterShaderGLES;
+#elif HAS_GL
+  using BaseVideoFilterShader = BaseVideoFilterShaderGL;
+#endif
 
   class ConvolutionFilterShader : public BaseVideoFilterShader
   {
   public:
     ConvolutionFilterShader(ESCALINGMETHOD method, bool stretch, GLSLOutput *output=NULL);
-    ~ConvolutionFilterShader() override;
+    virtual ~ConvolutionFilterShader() override;
     void OnCompiledAndLinked() override;
     bool OnEnabled() override;
     void OnDisabled() override;
