@@ -76,8 +76,9 @@ bool CActiveAEResampleFFMPEG::Init(uint64_t dst_chan_layout, int dst_channels, i
 
   if(quality == AE_QUALITY_HIGH)
   {
-    av_opt_set_double(m_pContext, "cutoff", 1.0, 0);
-    av_opt_set_int(m_pContext,"filter_size", 256, 0);
+    // use soxr engine
+    av_opt_set_int(m_pContext, "resampler", SWR_ENGINE_SOXR, 0);
+    CLog::Log(LOGDEBUG, "Using SOXR resampler");
   }
   else if(quality == AE_QUALITY_MID)
   {
@@ -191,9 +192,10 @@ int CActiveAEResampleFFMPEG::Resample(uint8_t **dst_buffer, int dst_samples, uin
 
   if (m_doesResample)
   {
-    if (swr_set_compensation(m_pContext, delta, distance) < 0)
+    // sox does not like a distance of 0 - does it make sense in general?
+    if ((distance > 0) && swr_set_compensation(m_pContext, delta, distance) < 0)
     {
-      CLog::Log(LOGERROR, "CActiveAEResampleFFMPEG::Resample - set compensation failed");
+      CLog::Log(LOGERROR, "CActiveAEResampleFFMPEG::Resample - set compensation failed %lf %lf", delta, distance);
       return -1;
     }
   }
@@ -204,7 +206,6 @@ int CActiveAEResampleFFMPEG::Resample(uint8_t **dst_buffer, int dst_samples, uin
     CLog::Log(LOGERROR, "CActiveAEResampleFFMPEG::Resample - resample failed");
     return -1;
   }
-
   // special handling for S24 formats which are carried in S32
   if (m_dst_fmt == AV_SAMPLE_FMT_S32 || m_dst_fmt == AV_SAMPLE_FMT_S32P)
   {
