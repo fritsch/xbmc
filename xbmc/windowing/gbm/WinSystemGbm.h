@@ -62,4 +62,7 @@ protected:
 
   EGLDisplay m_nativeDisplay;
   EGLNativeWindowType m_nativeWindow;
+
+  CCriticalSection m_resourceSection;
+  std::vector<IDispResource*>  m_resources;
 };
