@@ -876,6 +876,8 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
       }
     }
     // Android v24 and backports can do real IEC API
+    CLog::Log(LOGWARNING, "You are using PCM passthrough - you were warned!");
+    CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
     if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
     {
       bool supports_192khz = m_sink_sampleRates.find(192000) != m_sink_sampleRates.end();
