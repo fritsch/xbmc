@@ -1339,7 +1339,7 @@ void CLinuxRendererGL::RenderProgressiveWeave(int index, int field)
   bool scale = (int)m_sourceHeight != m_destRect.Height() ||
                (int)m_sourceWidth != m_destRect.Width();
 
-  if (m_fbo.fbo.IsSupported() && (scale || m_renderQuality == RQ_MULTIPASS))
+  if (g_Windowing.IsExtSupported("GL_EXT_framebuffer_object") && (scale || m_renderQuality == RQ_MULTIPASS))
   {
     glEnable(GL_POLYGON_STIPPLE);
     glPolygonStipple(stipple_weave);
