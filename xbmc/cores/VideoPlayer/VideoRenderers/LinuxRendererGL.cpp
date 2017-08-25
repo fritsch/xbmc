@@ -1254,6 +1254,7 @@ void CLinuxRendererGL::RenderFromFBO()
 {
   glEnable(GL_TEXTURE_2D);
   glActiveTextureARB(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, m_fbo.fbo.Texture());
   VerifyGLState();
 
   // Use regular normalized texture coordinates
@@ -1298,7 +1299,7 @@ void CLinuxRendererGL::RenderFromFBO()
   GLfloat tex[4][2];
 
   GLint vertLoc = m_pVideoFilterShader->GetVertexLoc();
-  GLint loc     = m_pVideoFilterShader->GetcoordLoc();
+  GLint loc = m_pVideoFilterShader->GetcoordLoc();
 
   glVertexAttribPointer(vertLoc, 3, GL_FLOAT, 0, 0, vert);
   glVertexAttribPointer(loc, 2, GL_FLOAT, 0, 0, tex);
@@ -1315,10 +1316,14 @@ void CLinuxRendererGL::RenderFromFBO()
   }
 
   // Setup texture coordinates
-  tex[0][0] = tex[3][0] = 0.0f;
-  tex[0][1] = tex[1][1] = 0.0f;
-  tex[1][0] = tex[2][0] = imgwidth;
-  tex[2][1] = tex[3][1] = imgheight;
+  tex[0][0] = 0.0f;
+  tex[3][0] = 0.0f;
+  tex[0][1] = 0.0f;
+  tex[1][1] = 0.0f;
+  tex[1][0] = imgwidth;
+  tex[2][0] = imgwidth;
+  tex[2][1] = imgheight;
+  tex[3][1] = imgheight;
 
   glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_BYTE, idx);
 

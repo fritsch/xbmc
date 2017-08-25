@@ -58,27 +58,27 @@ BaseVideoFilterShader::BaseVideoFilterShader()
 
   m_hVertex = -1;
   m_hcoord = -1;
-  m_hProj   = -1;
-  m_hModel  = -1;
-  m_hAlpha  = -1;
+  m_hProj = -1;
+  m_hModel = -1;
+  m_hAlpha = -1;
 
   m_proj = nullptr;
   m_model = nullptr;
   m_alpha = -1;
 
   std::string shaderv =
-      " attribute vec4 m_attrpos;"
-      " attribute vec2 m_attrcord;"
-      " varying vec2 cord;"
-      " uniform mat4 m_proj;"
-      " uniform mat4 m_model;"
+    "attribute vec4 m_attrpos;"
+    "attribute vec2 m_attrcord;"
+    "varying vec2 cord;"
+    "uniform mat4 m_proj;"
+    "uniform mat4 m_model;"
 
-      " void main ()"
-      " {"
-      "   mat4 mvp    = m_proj * m_model;"
-      "   gl_Position = mvp * m_attrpos;"
-      "   cord        = m_attrcord.xy;"
-      " }";
+    "void main ()"
+    "{"
+    "mat4 mvp = m_proj * m_model;"
+    "gl_Position = mvp * m_attrpos;"
+    "cord = m_attrcord.xy;"
+    "}";
   VertexShader()->SetSource(shaderv);
 
   std::string shaderp =
@@ -87,7 +87,7 @@ BaseVideoFilterShader::BaseVideoFilterShader()
     "varying vec2 cord;"
     "void main()"
     "{"
-    "  gl_FragColor = texture2D(img, cord);"
+    "gl_FragColor = texture2D(img, cord);"
     "}";
   PixelShader()->SetSource(shaderp);
 }
