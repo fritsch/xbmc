@@ -1270,6 +1270,7 @@ void CLinuxRendererGL::RenderFromFBO()
     m_pVideoFilterShader->SetSourceTexture(0);
     m_pVideoFilterShader->SetWidth(m_sourceWidth);
     m_pVideoFilterShader->SetHeight(m_sourceHeight);
+    m_pVideoFilterShader->SetAlpha(1.0f);
 
     //disable non-linear stretch when a dvd menu is shown, parts of the menu are rendered through the overlay renderer
     //having non-linear stretch on breaks the alignment
@@ -1278,13 +1279,13 @@ void CLinuxRendererGL::RenderFromFBO()
     else
       m_pVideoFilterShader->SetNonLinStretch(pow(CDisplaySettings::GetInstance().GetPixelRatio(), g_advancedSettings.m_videoNonLinStretchRatio));
 
+    m_pVideoFilterShader->SetMatrices(glMatrixProject.Get(), glMatrixModview.Get());
     m_pVideoFilterShader->Enable();
   }
   else
   {
     GLint filter = m_scalingMethod == VS_SCALINGMETHOD_NEAREST ? GL_NEAREST : GL_LINEAR;
     m_fbo.fbo.SetFiltering(GL_TEXTURE_2D, filter);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   }
 
   VerifyGLState();
@@ -1292,21 +1293,34 @@ void CLinuxRendererGL::RenderFromFBO()
   float imgwidth = m_fbo.width / m_sourceWidth;
   float imgheight = m_fbo.height / m_sourceHeight;
 
-  glBegin(GL_QUADS);
+  GLubyte idx[4] = {0, 1, 3, 2};        //determines order of triangle strip
+  GLfloat vert[4][3];
+  GLfloat tex[4][2];
 
-  glMultiTexCoord2fARB(GL_TEXTURE0, 0.0f, 0.0f);
-  glVertex4f(m_rotatedDestCoords[0].x, m_rotatedDestCoords[0].y, 0, 1.0f );
+  GLint vertLoc = m_pVideoFilterShader->GetVertexLoc();
+  GLint loc     = m_pVideoFilterShader->GetcoordLoc();
 
-  glMultiTexCoord2fARB(GL_TEXTURE0, imgwidth, 0.0f);
-  glVertex4f(m_rotatedDestCoords[1].x, m_rotatedDestCoords[1].y, 0, 1.0f );
+  glVertexAttribPointer(vertLoc, 3, GL_FLOAT, 0, 0, vert);
+  glVertexAttribPointer(loc, 2, GL_FLOAT, 0, 0, tex);
 
-  glMultiTexCoord2fARB(GL_TEXTURE0, imgwidth, imgheight);
-  glVertex4f(m_rotatedDestCoords[2].x, m_rotatedDestCoords[2].y, 0, 1.0f );
-  
-  glMultiTexCoord2fARB(GL_TEXTURE0, 0.0f, imgheight);
-  glVertex4f(m_rotatedDestCoords[3].x, m_rotatedDestCoords[3].y, 0, 1.0f );
+  glEnableVertexAttribArray(vertLoc);
+  glEnableVertexAttribArray(loc);
 
-  glEnd();
+  // Setup vertex position values
+  for(int i = 0; i < 4; i++)
+  {
+    vert[i][0] = m_rotatedDestCoords[i].x;
+    vert[i][1] = m_rotatedDestCoords[i].y;
+    vert[i][2] = 0.0f;// set z to 0
+  }
+
+  // Setup texture coordinates
+  tex[0][0] = tex[3][0] = 0.0f;
+  tex[0][1] = tex[1][1] = 0.0f;
+  tex[1][0] = tex[2][0] = imgwidth;
+  tex[2][1] = tex[3][1] = imgheight;
+
+  glDrawElements(GL_TRIANGLE_STRIP, 4, GL_UNSIGNED_BYTE, idx);
 
   VerifyGLState();
 
