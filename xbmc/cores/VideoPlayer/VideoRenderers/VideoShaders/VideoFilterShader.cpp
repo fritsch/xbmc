@@ -82,7 +82,9 @@ BaseVideoFilterShader::BaseVideoFilterShader()
   VertexShader()->SetSource(shaderv);
 
   std::string shaderp =
+#if defined(HAS_GLES)
     "precision mediump float;"
+#endif
     "uniform sampler2D img;"
     "varying vec2 cord;"
     "void main()"
@@ -176,7 +178,7 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
   defines += "#define USE1DTEXTURE 0\n";
 #endif
 
-#ifdef HAS_GLES >= 2
+#if defined(HAS_GLES)
   defines += "#define USEPRECISION 1\n";
 #else
   defines += "#define USEPRECISION 0\n";
