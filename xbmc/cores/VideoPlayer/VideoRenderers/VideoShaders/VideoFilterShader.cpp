@@ -136,12 +136,12 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
       m_method == VS_SCALINGMETHOD_SPLINE36_FAST ||
       m_method == VS_SCALINGMETHOD_LANCZOS3_FAST)
   {
-    shadername = "convolution-4x4_gles.glsl";
+    shadername = "convolution-4x4.glsl";
   }
   else if (m_method == VS_SCALINGMETHOD_SPLINE36 ||
            m_method == VS_SCALINGMETHOD_LANCZOS3)
   {
-    shadername = "convolution-6x6_gles.glsl";
+    shadername = "convolution-6x6.glsl";
   }
 
   if (m_floattex)
@@ -174,6 +174,12 @@ ConvolutionFilterShader::ConvolutionFilterShader(ESCALINGMETHOD method, bool str
   defines += "#define USE1DTEXTURE 1\n";
 #else
   defines += "#define USE1DTEXTURE 0\n";
+#endif
+
+#ifdef HAS_GLES >= 2
+  defines += "#define USEPRECISION 1\n";
+#else
+  defines += "#define USEPRECISION 0\n";
 #endif
 
   CLog::Log(LOGDEBUG, "GL: ConvolutionFilterShader: using %s defines:\n%s", shadername.c_str(), defines.c_str());

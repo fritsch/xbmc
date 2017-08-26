@@ -18,6 +18,10 @@
  *
  */
 
+#if (USEPRECISION)
+  precision highp float;
+#endif
+
 uniform sampler2D img;
 uniform vec2      stepxy;
 uniform float     m_stretch;
