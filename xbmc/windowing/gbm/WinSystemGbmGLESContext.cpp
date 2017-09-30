@@ -25,12 +25,10 @@
 #endif
 
 #include "cores/RetroPlayer/process/RPProcessInfo.h"
-#include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererOpenGLES.h"
+#include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererGuiTexture.h"
 #include "cores/VideoPlayer/DVDCodecs/DVDFactoryCodec.h"
 #include "cores/VideoPlayer/VideoRenderers/LinuxRendererGLES.h"
 #include "cores/VideoPlayer/VideoRenderers/RenderFactory.h"
-// Retroplayer textures
-#include "cores/RetroPlayer/rendering/VideoRenderers/RPRendererGuiTexture.h"
 
 #include "WinSystemGbmGLESContext.h"
 #include "utils/log.h"
