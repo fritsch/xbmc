@@ -274,7 +274,7 @@ bool CAESinkAUDIOTRACK::VerifySinkConfiguration(int sampleRate, int channelMask,
 
   try
   {
-    jniAt = new CJNIAudioTrack(stream,
+    jniAt = new CJNIAudioTrack(CJNIAudioManager::STREAM_MUSIC,
                                sampleRate,
                                channelMask,
                                encoding,
