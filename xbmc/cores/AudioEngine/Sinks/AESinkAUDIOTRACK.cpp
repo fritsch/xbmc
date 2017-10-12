@@ -877,6 +877,9 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   m_info.m_displayName = "android";
   m_info.m_displayNameExtra = "audiotrack";
 
+  // forcing PCM no matter what it might support
+  CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
+
   UpdateAvailablePCMCapabilities();
 
   if (!CXBMCApp::IsHeadsetPlugged())
