@@ -22,6 +22,7 @@
 #include "Peripheral.h"
 #include "input/joysticks/DefaultJoystick.h"
 #include "input/joysticks/IDriverReceiver.h"
+#include "input/joysticks/JoystickMonitor.h"
 #include "input/joysticks/JoystickTypes.h"
 #include "threads/CriticalSection.h"
 
@@ -36,7 +37,6 @@ namespace JOYSTICK
   class CDeadzoneFilter;
   class IButtonMap;
   class IDriverHandler;
-  class IInputHandler;
 }
 
 namespace PERIPHERALS
@@ -119,7 +119,7 @@ namespace PERIPHERALS
     unsigned int                        m_motorCount;
     bool                                m_supportsPowerOff;
     JOYSTICK::CDefaultJoystick          m_defaultInputHandler;
-    std::unique_ptr<JOYSTICK::IInputHandler> m_joystickMonitor;
+    JOYSTICK::CJoystickMonitor          m_joystickMonitor;
     std::unique_ptr<JOYSTICK::IButtonMap>      m_buttonMap;
     std::unique_ptr<JOYSTICK::CDeadzoneFilter> m_deadzoneFilter;
     std::vector<DriverHandler>          m_driverHandlers;

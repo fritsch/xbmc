@@ -20,8 +20,6 @@
 
 #include "PeripheralJoystick.h"
 #include "input/joysticks/DeadzoneFilter.h"
-#include "input/joysticks/IDriverHandler.h"
-#include "input/joysticks/JoystickMonitor.h"
 #include "input/joysticks/JoystickTranslator.h"
 #include "peripherals/Peripherals.h"
 #include "peripherals/addons/AddonButtonMap.h"
@@ -50,12 +48,11 @@ CPeripheralJoystick::CPeripheralJoystick(const PeripheralScanResult& scanResult,
 
 CPeripheralJoystick::~CPeripheralJoystick(void)
 {
-  m_defaultInputHandler.AbortRumble();
-  UnregisterJoystickInputHandler(m_joystickMonitor.get());
-  m_joystickMonitor.reset();
-  UnregisterJoystickInputHandler(&m_defaultInputHandler);
   m_deadzoneFilter.reset();
   m_buttonMap.reset();
+  m_defaultInputHandler.AbortRumble();
+  UnregisterJoystickInputHandler(&m_defaultInputHandler);
+  UnregisterJoystickDriverHandler(&m_joystickMonitor);
 }
 
 bool CPeripheralJoystick::InitialiseFeature(const PeripheralFeature feature)
@@ -77,8 +74,7 @@ bool CPeripheralJoystick::InitialiseFeature(const PeripheralFeature feature)
 
         // Give joystick monitor priority over default controller
         RegisterJoystickInputHandler(&m_defaultInputHandler);
-        m_joystickMonitor.reset(new CJoystickMonitor);
-        RegisterJoystickInputHandler(m_joystickMonitor.get());
+        RegisterJoystickDriverHandler(&m_joystickMonitor, false);
       }
     }
     else if (feature == FEATURE_RUMBLE)

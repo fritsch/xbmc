@@ -19,28 +19,12 @@
  */
 
 #include "JoystickMonitor.h"
-#include "DefaultJoystick.h"
 #include "Application.h"
 #include "input/InputManager.h"
 
-#include <cmath>
-
 using namespace JOYSTICK;
 
-#define AXIS_DEADZONE  0.05f
-
-std::string CJoystickMonitor::ControllerID() const
-{
-  return DEFAULT_CONTROLLER_ID;
-}
-
-bool CJoystickMonitor::AcceptsInput()
-{
-  // Only accept input when screen saver is active
-  return g_application.IsInScreenSaver();
-}
-
-bool CJoystickMonitor::OnButtonPress(const FeatureName& feature, bool bPressed)
+bool CJoystickMonitor::OnButtonMotion(unsigned int buttonIndex, bool bPressed)
 {
   if (bPressed)
   {
@@ -51,9 +35,9 @@ bool CJoystickMonitor::OnButtonPress(const FeatureName& feature, bool bPressed)
   return false;
 }
 
-bool CJoystickMonitor::OnButtonMotion(const FeatureName& feature, float magnitude)
+bool CJoystickMonitor::OnHatMotion(unsigned int hatIndex, HAT_STATE state)
 {
-  if (std::fabs(magnitude) > AXIS_DEADZONE)
+  if (state != HAT_STATE::UNPRESSED)
   {
     CInputManager::GetInstance().SetMouseActive(false);
     return ResetTimers();
@@ -62,10 +46,9 @@ bool CJoystickMonitor::OnButtonMotion(const FeatureName& feature, float magnitud
   return false;
 }
 
-bool CJoystickMonitor::OnAnalogStickMotion(const FeatureName& feature, float x, float y, unsigned int motionTimeMs)
+bool CJoystickMonitor::OnAxisMotion(unsigned int axisIndex, float position, int center, unsigned int range)
 {
-  // Analog stick deadzone already processed
-  if (x != 0.0f || y != 0.0f)
+  if (position)
   {
     CInputManager::GetInstance().SetMouseActive(false);
     return ResetTimers();

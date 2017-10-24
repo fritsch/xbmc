@@ -19,7 +19,7 @@
  */
 #pragma once
 
-#include "IInputHandler.h"
+#include "IDriverHandler.h"
 
 namespace JOYSTICK
 {
@@ -28,19 +28,14 @@ namespace JOYSTICK
    * \brief Monitors joystick input and resets screensaver/shutdown timers
    *        whenever motion occurs.
    */
-  class CJoystickMonitor : public IInputHandler
+  class CJoystickMonitor : public IDriverHandler
   {
   public:
-    // implementation of IInputHandler
-    virtual std::string ControllerID() const override;
-    virtual bool HasFeature(const FeatureName& feature) const override { return true; }
-    virtual bool AcceptsInput(void) override;
-    virtual INPUT_TYPE GetInputType(const FeatureName& feature) const override { return INPUT_TYPE::ANALOG; }
-    virtual bool OnButtonPress(const FeatureName& feature, bool bPressed) override;
-    virtual void OnButtonHold(const FeatureName& feature, unsigned int holdTimeMs) override { }
-    virtual bool OnButtonMotion(const FeatureName& feature, float magnitude) override;
-    virtual bool OnAnalogStickMotion(const FeatureName& feature, float x, float y, unsigned int motionTimeMs) override;
-    virtual bool OnAccelerometerMotion(const FeatureName& feature, float x, float y, float z) override { return false; }
+    // implementation of IDriverHandler
+    virtual bool OnButtonMotion(unsigned int buttonIndex, bool bPressed) override;
+    virtual bool OnHatMotion(unsigned int hatIndex, HAT_STATE state) override;
+    virtual bool OnAxisMotion(unsigned int axisIndex, float position, int center, unsigned int range) override;
+    virtual void ProcessAxisMotions(void) override { }
 
   private:
     /*!
