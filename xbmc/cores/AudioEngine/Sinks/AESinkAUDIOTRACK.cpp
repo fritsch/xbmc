@@ -796,7 +796,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
 
   UpdateAvailablePCMCapabilities();
 
-  if (!CXBMCApp::IsHeadsetPlugged())
+//  if (!CXBMCApp::IsHeadsetPlugged())
   {
     UpdateAvailablePassthroughCapabilities();
   }
