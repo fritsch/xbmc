@@ -702,7 +702,10 @@ void CActiveAESink::PrintSinks()
       std::stringstream ss((std::string)info);
       std::string line;
       while(std::getline(ss, line, '\n'))
+      {
         CLog::Log(LOGNOTICE, "        %s", line.c_str());
+        std::cout << line.c_str() << std::endl;
+      }
     }
   }
 }
