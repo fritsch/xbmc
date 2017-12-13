@@ -319,7 +319,7 @@ void CGUIDialogAudioSubtitleSettings::InitializeSettings()
   SettingDependencies depsAudioOutputPassthroughDisabled;
   depsAudioOutputPassthroughDisabled.push_back(dependencyAudioOutputPassthroughDisabled);
 
-  m_dspEnabled = CServiceBroker::GetSettings().GetBool(CSettings::SETTING_AUDIOOUTPUT_DSPADDONSENABLED);
+  m_dspEnabled = false;
 
   // audio settings
   // audio volume setting
