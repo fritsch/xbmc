@@ -28,7 +28,9 @@
 #include "ServiceBroker.h"
 #include "utils/StringUtils.h"
 
+#if PA_CHECK_VERSION(12,0,0)
 #define HAS_HD_SUPPORT
+#endif
 
 static const char *ContextStateToString(pa_context_state s)
 {
