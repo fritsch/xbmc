@@ -28,6 +28,8 @@
 #include "ServiceBroker.h"
 #include "utils/StringUtils.h"
 
+#define HAS_HD_SUPPORT
+
 static const char *ContextStateToString(pa_context_state s)
 {
   switch (s)
@@ -80,6 +82,8 @@ static pa_sample_format AEStreamFormatToPulseFormat(CAEStreamInfo::DataType type
     case CAEStreamInfo::STREAM_TYPE_DTS_2048:
     case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
     case CAEStreamInfo::STREAM_TYPE_EAC3:
+    case CAEStreamInfo::STREAM_TYPE_DTSHD:
+    case CAEStreamInfo::STREAM_TYPE_TRUEHD:
       return PA_SAMPLE_S16NE;
 
     default:
@@ -115,6 +119,14 @@ static pa_encoding AEStreamFormatToPulseEncoding(CAEStreamInfo::DataType type)
     case CAEStreamInfo::STREAM_TYPE_DTS_2048:
     case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
       return PA_ENCODING_DTS_IEC61937;
+
+#ifdef HAS_HD_SUPPORT
+    case CAEStreamInfo::STREAM_TYPE_DTSHD:
+      return PA_ENCODING_DTSHD_IEC61937;
+
+    case CAEStreamInfo::STREAM_TYPE_TRUEHD:
+      return PA_ENCODING_TRUEHD_IEC61937;
+#endif
 
     case CAEStreamInfo::STREAM_TYPE_EAC3:
       return PA_ENCODING_EAC3_IEC61937;
@@ -445,6 +457,22 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
           device_type = AE_DEVTYPE_IEC958;
           break;
+#ifdef HAS_HD_SUPPORT
+        case PA_ENCODING_DTSHD_IEC61937:
+          if (device.m_channels.Count() >= 8)
+          {
+            device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+            device_type = AE_DEVTYPE_HDMI;
+          }
+          break;
+        case PA_ENCODING_TRUEHD_IEC61937:
+          if (device.m_channels.Count() >= 8)
+          {
+            device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+            device_type = AE_DEVTYPE_HDMI;
+          }
+          break;
+#endif
         case PA_ENCODING_PCM:
           device.m_dataFormats.insert(device.m_dataFormats.end(), defaultDataFormats, defaultDataFormats + ARRAY_SIZE(defaultDataFormats));
           break;
@@ -453,11 +481,18 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
       }
     }
     // passthrough is only working when device has Stereo channel config
-    if (device_type > AE_DEVTYPE_PCM && device.m_channels.Count() == 2)
+    if (device_type == AE_DEVTYPE_IEC958 && device.m_channels.Count() == 2)
     {
       device.m_deviceType = AE_DEVTYPE_IEC958;
       device.m_dataFormats.push_back(AE_FMT_RAW);
     }
+#ifdef HAS_HD_SUPPORT // this needs revisiting as normally PA only does passthrough when NOT in multichannel mode
+    else if (device_type == AE_DEVTYPE_HDMI)
+    {
+        device.m_deviceType = AE_DEVTYPE_HDMI;
+        device.m_dataFormats.push_back(AE_FMT_RAW);
+    }
+#endif
     else
       device.m_deviceType = AE_DEVTYPE_PCM;
 
@@ -605,8 +640,18 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
 
   if(m_passthrough)
   {
-    map.channels = 2;
-    format.m_channelLayout = AE_CH_LAYOUT_2_0;
+      switch (format.m_streamInfo.m_type)
+      {
+        case CAEStreamInfo::STREAM_TYPE_DTSHD:
+        case CAEStreamInfo::STREAM_TYPE_TRUEHD:
+          map.channels = 8;
+          format.m_channelLayout = AE_CH_LAYOUT_7_1;
+          break;
+        default:
+          map.channels = 2;
+          format.m_channelLayout = AE_CH_LAYOUT_2_0;
+          break;
+      }
   }
   else
   {
@@ -673,10 +718,23 @@ bool CAESinkPULSE::Initialize(AEAudioFormat &format, std::string &device)
 
   // PA requires the original encoded rate in order to do EAC3
   unsigned int samplerate = format.m_sampleRate;
-  if (m_passthrough && (info[0]->encoding == PA_ENCODING_EAC3_IEC61937))
+  if (m_passthrough)
   {
-    // this is only used internally for PA to use EAC3
-    samplerate = format.m_streamInfo.m_sampleRate;
+    switch (info[0]->encoding)
+    {
+      case PA_ENCODING_EAC3_IEC61937:
+        samplerate = format.m_streamInfo.m_sampleRate;
+        break;
+#ifdef HAS_HD_SUPPORT
+      case PA_ENCODING_TRUEHD_IEC61937:
+      case PA_ENCODING_DTSHD_IEC61937:
+        samplerate = 192000U;
+        format.m_sampleRate = samplerate;
+        break;
+#endif
+      default:
+        break;
+    }
   }
 
   pa_format_info_set_rate(info[0], samplerate);
