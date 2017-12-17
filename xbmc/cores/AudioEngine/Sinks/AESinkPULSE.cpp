@@ -440,39 +440,40 @@ static void SinkInfoRequestCallback(pa_context *c, const pa_sink_info *i, int eo
 
     device.m_sampleRates.assign(defaultSampleRates, defaultSampleRates + ARRAY_SIZE(defaultSampleRates));
 
+    unsigned int pt_type = AE_DEVTYPE_IEC958;
+#ifdef HAS_HD_SUPPORT
+    pt_type = AE_DEVTYPE_HDMI;
+#endif
+
     for (unsigned int j = 0; j < i->n_formats; j++)
     {
       switch(i->formats[j]->encoding)
       {
         case PA_ENCODING_AC3_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-          device_type = AE_DEVTYPE_IEC958;
+          device_type = pt_type;
           break;
         case PA_ENCODING_DTS_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-          device_type = AE_DEVTYPE_IEC958;
+          device_type = pt_type;
           break;
         case PA_ENCODING_EAC3_IEC61937:
           device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-          device_type = AE_DEVTYPE_IEC958;
+          device_type = pt_type;
           break;
 #ifdef HAS_HD_SUPPORT
         case PA_ENCODING_DTSHD_IEC61937:
-          if (device.m_channels.Count() >= 8)
-          {
-            device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-            device_type = AE_DEVTYPE_HDMI;
-          }
+          device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+          device_type = pt_type;
+          device.m_channels = AE_CH_LAYOUT_7_1; // signal to AE that we have 8 channels
           break;
         case PA_ENCODING_TRUEHD_IEC61937:
-          if (device.m_channels.Count() >= 8)
-          {
-            device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-            device_type = AE_DEVTYPE_HDMI;
-          }
+          device.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+          device_type = pt_type;
+          device.m_channels = AE_CH_LAYOUT_7_1; // // signal to AE that we have 8 channels
           break;
 #endif
         case PA_ENCODING_PCM:
