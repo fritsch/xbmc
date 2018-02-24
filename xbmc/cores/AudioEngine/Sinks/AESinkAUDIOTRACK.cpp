@@ -694,7 +694,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     }
     m_delayTimer.Set(10000);
   }
-  if (m_test_delay != 0.0);
+  if (m_test_delay != 0.0)
     status.SetDelay(m_test_delay);
   else
     status.SetDelay(d);
