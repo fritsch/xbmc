@@ -685,14 +685,16 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
       double g = h_pos / (double) m_sink_sampleRate;
       // if something odd comes out, just use delay we have once more
       double d_f = g > m_duration_written ? d : m_duration_written - g;
-      CLog::Log(LOGDEBUG, "Old delay: %lf Timestamp delay: %lf api_time_delay: %lf", d, d_f, api_time_delay);
+      d_f -= m_audiotrackbuffer_sec;
+//      CLog::Log(LOGDEBUG, "Old delay: %lf Timestamp delay: %lf api_time_delay: %lf", d, d_f, api_time_delay);
       d_f -= api_time_delay;
       m_test_delay = d_f;
       // update delay to report to audio engine
       d = GetMovingAverageDelay(d_f);
-      CLog::Log(LOGDEBUG, "New delay: %lf", d);
+//      CLog::Log(LOGDEBUG, "New delay: %lf", d);
     }
     m_delayTimer.Set(10000);
+    CLog::Log(LOGDEBUG, "Old delay (direct): %lf Timestamp delay (corrected): %lf", delay, d_f);
   }
   if (m_test_delay != 0.0)
     status.SetDelay(m_test_delay);
