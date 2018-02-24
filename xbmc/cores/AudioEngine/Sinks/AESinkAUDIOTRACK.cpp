@@ -674,6 +674,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     delay = 0;
 
   double d = GetMovingAverageDelay(delay);
+  double d_f = 0.0;
   if (!old_aml_workaround && m_delayTimer.IsTimePast())
   {
     CJNIAudioTimestamp ts;
@@ -684,7 +685,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
       uint64_t h_pos = ts.get_framePosition();
       double g = h_pos / (double) m_sink_sampleRate;
       // if something odd comes out, just use delay we have once more
-      double d_f = g > m_duration_written ? d : m_duration_written - g;
+      d_f = g > m_duration_written ? d : m_duration_written - g;
       d_f -= m_audiotrackbuffer_sec;
 //      CLog::Log(LOGDEBUG, "Old delay: %lf Timestamp delay: %lf api_time_delay: %lf", d, d_f, api_time_delay);
       d_f -= api_time_delay;
