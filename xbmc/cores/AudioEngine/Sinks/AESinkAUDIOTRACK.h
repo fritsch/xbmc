@@ -68,6 +68,7 @@ private:
   int     m_jniAudioFormat;
   
   double                m_duration_written;
+  double                m_test_delay;
   unsigned int          m_min_buffer_size;
   int64_t               m_offset;
   uint64_t              m_headPos;

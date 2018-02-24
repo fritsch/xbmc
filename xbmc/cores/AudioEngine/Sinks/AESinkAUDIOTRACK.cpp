@@ -251,6 +251,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_audiotrackbuffer_sec = 0.0;
   m_at_jni = NULL;
   m_duration_written = 0;
+  m_test_delay = 0.0;
   m_offset = -1;
   m_headPos = 0;
   m_volume = -1;
@@ -586,6 +587,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_at_jni->release();
 
   m_duration_written = 0;
+  m_test_delay = 0.0;
   m_offset = -1;
   m_headPos = 0;
 
@@ -685,14 +687,17 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
       double d_f = g > m_duration_written ? d : m_duration_written - g;
       CLog::Log(LOGDEBUG, "Old delay: %lf Timestamp delay: %lf api_time_delay: %lf", d, d_f, api_time_delay);
       d_f -= api_time_delay;
+      m_test_delay = d_f;
       // update delay to report to audio engine
       d = GetMovingAverageDelay(d_f);
       CLog::Log(LOGDEBUG, "New delay: %lf", d);
     }
     m_delayTimer.Set(10000);
   }
-
-  status.SetDelay(d);
+  if (m_test_delay != 0.0);
+    status.SetDelay(m_test_delay);
+  else
+    status.SetDelay(d);
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
@@ -850,6 +855,7 @@ void CAESinkAUDIOTRACK::Drain()
   CLog::Log(LOGDEBUG, "Draining Audio");
   m_at_jni->stop();
   m_duration_written = 0;
+  m_test_delay = 0.0;
   m_offset = -1;
   m_headPos = 0;
   m_extTimer.SetExpired();
