@@ -126,8 +126,11 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
     }
   }
 
-  CLog::Log(LOGDEBUG, "No double refresh rate whitelisted resolution matched, trying current resolution");
+  CLog::Log(LOGDEBUG, "No double refresh rate whitelisted resolution matched, trying larger equal policy");
 
+  int32_t diff = 16384; //Something for 16k screens
+  bool found = false;
+  RESOLUTION_INFO infoset;
   for (const auto &mode : indexList)
   {
     auto i = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
@@ -135,19 +138,30 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
 
     const RESOLUTION_INFO desktop_info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(CDisplaySettings::GetInstance().GetCurrentResolution());
 
-    // allow resolutions that are desktop resolution but have the correct refresh rate
-    if (info.iScreenWidth == desktop_info.iWidth &&
+    // this would not be large enough to display without downscaling
+    if (info.iScreenWidth < width)
+      continue;
+
+    int32_t tmpdiff = info.iScreenWidth - width;
+    // allow resolutions that are of higher resolution but have the correct refresh rate
+    if (tmpdiff < diff &&
         info.iScreen == desktop_info.iScreen &&
         (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (desktop_info.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
         MathUtils::FloatEquals(info.fRefreshRate, fps, 0.01f))
     {
-      CLog::Log(LOGDEBUG, "Matched fuzzy whitelisted Resolution %s (%d)", info.strMode.c_str(), i);
+      diff = tmpdiff;
       resolution = i;
-      return;
+      infoset = info;
+      found = true;
     }
   }
+  if (found)
+  {
+    CLog::Log(LOGDEBUG, "Matched fuzzy whitelisted Resolution %s (%d)", infoset.strMode.c_str(), resolution);
+    return;
+  }
 
-  CLog::Log(LOGDEBUG, "No larger whitelisted resolution matched, trying current resolution with double refreshrate");
+  CLog::Log(LOGDEBUG, "No larger whitelisted resolution matched, trying larger equal policy with double refreshrate");
 
   for (const auto &mode : indexList)
   {
@@ -156,16 +170,27 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
 
     const RESOLUTION_INFO desktop_info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(CDisplaySettings::GetInstance().GetCurrentResolution());
 
-    // allow resolutions that are desktop resolution but have double the refresh rate
-    if (info.iScreenWidth == desktop_info.iWidth &&
+    // this would not be large enough to display without downscaling
+    if (info.iScreenWidth < width)
+      continue;
+
+    int32_t tmpdiff = info.iScreenWidth - width;
+    // allow resolutions that are of higher resolution but have the correct refresh rate
+    if (tmpdiff < diff &&
         info.iScreen == desktop_info.iScreen &&
         (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (desktop_info.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
         MathUtils::FloatEquals(info.fRefreshRate, fps * 2, 0.01f))
     {
-      CLog::Log(LOGDEBUG, "Matched fuzzy whitelisted Resolution %s (%d)", info.strMode.c_str(), i);
+      diff = tmpdiff;
       resolution = i;
-      return;
+      infoset = info;
+      found = true;
     }
+  }
+  if (found)
+  {
+    CLog::Log(LOGDEBUG, "Matched fuzzy whitelisted Resolution %s (%d)", infoset.strMode.c_str(), resolution);
+    return;
   }
 
   CLog::Log(LOGDEBUG, "No whitelisted resolution matched");
