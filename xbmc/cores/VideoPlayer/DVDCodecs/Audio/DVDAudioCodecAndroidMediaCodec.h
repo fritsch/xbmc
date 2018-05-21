@@ -54,7 +54,7 @@ public:
   void GetData(DVDAudioFrame &frame) override;
   void Reset() override;
   AEAudioFormat GetFormat() override;
-  std::string GetName() override;
+  const char* GetName() override { return "mediacodec"; }
 
 protected:
   int GetData(uint8_t** dst);

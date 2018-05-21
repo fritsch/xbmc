@@ -44,7 +44,7 @@ public:
   void GetData(DVDAudioFrame &frame) override;
   void Reset() override;
   AEAudioFormat GetFormat() override { return m_format; }
-  std::string GetName() override { return m_codecName; };
+  const char* GetName() override { return "FFmpeg"; }
   enum AVMatrixEncoding GetMatrixEncoding() override;
   enum AVAudioServiceType GetAudioServiceType() override;
   int GetProfile() override;
@@ -67,6 +67,5 @@ protected:
   bool m_eof;
   int m_channels;
   uint64_t m_layout;
-  std::string m_codecName;
 };
 
