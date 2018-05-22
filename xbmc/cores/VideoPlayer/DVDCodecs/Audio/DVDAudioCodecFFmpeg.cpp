@@ -29,6 +29,7 @@
 #include "DVDCodecs/DVDCodecs.h"
 extern "C" {
 #include "libavutil/opt.h"
+#include "libavutil/downmix_info.h"
 }
 
 #include "settings/Settings.h"
@@ -93,6 +94,7 @@ bool CDVDAudioCodecFFmpeg::Open(CDVDStreamInfo &hints, CDVDCodecOptions &options
     m_pCodecContext->flags |= AV_CODEC_FLAG_TRUNCATED;
 
   m_matrixEncoding = AV_MATRIX_ENCODING_NONE;
+  m_downmixType = AV_DOWNMIX_TYPE_UNKNOWN;
   m_channels = 0;
   m_pCodecContext->channels = hints.channels;
   m_pCodecContext->sample_rate = hints.samplerate;
@@ -204,6 +206,7 @@ void CDVDAudioCodecFFmpeg::GetData(DVDAudioFrame &frame)
   frame.bits_per_sample = CAEUtil::DataFormatToBits(frame.format.m_dataFormat);
   frame.format.m_sampleRate = m_format.m_sampleRate;
   frame.matrix_encoding = GetMatrixEncoding();
+  frame.downmix_type = GetDownmixType();
   frame.audio_service_type = GetAudioServiceType();
   frame.profile = GetProfile();
   // compute duration.
@@ -234,6 +237,10 @@ int CDVDAudioCodecFFmpeg::GetData(uint8_t** dst)
           if (sd->type == AV_FRAME_DATA_MATRIXENCODING)
           {
             m_matrixEncoding = *(enum AVMatrixEncoding*)sd->data;
+          }
+          else if (sd->type == AV_FRAME_DATA_DOWNMIX_INFO)
+          {
+            m_downmixType = *(enum AVDownmixType*)sd->data;
           }
         }
       }
@@ -305,6 +312,11 @@ int CDVDAudioCodecFFmpeg::GetBitRate()
 enum AVMatrixEncoding CDVDAudioCodecFFmpeg::GetMatrixEncoding()
 {
   return m_matrixEncoding;
+}
+
+enum AVDownmixType CDVDAudioCodecFFmpeg::GetDownmixType()
+{
+  return m_downmixType;
 }
 
 enum AVAudioServiceType CDVDAudioCodecFFmpeg::GetAudioServiceType()

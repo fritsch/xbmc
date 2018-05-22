@@ -46,6 +46,7 @@ public:
   AEAudioFormat GetFormat() override { return m_format; }
   std::string GetName() override { return m_codecName; };
   enum AVMatrixEncoding GetMatrixEncoding() override;
+  enum AVDownmixType GetDownmixType() override;
   enum AVAudioServiceType GetAudioServiceType() override;
   int GetProfile() override;
 
@@ -63,6 +64,7 @@ protected:
   enum AVSampleFormat m_iSampleFormat;
   CAEChannelInfo m_channelLayout;
   enum AVMatrixEncoding m_matrixEncoding = AV_MATRIX_ENCODING_NONE;
+  enum AVDownmixType m_downmixType = AV_DOWNMIX_TYPE_UNKNOWN;
   AVFrame* m_pFrame;
   bool m_eof;
   int m_channels;

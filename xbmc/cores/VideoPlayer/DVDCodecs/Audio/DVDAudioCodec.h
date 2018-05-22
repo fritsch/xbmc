@@ -30,6 +30,7 @@
 
 extern "C" {
 #include "libavcodec/avcodec.h"
+#include "libavutil/downmix_info.h"
 }
 
 struct AVStream;
@@ -56,6 +57,7 @@ typedef struct stDVDAudioFrame
   enum AVAudioServiceType audio_service_type;
   enum AVMatrixEncoding matrix_encoding;
   int profile;
+  enum AVDownmixType downmix_type;
 } DVDAudioFrame;
 
 class CDVDAudioCodec
@@ -120,6 +122,11 @@ public:
    * should return the ffmpeg matrix encoding type
    */
   virtual enum AVMatrixEncoding GetMatrixEncoding() { return AV_MATRIX_ENCODING_NONE; }
+
+  /*
+   * should return the ffmpeg downmix types
+   */
+  virtual enum AVDownmixType GetDownmixType() { return AV_DOWNMIX_TYPE_UNKNOWN; }
 
   /*
    * should return the ffmpeg audio service type
