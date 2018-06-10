@@ -589,7 +589,6 @@ void CActiveAE::StateMachine(int signal, Protocol *port, Message *msg)
           LoadSettings();
           m_sink.m_controlPort.SendOutMessage(CSinkControlProtocol::SETNOISETYPE, &m_settings.streamNoise, sizeof(bool));
           m_sink.m_controlPort.SendOutMessage(CSinkControlProtocol::SETSILENCETIMEOUT, &m_settings.silenceTimeout, sizeof(int));
-          m_sink.m_controlPort.SendOutMessage(CSinkControlProtocol::SETSILENCETIMEOUT, &m_settings.boostcenter, sizeof(int));
           ChangeResamplers();
           if (!NeedReconfigureBuffers() && !NeedReconfigureSink())
             return;
@@ -3168,6 +3167,7 @@ bool CActiveAE::ResampleSound(CActiveAESound *sound)
                   true,
                   outChannels.Count() > 0 ? &outChannels : NULL,
                   m_settings.resampleQuality,
+                  m_settings.boostcenter,
                   false);
 
   dst_samples = resampler->CalcDstSampleCount(sound->GetSound(true)->nb_samples,

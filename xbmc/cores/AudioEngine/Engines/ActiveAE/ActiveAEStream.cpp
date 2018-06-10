@@ -165,6 +165,7 @@ void CActiveAEStream::InitRemapper()
                      false,
                      &remapLayout,
                      AE_QUALITY_LOW, // not used for remapping
+                     0,
                      false);
 
     // extra sound packet, we can't resample to the same buffer
@@ -654,9 +655,9 @@ bool CActiveAEStreamBuffers::ProcessBuffers()
   return busy;
 }
 
-void CActiveAEStreamBuffers::ConfigureResampler(bool normalizelevels, bool stereoupmix, AEQuality quality)
+void CActiveAEStreamBuffers::ConfigureResampler(bool normalizelevels, bool stereoupmix, AEQuality quality, int boostcenter)
 {
-  m_resampleBuffers->ConfigureResampler(normalizelevels, stereoupmix, quality);
+  m_resampleBuffers->ConfigureResampler(normalizelevels, stereoupmix, quality, boostcenter);
 }
 
 float CActiveAEStreamBuffers::GetDelay()
