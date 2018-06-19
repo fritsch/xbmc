@@ -196,42 +196,48 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
   // 60.0 - 59.94 ~ 0.06 + something if they are a bit off
   // min: 59.86
   // max: 60.14
-  for (const auto &mode : indexList)
+  if (MathUtils::FloatEquals(23.97f, fps , 0.1f) || MathUtils::FloatEquals(29.97f, fps , 0.1f) || MathUtils::FloatEquals(59.94f, fps , 0.1f))
   {
-    auto i = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
-    const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(i);
-
-    const RESOLUTION_INFO desktop_info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(CDisplaySettings::GetInstance().GetCurrentResolution());
-
-    if (info.iScreenWidth == desktop_info.iWidth &&
-        info.iScreen == desktop_info.iScreen &&
-        (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (desktop_info.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
-        MathUtils::FloatEquals(info.fRefreshRate, fps , 0.1f))
+    for (const auto &mode : indexList)
     {
-      CLog::Log(LOGDEBUG, "Matched upper sync refreshrate from whitelisted Resolution %s (%d)", info.strMode.c_str(), i);
-      resolution = i;
-      return;
+      auto i = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
+      const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(i);
+
+      const RESOLUTION_INFO desktop_info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(CDisplaySettings::GetInstance().GetCurrentResolution());
+
+      if (info.iScreenWidth == desktop_info.iWidth &&
+          info.iScreen == desktop_info.iScreen &&
+          (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (desktop_info.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
+          MathUtils::FloatEquals(info.fRefreshRate, fps , 0.1f))
+      {
+        CLog::Log(LOGDEBUG, "Matched upper sync refreshrate from whitelisted Resolution %s (%d)", info.strMode.c_str(), i);
+        resolution = i;
+        return;
+      }
     }
   }
 
   CLog::Log(LOGDEBUG, "No next upper integer refreshrate matched, trying double next upper refreshrate");
   // And finally to help people to get 29.97i to 60 hz
-  for (const auto &mode : indexList)
+  if (MathUtils::FloatEquals(29.97f, fps , 0.1f))
   {
-    auto i = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
-    const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(i);
-
-    const RESOLUTION_INFO desktop_info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(CDisplaySettings::GetInstance().GetCurrentResolution());
-
-    // allow resolutions that are desktop resolution but have double the refresh rate
-    if (info.iScreenWidth == desktop_info.iWidth &&
-        info.iScreen == desktop_info.iScreen &&
-        (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (desktop_info.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
-        MathUtils::FloatEquals(info.fRefreshRate, 2 * fps, 0.1f))
+    for (const auto &mode : indexList)
     {
-      CLog::Log(LOGDEBUG, "Matched double upper sync refreshrate from whitelisted Resolution %s (%d)", info.strMode.c_str(), i);
-      resolution = i;
-      return;
+      auto i = CDisplaySettings::GetInstance().GetResFromString(mode.asString());
+      const RESOLUTION_INFO info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(i);
+
+      const RESOLUTION_INFO desktop_info = CServiceBroker::GetWinSystem()->GetGfxContext().GetResInfo(CDisplaySettings::GetInstance().GetCurrentResolution());
+
+      // allow resolutions that are desktop resolution but have double the refresh rate
+      if (info.iScreenWidth == desktop_info.iWidth &&
+          info.iScreen == desktop_info.iScreen &&
+          (info.dwFlags & D3DPRESENTFLAG_MODEMASK) == (desktop_info.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
+          MathUtils::FloatEquals(info.fRefreshRate, 2 * fps, 0.1f))
+      {
+        CLog::Log(LOGDEBUG, "Matched double upper sync refreshrate from whitelisted Resolution %s (%d)", info.strMode.c_str(), i);
+        resolution = i;
+        return;
+      }
     }
   }
 
