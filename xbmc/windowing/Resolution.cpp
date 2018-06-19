@@ -168,6 +168,7 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
     }
   }
 
+  CLog::Log(LOGDEBUG, "No double refreshrate resolution matched, trying current resolution with 3:2 pulldown");
   // Allow 3:2 pull down
   // 23.976 * 3 + 23.976 *2 ~ 59.94 * 2
   // 23.976 * 2.5 ~ 59.94
@@ -189,6 +190,7 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
     }
   }
 
+   CLog::Log(LOGDEBUG, "No 3:2 pulldown  matched, trying to match next upper integer refreshrate");
   // Allow next upper integer refreshrate - some computers, like the MAC don't have fractional refreshrates - those refreshrate
   // especially make sense with Sync Playback to Display
   // 60.0 - 59.94 ~ 0.06 + something if they are a bit off
@@ -212,6 +214,7 @@ void CResolutionUtils::FindResolutionFromWhitelist(float fps, int width, bool is
     }
   }
 
+  CLog::Log(LOGDEBUG, "No next upper integer refreshrate matched, trying double next upper refreshrate");
   // And finally to help people to get 29.97i to 60 hz
   for (const auto &mode : indexList)
   {
