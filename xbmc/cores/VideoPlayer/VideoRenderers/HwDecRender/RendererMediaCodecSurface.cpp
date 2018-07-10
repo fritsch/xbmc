@@ -37,11 +37,14 @@
 CRendererMediaCodecSurface::CRendererMediaCodecSurface()
  : m_bConfigured(false)
 {
+  memset(m_buffers,0, sizeof(m_buffers));
+  m_lastIndex = -1;
   CLog::Log(LOGNOTICE, "Instancing CRendererMediaCodecSurface");
 }
 
 CRendererMediaCodecSurface::~CRendererMediaCodecSurface()
 {
+  Reset();
 }
 
 CBaseRenderer* CRendererMediaCodecSurface::Create(CVideoBuffer *buffer)
@@ -93,16 +96,32 @@ bool CRendererMediaCodecSurface::RenderCapture(CRenderCapture* capture)
 
 void CRendererMediaCodecSurface::AddVideoPicture(const VideoPicture &picture, int index, double currentClock)
 {
-  if (m_bConfigured && dynamic_cast<CMediaCodecVideoBuffer*>(picture.videoBuffer))
+  ReleaseBuffer(index);
+
+  BUFFER &buf(m_buffers[index]);
+  if (picture.videoBuffer)
   {
-    int64_t nanodiff(static_cast<int64_t>((picture.pts - currentClock) * 1000));
-    dynamic_cast<CMediaCodecVideoBuffer*>(picture.videoBuffer)->RenderUpdate(m_surfDestRect,
-      CurrentHostCounter() + nanodiff);
+    buf.videoBuffer = picture.videoBuffer;
+    buf.videoBuffer->Acquire();
+  }
+}
+
+void CRendererMediaCodecSurface::ReleaseVideoBuffer(int idx, bool render)
+{
+  BUFFER &buf(m_buffers[idx]);
+  if (buf.videoBuffer)
+  {
+    CMediaCodecVideoBuffer *mcvb(dynamic_cast<CMediaCodecVideoBuffer*>(buf.videoBuffer));
+    if (mcvb)
+      mcvb->ReleaseOutputBuffer(render, 0);
+    buf.videoBuffer->Release();
+    buf.videoBuffer = nullptr;
   }
 }
 
 void CRendererMediaCodecSurface::ReleaseBuffer(int idx)
 {
+  ReleaseVideoBuffer(idx, false);
 }
 
 bool CRendererMediaCodecSurface::Supports(ERENDERFEATURE feature)
@@ -116,9 +135,15 @@ bool CRendererMediaCodecSurface::Supports(ERENDERFEATURE feature)
   return false;
 }
 
+void CRendererMediaCodecSurface::Reset()
+{
+  for (int i = 0 ; i < 4 ; ++i)
+    ReleaseVideoBuffer(i, false);
+  m_lastIndex = -1;
+}
+
 void CRendererMediaCodecSurface::RenderUpdate(int index, int index2, bool clear, unsigned int flags, unsigned int alpha)
 {
-  CXBMCApp::get()->WaitVSync(100);
   m_bConfigured = true;
 
   // this hack is needed to get the 2D mode of a 3D movie going
@@ -146,6 +171,12 @@ void CRendererMediaCodecSurface::RenderUpdate(int index, int index2, bool clear,
       break;
     default:
       break;
+  }
+
+  if (index != m_lastIndex)
+  {
+    ReleaseVideoBuffer(index, true);
+    m_lastIndex = index;
   }
 }
 
