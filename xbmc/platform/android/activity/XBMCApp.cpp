@@ -964,8 +964,6 @@ void CXBMCApp::onReceive(CJNIIntent intent)
     {
       CLog::Log(LOGDEBUG, "-- HDMI state: %s",  newstate ? "on" : "off");
       m_hdmiPlugged = newstate;
-      if (m_hdmiPlugged)
-        CServiceBroker::GetActiveAE()->DeviceChange();
     }
   }
   else if (action == "android.intent.action.SCREEN_OFF")
