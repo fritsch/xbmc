@@ -151,6 +151,12 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
 
   m_android->SetNativeResolution(res);
 
+  // wait until HDMI is at least reconnected -> give it 3 seconds time at max
+  int count = 30;
+  while (!CXBMCApp::IsHDMIPlugged() && count--)
+    CThread::Sleep(100);
+
+  CLog::Log(LOGNOTICE, "Slept: %d ms", (30 - count) * 1000);
   if (!m_delayDispReset)
   {
     CLog::Log(LOGNOTICE, "HERE I AM CALLING OnResetDiplay() without delay");
