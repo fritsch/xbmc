@@ -136,6 +136,7 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
   }
 
   {
+    CLog::Log(LOGNOTICE, "HERE I AM CALLING OnLostDisplay()");
     CSingleLock lock(m_resourceSection);
     for (std::vector<IDispResource *>::iterator i = m_resources.begin(); i != m_resources.end(); ++i)
     {
@@ -152,6 +153,7 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
 
   if (!m_delayDispReset)
   {
+    CLog::Log(LOGNOTICE, "HERE I AM CALLING OnResetDiplay() without delay");
     CSingleLock lock(m_resourceSection);
     // tell any shared resources
     for (std::vector<IDispResource *>::iterator i = m_resources.begin(); i != m_resources.end(); ++i)

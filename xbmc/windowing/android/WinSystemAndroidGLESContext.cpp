@@ -84,6 +84,7 @@ bool CWinSystemAndroidGLESContext::CreateNewWindow(const std::string& name,
 
   if (!m_delayDispReset)
   {
+    CLog::Log(LOGNOTICE, "Calling OnResetDisplay() in CreateNewWindow method");
     CSingleLock lock(m_resourceSection);
     // tell any shared resources
     for (std::vector<IDispResource *>::iterator i = m_resources.begin(); i != m_resources.end(); ++i)
@@ -120,6 +121,7 @@ void CWinSystemAndroidGLESContext::PresentRenderImpl(bool rendered)
 {
   if (m_delayDispReset && m_dispResetTimer.IsTimePast())
   {
+    CLog::Log(LOGNOTICE, "Calling OnResetDisplay() in PresentRenderImpl after Endtimer is run down");
     m_delayDispReset = false;
     CSingleLock lock(m_resourceSection);
     // tell any shared resources
