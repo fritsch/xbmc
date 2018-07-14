@@ -91,7 +91,7 @@ static void fetchDisplayModes()
     {
       if (m.getPhysicalWidth() > m.getPhysicalHeight())   // Assume unusable if portrait is returned
       {
-        s_hasModeApi = true;
+        s_hasModeApi = false;
 
         CLog::Log(LOGDEBUG, "CAndroidUtils: current mode: %d: %dx%d@%f", m.getModeId(), m.getPhysicalWidth(), m.getPhysicalHeight(), m.getRefreshRate());
         s_res_cur_displayMode.strId = StringUtils::Format("%d", m.getModeId());
