@@ -155,7 +155,7 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
   // wait until HDMI is disconnected -> give it 6 seconds
   int count_unplugged = 60;
   while (CXBMCApp::IsHDMIPlugged() && count_unplugged--)
-   CThread::Sleep(100);
+   XbmcThreads::ThreadSleep(100);
 
   // Now wait until HDMI is at least reconnected -> give it 3 seconds time at max
   int count = 30;
