@@ -33,6 +33,7 @@
 #include "guilib/DispResource.h"
 #include "utils/log.h"
 #include "threads/SingleLock.h"
+#include "threads/Thread.h"
 #include "platform/android/activity/XBMCApp.h"
 
 #include "cores/RetroPlayer/process/android/RPProcessInfoAndroid.h"
