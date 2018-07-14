@@ -162,7 +162,7 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
   while (!CXBMCApp::IsHDMIPlugged() && count--)
     XbmcThreads::ThreadSleep(100);
 
-  CLog::Log(LOGNOTICE, "Slept for plug: %d ms unplug: %d ms", (30 - count) * 1000, (60 - count_unplugged) * 1000);
+  CLog::Log(LOGNOTICE, "Slept for plug: %d ms unplug: %d ms", (30 - count) * 100, (60 - count_unplugged) * 100);
   if (!m_delayDispReset)
   {
     CLog::Log(LOGNOTICE, "HERE I AM CALLING OnResetDiplay() without delay");
