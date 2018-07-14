@@ -56,6 +56,16 @@ protected:
   virtual void ReorderDrawPoints() override;
 
 private:
+  void Reset();
+  void ReleaseVideoBuffer(int idx, bool render);
+
   bool m_bConfigured;
   CRect m_surfDestRect;
+  int m_lastIndex;
+
+  struct BUFFER
+  {
+    BUFFER() : videoBuffer(nullptr) {};
+    CVideoBuffer *videoBuffer;
+  } m_buffers[4];
 };

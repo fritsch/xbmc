@@ -33,6 +33,7 @@
 #include "guilib/DispResource.h"
 #include "utils/log.h"
 #include "threads/SingleLock.h"
+#include "threads/Thread.h"
 #include "platform/android/activity/XBMCApp.h"
 
 #include "cores/RetroPlayer/process/android/RPProcessInfoAndroid.h"
@@ -136,6 +137,7 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
   }
 
   {
+    CLog::Log(LOGNOTICE, "HERE I AM CALLING OnLostDisplay()");
     CSingleLock lock(m_resourceSection);
     for (std::vector<IDispResource *>::iterator i = m_resources.begin(); i != m_resources.end(); ++i)
     {
@@ -150,8 +152,20 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
 
   m_android->SetNativeResolution(res);
 
+  // wait until HDMI is disconnected -> give it 6 seconds
+  int count_unplugged = 60;
+  while (CXBMCApp::IsHDMIPlugged() && count_unplugged--)
+   XbmcThreads::ThreadSleep(100);
+
+  // Now wait until HDMI is at least reconnected -> give it 3 seconds time at max
+  int count = 30;
+  while (!CXBMCApp::IsHDMIPlugged() && count--)
+    XbmcThreads::ThreadSleep(100);
+
+  CLog::Log(LOGNOTICE, "Slept for plug: %d ms unplug: %d ms", (30 - count) * 100, (60 - count_unplugged) * 100);
   if (!m_delayDispReset)
   {
+    CLog::Log(LOGNOTICE, "HERE I AM CALLING OnResetDiplay() without delay");
     CSingleLock lock(m_resourceSection);
     // tell any shared resources
     for (std::vector<IDispResource *>::iterator i = m_resources.begin(); i != m_resources.end(); ++i)
