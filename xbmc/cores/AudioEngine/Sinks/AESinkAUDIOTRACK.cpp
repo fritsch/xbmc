@@ -1006,7 +1006,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
   // music samplerate
   if (!aml_present() || CJNIAudioManager::GetSDKVersion() >= 23)
   {
-    int test_sample[] = { 32000, 44100, 48000, 88200, 96000, 176400, 192000 };
+    int test_sample[] = { 32000, 48000, 88200, 96000, 176400, 192000 };
     int test_sample_sz = sizeof(test_sample) / sizeof(int);
 
     for (int i = 0; i < test_sample_sz; ++i)
