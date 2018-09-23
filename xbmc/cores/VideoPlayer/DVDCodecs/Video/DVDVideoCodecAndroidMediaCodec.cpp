@@ -394,11 +394,11 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
     CLog::Log(LOGERROR, "CDVDVideoCodecAndroidMediaCodec::Open - %s\n", "null size, cannot handle");
     goto FAIL;
   }
-  else if (hints.stills || hints.dvd)
-  {
-    // Won't work reliably
-    goto FAIL;
-  }
+//  else if (hints.stills || hints.dvd)
+//  {
+//    // Won't work reliably
+//    goto FAIL;
+//  }
   else if (hints.orientation && m_render_surface && CJNIBase::GetSDKVersion() < 23)
   {
     CLog::Log(LOGERROR, "CDVDVideoCodecAndroidMediaCodec::Open - %s\n", "Surface does not support orientation before API 23");
