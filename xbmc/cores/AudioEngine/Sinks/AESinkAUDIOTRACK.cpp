@@ -298,6 +298,13 @@ bool CAESinkAUDIOTRACK::VerifySinkConfiguration(int sampleRate, int channelMask,
   if (jniAt)
   {
     jniAt->stop();
+    int timeout = 50;
+    while (timeout > 0 && jniAt->getState() != CJNIAudioTrack::PLAYSTATE_STOPPED)
+    {
+      usleep(10 * 1000);
+      CLog::Log(LOGNOTICE, "Waiting for stop state: %d", timeout);
+      --timeout;
+    }
     jniAt->flush();
     jniAt->release();
     delete jniAt;
@@ -590,6 +597,13 @@ void CAESinkAUDIOTRACK::Deinitialize()
   if (IsInitialized())
   {
     m_at_jni->stop();
+    int timeout = 50;
+    while (timeout > 0 && m_at_jni->getState() != CJNIAudioTrack::PLAYSTATE_STOPPED)
+    {
+      usleep(10 * 1000);
+      CLog::Log(LOGNOTICE, "Waiting for stop state (2): %d", timeout);
+      --timeout;
+    }
     m_at_jni->flush();
   }
   m_at_jni->release();
