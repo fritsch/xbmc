@@ -617,6 +617,10 @@ void CAESinkAUDIOTRACK::Deinitialize()
 
   delete m_at_jni;
   m_at_jni = NULL;
+
+  // hack to reinit sink under the hood
+  if (m_format.m_dataFormat == AE_FMT_RAW)
+    VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_16BIT);
 }
 
 bool CAESinkAUDIOTRACK::IsInitialized()
