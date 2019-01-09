@@ -107,6 +107,7 @@ public class Main extends NativeActivity implements Choreographer.FrameCallback
     System.loadLibrary("@APP_NAME_LC@");
 
     super.onCreate(savedInstanceState);
+    getWindow().setFormat(PixelFormat.TRANSPARENT);
 
     setContentView(R.layout.activity_main);
     setVolumeControlStream(AudioManager.STREAM_MUSIC);
