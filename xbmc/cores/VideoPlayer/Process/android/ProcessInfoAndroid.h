@@ -11,13 +11,16 @@
 #include "cores/IPlayer.h"
 #include "cores/VideoPlayer/Process/ProcessInfo.h"
 
-class CProcessInfoAndroid : public CProcessInfo
+namespace VIDEOPLAYER
 {
-public:
-  CProcessInfoAndroid();
-  static CProcessInfo* Create();
-  static void Register();
-  EINTERLACEMETHOD GetFallbackDeintMethod() override;
+  class CProcessInfoAndroid : public CProcessInfo
+  {
+  public:
+    CProcessInfoAndroid();
+    static CProcessInfo* Create();
+    static void Register();
+    EINTERLACEMETHOD GetFallbackDeintMethod() override;
 
-//protected:
-};
+  //protected:
+  };
+}

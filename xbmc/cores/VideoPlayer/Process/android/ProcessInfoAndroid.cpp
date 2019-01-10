@@ -8,6 +8,8 @@
 
 #include "ProcessInfoAndroid.h"
 
+using namespace VIDEOPLAYER;
+
 CProcessInfo* CProcessInfoAndroid::Create()
 {
   return new CProcessInfoAndroid();
