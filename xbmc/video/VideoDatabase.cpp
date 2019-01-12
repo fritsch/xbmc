@@ -398,7 +398,7 @@ void CVideoDatabase::CreateViews()
   m_pDS->exec(tvshowcounts);
 
   CLog::Log(LOGINFO, "create tvshow_view");
-  std::string tvshowview = PrepareSQL("CREATE VIEW tvshow_view AS SELECT "
+  std::string tvshowview = PrepareSQL("CREATE VIEW tvshow_view AS SELECT DISTINCT"
                                      "  tvshow.*,"
                                      "  path.idParentPath AS idParentPath,"
                                      "  path.strPath AS strPath,"
