@@ -35,7 +35,7 @@ ifeq ($(OS), android)
     ffmpg_config += --arch=aarch64 --cpu=cortex-a53
   else
     ifeq ($(findstring arm, $(CPU)), arm)
-      ffmpg_config += --cpu=cortex-a9
+      ffmpg_config += --cpu=cortex-a9 --enable-neon --enable-vfp
     else
       ffmpg_config += --cpu=i686 --disable-mmx
       ffmpg_config += --extra-cflags=-no-integrated-as --extra-cflags=-mno-stackrealign
