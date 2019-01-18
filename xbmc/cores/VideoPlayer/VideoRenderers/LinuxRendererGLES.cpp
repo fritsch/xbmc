@@ -46,6 +46,7 @@ CLinuxRendererGLES::~CLinuxRendererGLES()
   UnInit();
 
   ReleaseShaders();
+  free(m_planeBuffer), m_planeBuffer = nullptr;
 }
 
 CBaseRenderer* CLinuxRendererGLES::Create(CVideoBuffer *buffer)
@@ -260,18 +261,29 @@ void CLinuxRendererGLES::LoadPlane(CYuvPlane& plane, int type,
   glBindTexture(m_textureTarget, plane.id);
 
   // OpenGL ES does not support strided texture input.
+  GLint pixelStore = -1;
   if (stride != static_cast<int>(width * bps))
   {
-    unsigned char* src = static_cast<unsigned char*>(data);
-    for (unsigned int y = 0; y < height; ++y, src += stride)
+    unsigned int verMajor, verMinor;
+    m_renderSystem->GetRenderVersion(verMajor, verMinor);
+
+    if (verMajor < 3)
     {
-      glTexSubImage2D(m_textureTarget, 0, 0, y, width, 1, type, GL_UNSIGNED_BYTE, src);
+      unsigned char* src (static_cast<unsigned char*>(data)), *dst(m_planeBuffer);
+      for (unsigned int y = 0; y < height; ++y, src += stride, dst += width)
+        memcpy(dst, src, width);
+      pixelData = m_planeBuffer;
+    }
+    else
+    {
+      glGetIntegerv(GL_UNPACK_ROW_LENGTH, &pixelStore);
+      glPixelStorei(GL_UNPACK_ROW_LENGTH, stride);
     }
   }
-  else
-  {
-    glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, pixelData);
-  }
+  glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, pixelData);
+
+  if (pixelStore >= 0)
+    glPixelStorei(GL_UNPACK_ROW_LENGTH, pixelStore);
 
   // check if we need to load any border pixels
   if (height < plane.texheight)
@@ -1261,6 +1273,8 @@ bool CLinuxRendererGLES::CreateYV12Texture(int index)
   im.planesize[0] = im.stride[0] * im.height;
   im.planesize[1] = im.stride[1] * (im.height >> im.cshift_y);
   im.planesize[2] = im.stride[2] * (im.height >> im.cshift_y);
+
+  m_planeBuffer = static_cast<unsigned char*>(realloc(m_planeBuffer, m_sourceHeight * m_sourceWidth));
 
   for (int i = 0; i < 3; i++)
   {
