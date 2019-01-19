@@ -259,19 +259,28 @@ void CLinuxRendererGLES::LoadPlane(CYuvPlane& plane, int type,
 
   glBindTexture(m_textureTarget, plane.id);
 
+  char* aligned_data = NULL;
   // OpenGL ES does not support strided texture input.
+  // this won't work for 10 bit textures anyways in 16 bit - so no idea about this check
+  // concerning bps - for everything not 1 upload will do stupid
   if (stride != static_cast<int>(width * bps))
   {
     unsigned char* src = static_cast<unsigned char*>(data);
+    int tocopyline = width * bps;
+    aligned_data = (char*) malloc(height * tocopyline);
     for (unsigned int y = 0; y < height; ++y, src += stride)
     {
-      glTexSubImage2D(m_textureTarget, 0, 0, y, width, 1, type, GL_UNSIGNED_BYTE, src);
+      memcpy(aligned_data + (y * tocopyline), src, tocopyline);
     }
   }
-  else
+  if (aligned_data)
   {
-    glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, pixelData);
+    glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, aligned_data);
+    free(aligned_data);
+    aligned_data = NULL;
   }
+  else
+    glTexSubImage2D(m_textureTarget, 0, 0, 0, width, height, type, GL_UNSIGNED_BYTE, pixelData);
 
   // check if we need to load any border pixels
   if (height < plane.texheight)
