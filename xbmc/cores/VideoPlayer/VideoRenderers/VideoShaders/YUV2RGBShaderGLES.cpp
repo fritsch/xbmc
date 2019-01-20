@@ -47,6 +47,8 @@ BaseYUV2RGBGLSLShader::BaseYUV2RGBGLSLShader(EShaderFormat format, AVColorPrimar
   if (dstPrimaries != srcPrimaries)
   {
     m_defines += "#define XBMC_COL_CONVERSION\n";
+    if (srcPrimaries == PrimariesBT2020) // Only support BT2020 as input for now
+      m_defines += "#define XBMC_COL_GAMMA_2_4\n";
   }
 
   if (toneMap)
