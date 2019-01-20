@@ -64,15 +64,14 @@ void main()
 #if defined(XBMC_COL_CONVERSION)
   vec4 tmp;
   tmp.rgb = max(vec3(0), rgb.rgb);
-  float a = 1.131;
-  float b = -0.147;
-  float c = 0.009;
-  float ai = -0.761;
-  float bi = 1.57;
-  float ci = 0.151;
-  rgb.rgb = tmp.rgb * tmp.rgb * a + b * tmp.rgb + vec3(c);
+  float a = 1.09998;
+  float b = -0.1105;
+  float ai = 2.314;
+  float bi = -4.3776;
+  float ci = 3.1161;
+  rgb.rgb = tmp.rgb * tmp.rgb * a + b * tmp.rgb;
   rgb.rgb = max(vec3(0), m_primMat * rgb.rgb);
-  rgb.rgb = rgb.rgb * rgb.rgb * ai + bi * rgb.rgb + vec3(ci);
+  rgb.rgb = rgb.rgb * rgb.rgb * rgb.rgb * ai + bi * rgb.rgb * rgb.rgb  + ci * rgb.rgb;
 
 #if defined(XBMC_TONE_MAPPING)
   float luma = dot(rgb.rgb, m_coefsDst);
