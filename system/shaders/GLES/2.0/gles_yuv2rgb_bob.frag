@@ -83,7 +83,6 @@ void main()
   rgb = mix(rgb, rgbBelow, 0.5);
 
 #if defined(XBMC_COL_CONVERSION)
-#if defined(XBMC_COL_CONVERSION)
   vec4 tmp;
   vec4 tmp2;
   tmp.rgb = max(vec3(0), rgb.rgb);
