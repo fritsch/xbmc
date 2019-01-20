@@ -68,15 +68,19 @@ void main()
   float a = 0.1854;
   float b = 0.8516;
   float c = -0.0357;
+  float ai = -0.07791;
+  float bi = 1.06787;
 #if defined(XBMC_COL_GAMMA_2_4)
   a = 0.3856;
   b = 0.6641;
   c = -0.2034;
+  ai = -0.14722;
+  bi = 1.1278;
 #endif
   tmp2.rgb = tmp.rgb * tmp.rgb;
   rgb.rgb = tmp2.rgb * tmp.rgb * a + tmp2.rgb * b + c * tmp.rgb;
   rgb.rgb = max(vec3(0), m_primMat * rgb.rgb);
-  rgb.rgb = pow(rgb.rgb, vec3(m_gammaDstInv));
+  rgb.rgb = ai * rgb.rgb*rgb.rgb + bi * sqrt(rgb.rgb);
 
 #if defined(XBMC_TONE_MAPPING)
   float luma = dot(rgb.rgb, m_coefsDst);
