@@ -63,10 +63,18 @@ void main()
 
 #if defined(XBMC_COL_CONVERSION)
   vec4 tmp;
+  vec4 tmp2;
   tmp.rgb = max(vec3(0), rgb.rgb);
-  float a = 1.09998;
-  float b = -0.1105;
-  rgb.rgb = tmp.rgb * tmp.rgb * a + b * tmp.rgb;
+  float a = 0.1854;
+  float b = 0.8516;
+  float c = -0.0357;
+#if defined(XBMC_COL_GAMMA_2_4)
+  a = 0.3856;
+  b = 0.6641;
+  c = -0.2034;
+#endif
+  tmp2.rgb = tmp.rgb * tmp.rgb;
+  rgb.rgb = tmp2.rgb * tmp.rgb * a + tmp2.rgb * b + c * tmp.rgb;
   rgb.rgb = max(vec3(0), m_primMat * rgb.rgb);
   rgb.rgb = pow(rgb.rgb, vec3(m_gammaDstInv));
 
