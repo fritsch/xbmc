@@ -116,20 +116,12 @@ void CThread::SetThreadInfo()
 
 ThreadIdentifier CThread::GetCurrentThreadId()
 {
-#if defined(TARGET_ANDROID)
-  return gettid();
-#else
   return pthread_self();
-#endif
 }
 
 bool CThread::IsCurrentThread(const ThreadIdentifier tid)
 {
-#if defined(TARGET_ANDROID)
-  return gettid() == tid;
-#else
   return pthread_equal(pthread_self(), tid);
-#endif
 }
 
 int CThread::GetMinPriority(void)
