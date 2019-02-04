@@ -29,6 +29,105 @@
       </group>
     </category>
   </section>
+  <section id="player">
+    <category id="videoplayer">
+      <group id="3">
+        <setting id="videoplayer.usemediacodecsurface" type="boolean" label="13440" help="36544">
+          <requirement>HAS_MEDIACODEC</requirement>
+          <level>2</level>
+          <default>true</default>
+          <updates>
+            <update type="change" />
+          </updates>
+          <control type="toggle" />
+        </setting>
+        <setting id="videoplayer.usemediacodec" type="boolean" label="13439" help="36544">
+          <requirement>HAS_MEDIACODEC</requirement>
+          <level>2</level>
+          <default>true</default>
+          <updates>
+            <update type="change" />
+          </updates>
+          <control type="toggle" />
+        </setting>
+      <setting id="videoplayer.usemediacodecmpeg2" type="integer" label="39001" >
+          <requirement>HAS_MEDIACODEC</requirement>
+          <level>2</level>
+          <default>0</default>
+          <constraints>
+            <options>
+              <option label="20420">9999</option>   <!-- Never -->
+              <option label="39000">800</option>  <!-- HD -->
+              <option label="20422">0</option>  <!-- Always -->
+            </options>
+          </constraints>
+          <updates>
+            <update type="change" />
+          </updates>
+          <dependencies>
+            <dependency type="enable">
+              <or>
+                <condition setting="videoplayer.usemediacodecsurface" operator="is">true</condition> <!-- USE MEDIACODECSURFACE -->
+                <condition setting="videoplayer.usemediacodec" operator="is">true</condition> <!-- USE MEDIACODEC -->
+              </or>
+            </dependency>
+          </dependencies>
+          <control type="spinner" format="string" />
+          <control type="edit" format="integer" />
+        </setting>
+        <setting id="videoplayer.usemediacodeccodecmpeg4" type="integer" label="39002">
+          <requirement>HAS_MEDIACODEC</requirement>
+          <level>2</level>
+          <default>800</default>
+          <constraints>
+            <options>
+              <option label="20420">9999</option>   <!-- Never -->
+              <option label="39000">800</option>  <!-- HD -->
+              <option label="20422">0</option>  <!-- Always -->
+            </options>
+          </constraints>
+          <updates>
+            <update type="change" />
+          </updates>
+          <dependencies>
+            <dependency type="enable">
+              <or>
+                <condition setting="videoplayer.usemediacodecsurface" operator="is">true</condition> <!-- USE MEDIACODECSURFACE -->
+                <condition setting="videoplayer.usemediacodec" operator="is">true</condition> <!-- USE MEDIACODEC -->
+              </or>
+            </dependency>
+          </dependencies>
+          <control type="spinner" format="string" />
+          <control type="edit" format="integer" />
+        </setting>
+        <setting id="videoplayer.usemediacodech264" type="integer" label="39003">
+          <requirement>HAS_MEDIACODEC</requirement>
+          <level>2</level>
+          <default>0</default>
+          <constraints>
+            <options>
+              <option label="20420">9999</option>   <!-- Never -->
+              <option label="39000">800</option>  <!-- HD -->
+              <option label="20422">0</option>  <!-- Always -->
+            </options>
+          </constraints>
+          <updates>
+            <update type="change" />
+          </updates>
+          <dependencies>
+            <dependency type="enable">
+              <or>
+                <condition setting="videoplayer.usemediacodecsurface" operator="is">true</condition> <!-- USE MEDIACODECSURFACE -->
+                <condition setting="videoplayer.usemediacodec" operator="is">true</condition> <!-- USE MEDIACODEC -->
+              </or>
+            </dependency>
+          </dependencies>
+          <control type="spinner" format="string" />
+          <control type="edit" format="integer" />
+        </setting>
+      </group>
+    </category>
+  </section>
   <section id="interface">
     <category id="regional">
       <group id="2">
