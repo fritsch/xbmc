@@ -964,27 +964,33 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
       if (supports_iec)
       {
         bool supports_192khz = m_sink_sampleRates.find(192000) != m_sink_sampleRates.end();
-        m_info.m_wantsIECPassthrough = true;
-        m_info.m_streamTypes.clear();
-        m_info.m_dataFormats.push_back(AE_FMT_RAW);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+        CAEDeviceInfo iecinfo;
+        iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+        iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+        iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+        iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+        iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
         CLog::Log(LOGDEBUG, "AESinkAUDIOTrack: Using IEC PT mode: %d", CJNIAudioFormat::ENCODING_IEC61937);
         if (supports_192khz)
         {
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
           // Check for IEC 8 channel 192 khz PT
           int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
           if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
           {
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+            iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+            iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
+            iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
             CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
           }
+        }
+        if (iecinfo.m_streamTypes.size() >= m_info.m_streamTypes.size())
+        {
+          CLog::Log(LOGNOTICE, "Using IEC Passthrough as more capabilities are available");
+          m_info.m_wantsIECPassthrough = true;
+          m_info.m_streamTypes.clear();
+          for (auto& s : iecinfo.m_streamTypes)
+            m_info.m_streamTypes.push_back(s);
         }
       }
     }
