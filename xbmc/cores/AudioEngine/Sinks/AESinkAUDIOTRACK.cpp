@@ -835,12 +835,14 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
   m_info.m_wantsIECPassthrough = false;
   m_info.m_dataFormats.push_back(AE_FMT_RAW);
   m_info.m_streamTypes.clear();
+  int rawcounter = 0;
   if (CJNIAudioFormat::ENCODING_AC3 != -1)
   {
     if (VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_AC3))
     {
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
       CLog::Log(LOGDEBUG, "Firmware implements AC3 RAW");
+      rawcounter++;
     }
   }
 
@@ -851,6 +853,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
     {
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
       CLog::Log(LOGDEBUG, "Firmware implements EAC3 RAW");
+      rawcounter += 2;
     }
   }
 
@@ -863,6 +866,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+      rawcounter++;
     }
   }
 
@@ -875,6 +879,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
         CLog::Log(LOGDEBUG, "Firmware implements DTS-HD RAW");
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
+        rawcounter += 6;
       }
     }
     if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
@@ -883,6 +888,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
       {
         CLog::Log(LOGDEBUG, "Firmware implements TrueHD RAW");
         m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+        rawcounter += 3;
       }
     }
   }
@@ -894,16 +900,16 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
     if (supports_iec)
     {
       bool supports_192khz = m_sink_sampleRates.find(192000) != m_sink_sampleRates.end();
-      m_info.m_wantsIECPassthrough = true;
-      m_info.m_streamTypes.clear();
-      m_info.m_dataFormats.push_back(AE_FMT_RAW);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
       CLog::Log(LOGDEBUG, "AESinkAUDIOTrack: Using IEC PT mode: %d", CJNIAudioFormat::ENCODING_IEC61937);
       CLog::Log(LOGDEBUG, "AC3 and DTS via IEC61937 is supported");
+      CAEDeviceInfo iecinfo;
+      iecinfo.m_dataFormats.push_back(AE_FMT_RAW);
+      iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
+      iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
+      iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
+      iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
+      iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
+      int ieccounter = 2;
       if (supports_192khz)
       {
         // Check for IEC 2 channel 192 khz PT DTS-HD-HR and E-AC3
@@ -913,15 +919,26 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
           CLog::Log(LOGDEBUG, "E-AC3 and DTSHD-HR via IEC61937 is supported");
+          ieccounter += 5;
         }
         // Check for IEC 8 channel 192 khz PT DTS-HD-MA and TrueHD
         int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
         if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
         {
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
           CLog::Log(LOGDEBUG, "DTSHD-MA and TrueHD via IEC61937 is supported");
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+          ieccounter += 6;
         }
+      }
+      // we prefer IEC but only if we have more capabilities
+      if (ieccounter >= rawcounter)
+      {
+        m_info.m_wantsIECPassthrough = true;
+        m_info.m_streamTypes = iecinfo.m_streamTypes;
+        m_info.m_dataFormats.push_back(AE_FMT_RAW);
+        CLog::Log(LOGNOTICE, "IEC Mode is used. Supported IEC: %d Supported RAW: %d", ieccounter,
+                  rawcounter);
       }
     }
   }
