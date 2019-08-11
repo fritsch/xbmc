@@ -334,11 +334,12 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_encoding = AEStreamFormatToATFormat(m_format.m_streamInfo.m_type);
     m_format.m_channelLayout = AE_CH_LAYOUT_2_0;
 
-    if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD_MA ||
+/*    if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD_MA ||
         m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
     {
       m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
     }
+ */
 
     // EAC3 needs real samplerate not the modulation
     if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3)
@@ -981,13 +982,13 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
         {
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
           // Check for IEC 8 channel 192 khz PT
-          int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
+          int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_2_0);
           if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
           {
             m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
             m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-            CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
+//            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+            CLog::Log(LOGDEBUG, "Fake 8 Channel PT via IEC61937 is supported");
           }
         }
       }
