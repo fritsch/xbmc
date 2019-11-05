@@ -484,9 +484,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     }
     else
     {
+      m_min_buffer_size *= 2;
       if (m_passthrough)
       {
-        m_min_buffer_size *= 2;
         // AML in old mode needs more buffer or it stutters when faking PT
         if (aml_present() && m_passthrough && m_info.m_wantsIECPassthrough && (CJNIAudioFormat::ENCODING_IEC61937 == -1))
         {
@@ -496,8 +496,6 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
             m_min_buffer_size *= (m_format.m_sampleRate / m_sink_sampleRate);
         }
       }
-      else
-        m_min_buffer_size *= 2;
 
       m_format.m_frameSize = m_format.m_channelLayout.Count() * (CAEUtil::DataFormatToBits(m_format.m_dataFormat) / 8);
       // again a workaround for AML old code
@@ -505,14 +503,22 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_sink_frameSize = 2 * CAEUtil::DataFormatToBits(AE_FMT_S16LE) / 8; // sending via 2 channels 2 * 16 / 8 = 4
       else
         m_sink_frameSize = m_format.m_frameSize;
-      m_format.m_frames = (int)(m_min_buffer_size / m_format.m_frameSize) / 2;
+
+      // aim at 200 ms buffer but at max 300 ms (2 * 0.15s) and 50 ms periods
+      m_audiotrackbuffer_sec =
+          static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
+      while (m_audiotrackbuffer_sec < 0.15)
+      {
+        m_min_buffer_size *= 2;
+        m_audiotrackbuffer_sec =
+            static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
+      }
+      // division by 4 -> 4 periods into one buffer
+      m_format.m_frames = static_cast<int>(m_min_buffer_size / m_format.m_frameSize) / 4;
     }
 
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
       m_audiotrackbuffer_sec = rawlength_in_seconds;
-    else
-     m_audiotrackbuffer_sec = (double)(m_min_buffer_size / m_sink_frameSize) / (double)m_sink_sampleRate;
-
 
     CLog::Log(LOGDEBUG, "Created Audiotrackbuffer with playing time of %lf ms min buffer size: %u bytes",
                          m_audiotrackbuffer_sec * 1000, m_min_buffer_size);
