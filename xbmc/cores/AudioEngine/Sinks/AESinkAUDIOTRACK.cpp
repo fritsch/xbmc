@@ -614,6 +614,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
 double CAESinkAUDIOTRACK::GetLatency()
 {
+  if (m_encoding == CJNIAudioFormat::ENCODING_PCM_FLOAT &&
+      m_format.m_channelLayout == AE_CH_LAYOUT_2_0)
+    return 0.2;
+
   return 0.0;
 }
 
