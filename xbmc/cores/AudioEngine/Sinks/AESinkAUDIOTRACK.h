@@ -81,6 +81,7 @@ private:
   double             m_audiotrackbuffer_sec;
   int                m_encoding;
   double m_pause_ms = 0.0;
+  double m_delay = 0.0;
 
   std::vector<float> m_floatbuf;
   std::vector<int16_t> m_shortbuf;
