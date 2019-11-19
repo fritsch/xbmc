@@ -724,7 +724,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
     {
       // leave enough head room for eventualities
-      double extra_sleep = m_format.m_streamInfo.GetDuration() - time_to_add_ms;
+      double extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) / 2.0;
       // warmup
       if (m_pause_ms > 0)
       {
@@ -752,10 +752,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     // waiting should only be done if sink is not run dry
     if (m_delay > (m_audiotrackbuffer_sec * 0.8))
     {
-      double time_should_ms = written_frames / static_cast<double>(m_format.m_sampleRate * 1000.0);
+      double time_should_ms = 1000.0 * written_frames / m_format.m_sampleRate;
       double time_off = time_should_ms - time_to_add_ms;
       if (time_off > 0)
-        usleep(time_off * 1000); // sleep the error away
+        usleep(time_off * 500); // sleep half the error away
     }
   }
 
