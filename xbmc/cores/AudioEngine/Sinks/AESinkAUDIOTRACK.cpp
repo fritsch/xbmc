@@ -561,6 +561,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
     CLog::Log(LOGDEBUG, "Flushing might not be properly implemented, sleeping: %d ms", diff);
     usleep(diff * 1000);
   }
+  m_delay = 0.0;
 }
 
 bool CAESinkAUDIOTRACK::IsInitialized()
@@ -604,6 +605,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // Audiotrack is caching more than we though it would
   if (d > m_audiotrackbuffer_sec)
     m_audiotrackbuffer_sec = d;
+
+  // track delay in local member
+  m_delay = d;
 
   status.SetDelay(d);
 }
@@ -709,21 +713,26 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   double time_to_add_ms = 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency();
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
+
     // AT does not consume in a blocking way - it runs ahead and blocks
     // exactly once with the last package for some 100 ms
-    // help it sleeping a bit
-    if (time_to_add_ms < m_format.m_streamInfo.GetDuration() / 2)
+    // help it sleeping a bit - but don't run dry -> at least 0.128 seconds of
+    // audio in buffer (e.g. 4 AC3 packages)
+    if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
     {
       // leave enough head room for eventualities
-      double extra_sleep = m_format.m_streamInfo.GetDuration() / 2;
+      double extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) / 2.0;
       // warmup
       if (m_pause_ms > 0)
       {
         m_pause_ms -= m_format.m_streamInfo.GetDuration();
-        extra_sleep /= 4;
+        extra_sleep /= 4; // fillup after Addpause
       }
-      else
-        m_pause_ms = 0;
+      else if (m_delay < 0.128)
+      {
+        // care for underrun
+        extra_sleep /= 2;
+      }
 
       usleep(extra_sleep * 1000);
     }
@@ -737,12 +746,13 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   }
   else
   {
-    if (m_duration_written >= m_audiotrackbuffer_sec)
+    // waiting should only be done if sink is not run dry
+    if (m_delay > (m_audiotrackbuffer_sec * 0.8))
     {
-      double time_should_ms = written_frames / static_cast<double>(m_format.m_sampleRate * 1000.0);
+      double time_should_ms = 1000.0 * written_frames / m_format.m_sampleRate;
       double time_off = time_should_ms - time_to_add_ms;
       if (time_off > 0)
-        usleep(time_off * 500); // sleep half the error
+        usleep(time_off * 500); // sleep half the error away
     }
   }
 
@@ -762,6 +772,9 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   // blocking, sleeping roughly and GetDelay smoothing
   // In short: Shit in, shit out
   usleep(millis * 1000);
+  if (m_pause_ms < 0)
+    m_pause_ms = 0.0;
+
   m_pause_ms += millis;
 }
 
