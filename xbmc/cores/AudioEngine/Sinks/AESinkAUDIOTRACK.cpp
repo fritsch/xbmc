@@ -610,6 +610,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   m_delay = d;
 
   status.SetDelay(d);
+
+  CLog::Log(LOGNOTICE, "------------------- Delay-Smooth: %lf Delay-Measured: %lf", d * 1000,
+            delay * 1000);
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
