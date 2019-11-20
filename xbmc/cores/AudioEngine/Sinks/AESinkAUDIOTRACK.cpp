@@ -712,7 +712,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       loop_written = 0;
     }
   }
-  unsigned int written_frames = < static_cast<unsigned int>(written / m_format.m_frameSize);
+  unsigned int written_frames = static_cast<unsigned int>(written / m_format.m_frameSize);
   double time_to_add_ms = 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency();
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
