@@ -919,8 +919,8 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
         int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
         if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
         {
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
           CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
           ieccounter += 6;
         }
@@ -928,8 +928,8 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
         if (VerifySinkConfiguration(192000, CJNIAudioFormat::CHANNEL_OUT_STEREO,
                                     CJNIAudioFormat::ENCODING_IEC61937))
         {
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
+          iecinfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
           CLog::Log(LOGDEBUG, "2 Channel 192 khz PT via IEC61937 is supported");
           ieccounter += 5;
         }
