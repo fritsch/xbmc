@@ -609,9 +609,6 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   m_delay = d;
 
   status.SetDelay(d);
-
-  CLog::Log(LOGNOTICE, "------------------- Delay-Smooth: %lf Delay-Measured: %lf", d * 1000,
-            delay * 1000);
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
@@ -634,7 +631,6 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
   // for debugging only - can be removed if everything is really stable
   uint64_t startTime = CurrentHostCounter();
-  CLog::Log(LOGNOTICE, "---------------------- AddPacket Called");
 
   uint8_t *buffer = data[0]+offset*m_format.m_frameSize;
   uint8_t *out_buf = buffer;
