@@ -118,6 +118,7 @@ bool CDVDAudioCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
     if (key.m_name == "ptstreamtype")
     {
       ptStreamType = static_cast<CAEStreamInfo::DataType>(atoi(key.m_value.c_str()));
+      CLog::Log(LOGNOTICE, "Found pstreamType: %d", ptStreamType);
       break;
     }
 

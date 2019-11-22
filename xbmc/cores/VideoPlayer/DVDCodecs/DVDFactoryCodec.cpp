@@ -165,6 +165,7 @@ CDVDAudioCodec* CDVDFactoryCodec::CreateAudioCodec(CDVDStreamInfo &hint, CProces
   std::unique_ptr<CDVDAudioCodec> pCodec;
   CDVDCodecOptions options;
 
+  CLog::Log(LOGNOTICE, "Trying with ptsstreamType: %d", ptStreamType);
   if (allowpassthrough && ptStreamType != CAEStreamInfo::STREAM_TYPE_NULL)
     options.m_keys.emplace_back("ptstreamtype", StringUtils::SizeToString(ptStreamType));
 

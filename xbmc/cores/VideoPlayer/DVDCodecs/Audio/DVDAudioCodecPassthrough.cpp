@@ -23,6 +23,7 @@ CDVDAudioCodecPassthrough::CDVDAudioCodecPassthrough(CProcessInfo &processInfo, 
   CDVDAudioCodec(processInfo)
 {
   m_format.m_streamInfo.m_type = streamType;
+  CLog::Log(LOGNOTICE, "Instantiated Passthroughcodec with: %d", streamType);
 }
 
 CDVDAudioCodecPassthrough::~CDVDAudioCodecPassthrough(void)
