@@ -359,9 +359,15 @@ CAEStreamInfo::DataType CAudioSinkAE::GetPassthroughStreamType(AVCodecID codecId
 
     case AV_CODEC_ID_DTS:
       if (profile == FF_PROFILE_DTS_HD_HRA)
+      {
         format.m_streamInfo.m_type = CAEStreamInfo::STREAM_TYPE_DTSHD;
+        CLog::Log(LOGNOTICE, "Found DTS-HD-HR");
+      }
       else
+      {
         format.m_streamInfo.m_type = CAEStreamInfo::STREAM_TYPE_DTSHD_MA;
+        CLog::Log(LOGNOTICE, "Initiating DTS-HD-MA");
+      }
       format.m_streamInfo.m_sampleRate = samplerate;
       break;
 

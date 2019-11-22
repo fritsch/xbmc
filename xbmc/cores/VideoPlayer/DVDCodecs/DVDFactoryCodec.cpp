@@ -166,7 +166,10 @@ CDVDAudioCodec* CDVDFactoryCodec::CreateAudioCodec(CDVDStreamInfo &hint, CProces
   CDVDCodecOptions options;
 
   if (allowpassthrough && ptStreamType != CAEStreamInfo::STREAM_TYPE_NULL)
+  {
     options.m_keys.emplace_back("ptstreamtype", StringUtils::SizeToString(ptStreamType));
+    CLog::Log(LOGNOTICE, "PTSStream Type true");
+  }
 
   if (!allowdtshddecode)
     options.m_keys.emplace_back("allowdtshddecode", "0");
@@ -184,6 +187,7 @@ CDVDAudioCodec* CDVDFactoryCodec::CreateAudioCodec(CDVDStreamInfo &hint, CProces
   // we don't use passthrough if "sync playback to display" is enabled
   if (allowpassthrough && ptStreamType != CAEStreamInfo::STREAM_TYPE_NULL)
   {
+    CLog::Log(LOGNOTICE, "Passthrough still playing a role!");
     pCodec.reset(new CDVDAudioCodecPassthrough(processInfo, ptStreamType));
     if (pCodec->Open(hint, options))
     {
