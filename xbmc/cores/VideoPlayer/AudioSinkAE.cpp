@@ -375,11 +375,15 @@ CAEStreamInfo::DataType CAudioSinkAE::GetPassthroughStreamType(AVCodecID codecId
   }
 
   bool supports = CServiceBroker::GetActiveAE()->SupportsRaw(format);
+  if (supports)
+    CLog::Log(LOGNOTICE, "Format: %d supported", format.m_streamInfo.m_type);
 
   if (!supports && codecId == AV_CODEC_ID_DTS)
   {
     format.m_streamInfo.m_type = CAEStreamInfo::STREAM_TYPE_DTSHD_CORE;
     supports = CServiceBroker::GetActiveAE()->SupportsRaw(format);
+    if (supports)
+      CLog::Log(LOGNOTICE, "Format 2: %d supported", format.m_streamInfo.m_type);
   }
 
   if (supports)

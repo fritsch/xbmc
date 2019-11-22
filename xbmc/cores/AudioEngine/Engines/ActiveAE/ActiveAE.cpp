@@ -2697,6 +2697,7 @@ bool CActiveAE::SupportsRaw(AEAudioFormat &format)
   if (!m_sink.SupportsFormat(CServiceBroker::GetSettingsComponent()->GetSettings()->GetString(CSettings::SETTING_AUDIOOUTPUT_PASSTHROUGHDEVICE), format))
     return false;
 
+  CLog::Log(LOGNOTCICE, "Format supported 3: %d", format.m_streamInfo.m_type);
   return true;
 }
 
