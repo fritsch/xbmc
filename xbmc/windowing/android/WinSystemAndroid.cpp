@@ -52,8 +52,7 @@ CWinSystemAndroid::CWinSystemAndroid()
 
   m_stereo_mode = RENDER_STEREO_MODE_OFF;
 
-  m_dispResetState = RESET_NOTWAITING;
-  m_dispResetTimer = new CTimer(this);
+  m_delayDispReset = false;
 
   m_android = nullptr;
 
@@ -64,7 +63,6 @@ CWinSystemAndroid::CWinSystemAndroid()
 CWinSystemAndroid::~CWinSystemAndroid()
 {
   m_nativeWindow = nullptr;
-  delete m_dispResetTimer, m_dispResetTimer = nullptr;
 }
 
 bool CWinSystemAndroid::InitWindowSystem()
@@ -122,20 +120,16 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
   m_fRefreshRate  = res.fRefreshRate;
 
   if ((m_bWindowCreated && m_android->GetNativeResolution(&current_resolution)) &&
-    current_resolution.iWidth == res.iWidth && current_resolution.iHeight == res.iHeight &&
-    current_resolution.iScreenWidth == res.iScreenWidth && current_resolution.iScreenHeight == res.iScreenHeight &&
-    m_bFullScreen == fullScreen && current_resolution.fRefreshRate == res.fRefreshRate &&
-    (current_resolution.dwFlags & D3DPRESENTFLAG_MODEMASK) == (res.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
-    m_stereo_mode == stereo_mode)
+      current_resolution.iWidth == res.iWidth && current_resolution.iHeight == res.iHeight &&
+      current_resolution.iScreenWidth == res.iScreenWidth &&
+      current_resolution.iScreenHeight == res.iScreenHeight && m_bFullScreen == fullScreen &&
+      current_resolution.fRefreshRate == res.fRefreshRate &&
+      (current_resolution.dwFlags & D3DPRESENTFLAG_MODEMASK) ==
+          (res.dwFlags & D3DPRESENTFLAG_MODEMASK) &&
+      m_stereo_mode == stereo_mode)
   {
     CLog::Log(LOGDEBUG, "CWinSystemAndroid::CreateNewWindow: No need to create a new window");
     return true;
-  }
-
-  if (m_dispResetState != RESET_NOTWAITING)
-  {
-    CLog::Log(LOGERROR, "CWinSystemAndroid::CreateNewWindow: cannot create window while resetting");
-    return false;
   }
 
   m_stereo_mode = stereo_mode;
@@ -148,6 +142,14 @@ bool CWinSystemAndroid::CreateNewWindow(const std::string& name,
     return false;
   }
   m_android->SetNativeResolution(res);
+
+  if (!m_delayDispReset)
+  {
+    CSingleLock lock(m_resourceSection);
+    CLog::Log(LOGNOTICE, "Waking up resources as display was turned on / off");
+    for (auto resource : m_resources)
+      resource->OnResetDisplay();
+  }
 
   return true;
 }
@@ -217,46 +219,76 @@ void CWinSystemAndroid::UpdateResolutions(bool bUpdateDesktopRes)
   }
 }
 
-void CWinSystemAndroid::OnTimeout()
-{
-  m_dispResetState = RESET_WAITEVENT;
-  SetHDMIState(true);
-}
-
 void CWinSystemAndroid::SetHDMIState(bool connected)
 {
   CSingleLock lock(m_resourceSection);
-  CLog::Log(LOGDEBUG, "CWinSystemAndroid::SetHDMIState: connected: %d, dispResetState: %d", static_cast<int>(connected), m_dispResetState);
-  if (connected && m_dispResetState != RESET_NOTWAITING)
+  CLog::Log(LOGDEBUG, "CWinSystemAndroid::SetHDMIState: connected: %d",
+            static_cast<int>(connected));
+  if (connected)
   {
-    for (auto resource : m_resources)
-      resource->OnResetDisplay();
-    m_dispResetState = RESET_NOTWAITING;
-    m_dispResetTimer->Stop();
-  }
-  else if (!connected)
-  {
-    if (m_dispResetState == RESET_WAITTIMER)
+    // wake up if Timer is gone or not set
+    // else just do nothing
+    if (!m_delayDispReset)
     {
-      //HDMI_AUDIOPLUG arrived, use this
-      m_dispResetTimer->Stop();
-      m_dispResetState = RESET_WAITEVENT;
-      return;
+      CLog::Log(LOGDEBUG, "Waking up resources directly");
+      for (auto resource : m_resources)
+        resource->OnResetDisplay();
     }
-    else if (m_dispResetState != RESET_NOTWAITING)
-      return;
+    else
+    {
+      // we got a real hot plug event while waiting - means it's
+      // properly implemented - wakeup user if the time
+      // specified is gone already
+      if (!m_dispResetTimer.IsTimePast())
+      {
+        int delay = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+                        "videoscreen.delayrefreshchange") *
+                    100;
+        int waited = m_dispResetTimer.GetInitialTimeoutValue() - m_dispResetTimer.MillisLeft();
+        int userdelta = delay - waited;
+        if (userdelta < 0)
+        {
+          CLog::Log(LOGDEBUG, "Waking up user - he slept long enough");
+          m_delayDispReset = false;
+          m_dispResetTimer.SetExpired();
+          // tell everyone we are going to wakeup now
+          for (auto resource : m_resources)
+            resource->OnResetDisplay();
+        }
+        else
+        {
+          CLog::Log(LOGDEBUG, "Received HDMI Intent - but user prefers sleeping longer");
+        }
+      }
+    }
+  }
+  else
+  {
+    // create new waiting timer if old delayed Timer was acked already
+    // This is called from Thread 1
+    if (!m_delayDispReset)
+    {
+      int delay = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
+                      "videoscreen.delayrefreshchange") *
+                  100;
+      // tell everyone we are going to sleep now
+      for (auto resource : m_resources)
+        resource->OnLostDisplay();
 
-    int delay = CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt("videoscreen.delayrefreshchange") * 100;
+      // we use a delay of 2000 ms to check if we get an HDMI Hotplug Event
+      // if we don't get it - the timer recovers us - else if user did not
+      // specify a delay and we get that event we will reset the delayed
+      // timer and compute the already waited time. This basically means:
+      // For devices without hot plug intent Refreshrate switching will
+      // last 2 seconds.
+      if (delay < 2000)
+        delay = 2000;
 
-    if (delay < 2000)
-      delay = 2000;
-
-    m_dispResetState = RESET_WAITTIMER;
-    m_dispResetTimer->Stop();
-    m_dispResetTimer->Start(delay);
-
-    for (auto resource : m_resources)
-      resource->OnLostDisplay();
+      m_delayDispReset = true;
+      m_dispResetTimer.Set(delay);
+    }
+    else
+      CLog::Log(LOGDEBUG, "HDMISet false called while delayed Display Reset in progress");
   }
 }
 
