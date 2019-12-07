@@ -646,7 +646,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
           delta * m_sink_sampleRate / 1000000000.0;
 
       // wrap around
-      if (stamphead < m_timestampPos)
+      // e.g. 0xFFFFFFFFFFFF0123 -> 0x0000000000002478
+      // because we only query each second the simple smaller comparison won't suffice
+      // as delay can fluctuate minimally
+      if (stamphead < m_timestampPos && (m_timestampPos - stamphead) > 0x7FFFFFFFFFFFFFFFULL)
       {
         uint64_t stamp = m_timestampPos;
         stamp += (1ULL << 32);
