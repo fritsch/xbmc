@@ -829,10 +829,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   else
   {
     // waiting should only be done if sink is not run dry
-    if (m_delay > (m_audiotrackbuffer_sec * 0.8))
+    double period_time = m_format.m_frames / static_cast<double>(m_sink_sampleRate);
+    CLog::Log(LOGDEBUG, "Delay: {} m_audiotrackbuffer_sec: {} Threshold {}", m_delay,
+              m_audiotrackbuffer_sec, m_audiotrackbuffer_sec - period_time);
+
+    if (m_delay >= (m_audiotrackbuffer_sec - period_time))
     {
       double time_should_ms = 1000.0 * written_frames / m_format.m_sampleRate;
       double time_off = time_should_ms - time_to_add_ms;
+      CLog::Log(LOGDEBUG, "Sleeptime: {} ms", time_off);
       if (time_off > 0)
         usleep(time_off * 500); // sleep half the error away
     }
