@@ -669,7 +669,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
         CLog::Log(LOGDEBUG, "Head-Position {} Timestamp Position {} Delay-Offset: {} ms", m_headPos,
                   m_timestampPos, 1000.0 * (m_headPos - m_timestampPos) / m_sink_sampleRate);
       }
-      double hw_delay = (m_headPos - m_timestampPos) / static_cast<double>(m_sink_sampleRate);
+      double hw_delay =
+          m_duration_written - m_timestampPos / static_cast<double>(m_sink_sampleRate);
+      // sadly we smooth the delay, so only compensate here what we did not yet smooth away
+      hw_delay -= d;
       // sometimes at the beginning of the stream m_timestampPos is more accurate and ahead of
       // m_headPos - don't use the computed value then and wait
       if (hw_delay >= 0.0 && hw_delay < 1.0)
