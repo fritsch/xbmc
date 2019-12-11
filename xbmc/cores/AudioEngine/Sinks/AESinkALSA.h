@@ -77,6 +77,8 @@ private:
   // support fragmentation, e.g. looping in the sink to get a certain amount of data onto the device
   bool m_fragmented = false;
   unsigned int m_originalPeriodSize = AE_MIN_PERIODSIZE;
+  m_isPaused = false;
+  m_canPause = false;
 
 #if HAVE_LIBUDEV
   static CALSADeviceMonitor m_deviceMonitor;

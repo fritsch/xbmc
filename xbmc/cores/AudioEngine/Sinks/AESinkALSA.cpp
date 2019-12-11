@@ -788,6 +788,10 @@ bool CAESinkALSA::InitializeHW(const ALSAConfig &inconfig, ALSAConfig &outconfig
 
   CLog::Log(LOGDEBUG, "CAESinkALSA::InitializeHW - Got: periodSize %lu, bufferSize %lu", periodSize, bufferSize);
 
+  // Check if we can pause and resume
+  if (snd_pcm_hw_params_can_pause(m_pcm, hw_params) == 1)
+    m_canPause = true;
+
   /* set the format parameters */
   outconfig.sampleRate   = sampleRate;
 
@@ -886,6 +890,16 @@ unsigned int CAESinkALSA::AddPackets(uint8_t **data, unsigned int frames, unsign
     return INT_MAX;
   }
 
+  if (m_isPaused)
+  {
+    if (snd_pcm_pause(m_pcm, 0) < 0)
+    {
+      CLog::Log(LOGERROR, "Could not unpause device!");
+      return INT_MAX;
+    }
+    m_isPaused = false;
+  }
+
   void *buffer = data[0]+offset*m_format.m_frameSize;
   unsigned int amount = 0;
   int64_t data_left = (int64_t) frames;
@@ -964,6 +978,29 @@ void CAESinkALSA::Drain()
 
   snd_pcm_drain(m_pcm);
   snd_pcm_prepare(m_pcm);
+}
+
+void CAESinkALSA::Pause()
+{
+  if (!m_pcm)
+    return;
+
+  if (m_isPaused)
+    return;
+
+  if (!m_canPause)
+    return;
+
+  if (snd_pcm_pause(m_pcm, 1) < 0)
+    CLog::Log(LOGERROR, "Error Pausing ALSA device");
+  else
+    m_isPaused = true;
+}
+
+void CAESinkALSA::Flush()
+{
+  Stop();
+  Pause();
 }
 
 void CAESinkALSA::AppendParams(std::string &device, const std::string &params)
