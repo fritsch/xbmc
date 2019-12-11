@@ -880,6 +880,31 @@ void CAESinkAUDIOTRACK::Drain()
   m_pause_ms = 0.0;
 }
 
+void CAESinkAUDIOTRACK::Flush()
+{
+  if (!m_at_jni)
+    return;
+
+  if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
+  {
+    m_at_jni->pause();
+    m_at_jni->flush();
+  }
+  else if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
+  {
+    m_at_jni->flush();
+  }
+}
+
+void CAESinkAUDIOTRACK::Pause()
+{
+  if (!m_at_jni)
+    return;
+
+  if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PLAYING)
+    m_at_jni->pause();
+}
+
 void CAESinkAUDIOTRACK::Register()
 {
   AE::AESinkRegEntry entry;
