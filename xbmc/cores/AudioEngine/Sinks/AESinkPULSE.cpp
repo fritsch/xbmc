@@ -1168,6 +1168,7 @@ void CAESinkPULSE::Flush()
 
   pa_threaded_mainloop_lock(m_MainLoop);
   WaitForOperation(pa_stream_flush(m_Stream, NULL, NULL), m_MainLoop, "Flush");
+  WaitForOperation(pa_stream_cork(m_Stream, 1, NULL, NULL), m_MainLoop, "Pause");
   pa_threaded_mainloop_unlock(m_MainLoop);
 }
 
