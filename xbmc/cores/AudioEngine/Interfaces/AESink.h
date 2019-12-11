@@ -48,6 +48,7 @@ public:
 
   /*!
    * @brief Adds packets to be sent out, this routine MUST block or sleep.
+   * If sink is paused when called it shall automatically unpause the sink.
    * @param data array of pointers to planes holding audio data
    * @param frames number of audio frames in data
    * @param offset offset in frames where audio data starts
@@ -81,5 +82,17 @@ public:
     This method sets the volume control, volume ranges from 0.0 to 1.0.
   */
   virtual void  SetVolume(float volume) {};
+
+  /*
+   * @brief This method is used to flush all buffers left in the sink, samples
+   * are not played out but discarded
+   */
+  virtual void Flush(){};
+
+  /*
+   * @brief This method is meant to keep the sink in a prepared state, avoiding
+   * it to underrun, so that new packages can directly be added
+   */
+  virtual void Pause(){};
 };
 
