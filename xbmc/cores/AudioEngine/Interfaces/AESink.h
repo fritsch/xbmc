@@ -85,7 +85,9 @@ public:
 
   /*
    * @brief This method is used to flush all buffers left in the sink, samples
-   * are not played out but discarded
+   * are not played out but discarded, after Flush the sink should automatically
+   * go into a prepared state, e.g. pause - so that it can receive new data
+   * immediately
    */
   virtual void Flush(){};
 
