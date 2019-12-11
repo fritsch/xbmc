@@ -1161,6 +1161,28 @@ void CAESinkPULSE::Drain()
   pa_threaded_mainloop_unlock(m_MainLoop);
 }
 
+void CAESinkPULSE::Flush()
+{
+  if (!m_IsAllocated)
+    return;
+
+  pa_threaded_mainloop_lock(m_MainLoop);
+  WaitForOperation(pa_stream_flush(m_Stream, NULL, NULL), m_MainLoop, "Flush");
+  pa_threaded_mainloop_unlock(m_MainLoop);
+}
+
+void CAESinkPULSE::Pause()
+{
+  if (!m_IsAllocated)
+    return;
+
+  pa_threaded_mainloop_lock(m_MainLoop);
+  WaitForOperation(pa_stream_cork(m_Stream, 1, NULL, NULL), m_MainLoop, "Pause");
+  m_IsStreamPaused = true;
+  pa_threaded_mainloop_unlock(m_MainLoop);
+}
+
+
 // This is a helper to get stream info during the PA callbacks
 // it shall never be called from real outside
 pa_stream* CAESinkPULSE::GetInternalStream()

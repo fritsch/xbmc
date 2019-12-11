@@ -43,6 +43,8 @@ public:
   double GetCacheTotal() override;
   unsigned int AddPackets(uint8_t **data, unsigned int frames, unsigned int offset) override;
   void Drain() override;
+  void Flush() override;
+  void Pause() override;
 
   bool HasVolume() override { return true; };
   void SetVolume(float volume) override;
