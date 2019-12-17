@@ -77,7 +77,6 @@ private:
   static bool m_sinkSupportsFloat;
 
   AEAudioFormat      m_format;
-  double             m_volume;
   int16_t           *m_alignedS16;
   unsigned int       m_sink_frameSize;
   unsigned int       m_sink_sampleRate;
