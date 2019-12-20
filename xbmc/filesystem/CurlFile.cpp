@@ -1101,7 +1101,7 @@ bool CCurlFile::OpenForWrite(const CURL& url, bool bOverWrite)
                               &m_state->m_easyHandle,
                               &m_state->m_multiHandle);
 
-    // setup common curl options
+  // setup common curl options
   SetCommonOptions(m_state);
   SetRequestHeaders(m_state);
 
@@ -1116,7 +1116,6 @@ bool CCurlFile::OpenForWrite(const CURL& url, bool bOverWrite)
 
   assert(m_state->m_multiHandle);
 
-  SetCommonOptions(m_state);
   g_curlInterface.easy_setopt(m_state->m_easyHandle, CURLOPT_UPLOAD, 1);
 
   g_curlInterface.multi_add_handle(m_state->m_multiHandle, m_state->m_easyHandle);
