@@ -199,7 +199,6 @@ bool CFileCache::Open(const CURL& url)
   m_writePos = 0;
   m_writeRate = 1024 * 1024;
   m_writeRateActual = 0;
-  m_forward = 0;
   m_bFilling = true;
   m_bLowSpeedDetected = false;
   m_seekEvent.Reset();
@@ -267,7 +266,6 @@ void CFileCache::Process()
           CLog::Log(LOGDEBUG,
                     "CFileCache::Process - Cache completely reset for seek to position %" PRId64,
                     m_seekPos);
-          m_forward = 0;
           m_bFilling = true;
           m_bLowSpeedDetected = false;
         }
@@ -401,11 +399,11 @@ void CFileCache::Process()
     // avoid uncertainty at start of caching
     m_writeRateActual = average.Rate(m_writePos, 1000);
 
-    // Update forward cache size
-    m_forward = m_pCache->WaitForData(0, 0);
-
     // NOTE: Hysteresis (20-80%) for filling-logic
-    const float level = (m_forwardCacheSize == 0) ? 0.0 : (float) m_forward / m_forwardCacheSize;
+    const int64_t forward = m_pCache->WaitForData(0, 0);
+    const float level =
+        (m_forwardCacheSize == 0) ? 0.0 : static_cast<float>(forward / m_forwardCacheSize);
+
     if (level > 0.8f)
     {
      /* NOTE: We can only reliably test for low speed condition, when the cache is *really*
@@ -591,7 +589,7 @@ int CFileCache::IoControl(EIoControl request, void* param)
   if (request == IOCTRL_CACHE_STATUS)
   {
     SCacheStatus* status = (SCacheStatus*)param;
-    status->forward = m_forward;
+    status->forward = m_pCache->WaitForData(0, 0);
     status->maxrate = m_writeRate;
     status->currate = m_writeRateActual;
     status->lowspeed = m_bLowSpeedDetected;
