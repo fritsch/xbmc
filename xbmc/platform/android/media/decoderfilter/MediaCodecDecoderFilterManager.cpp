@@ -14,9 +14,11 @@
  */
 
 #include "MediaCodecDecoderFilterManager.h"
-#include <androidjni/MediaCodecList.h>
+
+#include "utils/StringUtils.h"
 #include "utils/log.h"
 
+#include <androidjni/MediaCodecList.h>
 
 CMediaCodecDecoderFilterManager::CMediaCodecDecoderFilterManager()
 {
@@ -50,7 +52,17 @@ CMediaCodecDecoderFilterManager::CMediaCodecDecoderFilterManager()
       if (!strnicmp(*ptr, codecname.c_str(), strlen(*ptr)))
         flags = 0;
     }
-    add(CDecoderFilter(codecname, flags, 0));
+    std::string tmp(codecname);
+    StringUtils::ToLower(tmp);
+    int minheight = 0;
+    if (tmp.find("mpeg4") != std::string::npos)
+      minheight = 720;
+    else if (tmp.find("mpeg2") != std::string::npos)
+      minheight = 720;
+    else if (tmp.find("263") != std::string::npos)
+      minheight = 720;
+
+    add(CDecoderFilter(codecname, flags, minheight));
     CLog::Log(LOGNOTICE, "Mediacodec decoder: %s", codecname.c_str());
   }
   Save();
