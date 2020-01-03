@@ -500,12 +500,12 @@ void CDVDVideoCodecFFmpeg::SetFilters()
   if (filters & FILTER_DEINTERLACE_YADIF)
   {
     if (filters & FILTER_DEINTERLACE_HALFED)
-      m_filters_next = "yadif=0:-1";
+      m_filters_next = "w3fdif=simple";
     else
-      m_filters_next = "yadif=1:-1";
+      m_filters_next = "w3fdif=complex";
 
     if (filters & FILTER_DEINTERLACE_FLAGGED)
-      m_filters_next += ":1";
+      m_filters_next += ":interlaced";
   }
 }
 
