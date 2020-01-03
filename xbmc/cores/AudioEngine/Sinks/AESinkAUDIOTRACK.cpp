@@ -352,7 +352,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_sink_sampleRate = 192000;
 
       // new Android N format
-      if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
+      if (false && CJNIAudioFormat::ENCODING_IEC61937 != -1)
       {
         m_encoding = CJNIAudioFormat::ENCODING_IEC61937;
         // this will be sent tunneled, therefore the IEC path needs e.g.
@@ -984,7 +984,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
     }
   }
   // Android v24 and backports can do real IEC API
-  if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
+  if (false && CJNIAudioFormat::ENCODING_IEC61937 != -1)
   {
     // check if we support opening an IEC sink at all:
     bool supports_iec = VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_IEC61937);
