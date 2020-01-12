@@ -72,32 +72,11 @@ CPeripheralBusUSB::CPeripheralBusUSB(CPeripherals& manager) :
 
   m_udev          = NULL;
   m_udevMon       = NULL;
-
-  if (!(m_udev = udev_new()))
-  {
-    CLog::Log(LOGERROR, "%s - failed to allocate udev context", __FUNCTION__);
-    return;
-  }
-
-  /* set up a devices monitor that listen for any device change */
-  m_udevMon = udev_monitor_new_from_netlink(m_udev, "udev");
-
-  /* filter to only receive usb events */
-  if (udev_monitor_filter_add_match_subsystem_devtype(m_udevMon, "usb", NULL) < 0)
-  {
-    CLog::Log(LOGERROR, "Could not limit filter on USB only");
-  }
-
-  udev_monitor_enable_receiving(m_udevMon);
-
-  CLog::Log(LOGDEBUG, "%s - initialised udev monitor", __FUNCTION__);
 }
 
 CPeripheralBusUSB::~CPeripheralBusUSB(void)
 {
   StopThread(true);
-  udev_monitor_unref(m_udevMon);
-  udev_unref(m_udev);
 }
 
 bool CPeripheralBusUSB::PerformDeviceScan(PeripheralScanResults &results)
@@ -105,7 +84,13 @@ bool CPeripheralBusUSB::PerformDeviceScan(PeripheralScanResults &results)
   struct udev_enumerate *enumerate;
   struct udev_list_entry *devices, *dev_list_entry;
   struct udev_device *dev(NULL), *parent(NULL);
-  enumerate = udev_enumerate_new(m_udev);
+  struct udev* udev_scan;
+  if (!(udev_scan = udev_new()))
+  {
+    CLog::Log(LOGERROR, "%s - failed to allocate udev perf mon context", __FUNCTION__);
+    return false;
+  }
+  enumerate = udev_enumerate_new(udev_scan);
   udev_enumerate_scan_devices(enumerate);
   devices = udev_enumerate_get_list_entry(enumerate);
 
@@ -167,6 +152,7 @@ bool CPeripheralBusUSB::PerformDeviceScan(PeripheralScanResults &results)
   }
   /* Free the enumerator object */
   udev_enumerate_unref(enumerate);
+  udev_unref(udev_scan);
 
   return true;
 }
@@ -195,6 +181,24 @@ PeripheralType CPeripheralBusUSB::GetType(int iDeviceClass)
 
 void CPeripheralBusUSB::Process(void)
 {
+  if (!(m_udev = udev_new()))
+  {
+    CLog::Log(LOGERROR, "%s - failed to allocate udev context", __FUNCTION__);
+    return;
+  }
+
+  /* set up a devices monitor that listen for any device change */
+  m_udevMon = udev_monitor_new_from_netlink(m_udev, "udev");
+
+  /* filter to only receive usb events */
+  if (udev_monitor_filter_add_match_subsystem_devtype(m_udevMon, "usb", NULL) < 0)
+  {
+    CLog::Log(LOGERROR, "Could not limit filter on USB only");
+  }
+
+  CLog::Log(LOGDEBUG, "%s - initialised udev monitor", __FUNCTION__);
+
+  udev_monitor_enable_receiving(m_udevMon);
   bool bUpdated(false);
   ScanForDevices();
   while (!m_bStop)
@@ -203,6 +207,8 @@ void CPeripheralBusUSB::Process(void)
     if (bUpdated && !m_bStop)
       ScanForDevices();
   }
+  udev_monitor_unref(m_udevMon);
+  udev_unref(m_udev);
 }
 
 void CPeripheralBusUSB::Clear(void)
