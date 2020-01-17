@@ -950,6 +950,7 @@ int CXBMCApp::GetMaxSystemVolume()
     maxVolume = GetMaxSystemVolume(env);
   }
   //android_printf("CXBMCApp::GetMaxSystemVolume: %i",maxVolume);
+  CLog::Log(LOGNOTICE, "CXBMCApp::GetMaxSystemVolume {}", maxVolume);
   return maxVolume;
 }
 
@@ -957,7 +958,11 @@ int CXBMCApp::GetMaxSystemVolume(JNIEnv *env)
 {
   CJNIAudioManager audioManager(getSystemService("audio"));
   if (audioManager)
-    return audioManager.getStreamMaxVolume();
+  {
+    int vol = audioManager.getStreamMaxVolume();
+    CLog::Log(LOGNOTICE, "XBMCApp::GetMaxSystemVolume {}", vol);
+    return vol;
+  }
   android_printf("CXBMCApp::SetSystemVolume: Could not get Audio Manager");
   return 0;
 }
@@ -966,7 +971,11 @@ float CXBMCApp::GetSystemVolume()
 {
   CJNIAudioManager audioManager(getSystemService("audio"));
   if (audioManager)
-    return (float)audioManager.getStreamVolume() / GetMaxSystemVolume();
+  {
+    float vol = (float)audioManager.getStreamVolume() / GetMaxSystemVolume();
+    CLog::Log(LOGNOTICE, "CXBMCApp::GetSystemVolume {}", vol);
+    return vol;
+  }
   else
   {
     android_printf("CXBMCApp::GetSystemVolume: Could not get Audio Manager");
@@ -982,6 +991,8 @@ void CXBMCApp::SetSystemVolume(float percent)
     audioManager.setStreamVolume(maxVolume);
   else
     android_printf("CXBMCApp::SetSystemVolume: Could not get Audio Manager");
+
+  CLog::Log(LOGNOTICE, "CXBMCApp::SetSystemVolume {} {}", percent, maxVolume);
 }
 
 void CXBMCApp::onReceive(CJNIIntent intent)
@@ -1182,9 +1193,10 @@ int CXBMCApp::WaitForActivityResult(const CJNIIntent &intent, int requestCode, C
 void CXBMCApp::onVolumeChanged(int volume)
 {
   // System volume was used; Reset Kodi volume to 100% if it isn't, already
-  if (g_application.GetVolume(false) != 1.0)
-    CApplicationMessenger::GetInstance().PostMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1, static_cast<void*>(
-                                                 new CAction(ACTION_VOLUME_SET, static_cast<float>(CXBMCApp::GetMaxSystemVolume()))));
+  //  if (g_application.GetVolume(false) != 1.0)
+  //    CApplicationMessenger::GetInstance().PostMsg(TMSG_GUI_ACTION, WINDOW_INVALID, -1, static_cast<void*>(
+  //                                                 new CAction(ACTION_VOLUME_SET, static_cast<float>(CXBMCApp::GetMaxSystemVolume()))));
+  CLog::Log(LOGNOTICE, "I was the bugger {}", volume);
 }
 
 void CXBMCApp::onAudioFocusChange(int focusChange)

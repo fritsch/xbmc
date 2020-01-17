@@ -575,6 +575,7 @@ bool CApplication::Create(const CAppParamParser &params)
   CServiceBroker::RegisterAE(m_pActiveAE.get());
 
   // restore AE's previous volume state
+  CLog::Log(LOGNOTICE, "HW Volume AE-Restore: {}", m_volumeLevel);
   SetHardwareVolume(m_volumeLevel);
   CServiceBroker::GetActiveAE()->SetMute(m_muted);
 
@@ -2967,6 +2968,7 @@ bool CApplication::PlayFile(CFileItem item, const std::string& player, bool bRes
   }
 
   m_appPlayer.OpenFile(item, options, m_ServiceManager->GetPlayerCoreFactory(), player, *this);
+  CLog::Log(LOGNOTICE, "Middle Volume {}", m_volumeLevel);
   m_appPlayer.SetVolume(m_volumeLevel);
   m_appPlayer.SetMute(m_muted);
 
@@ -4343,6 +4345,7 @@ void CApplication::SetVolume(float iValue, bool isPercentage/*=true*/)
   if(isPercentage)
     hardwareVolume /= 100.0f;
 
+  CLog::Log(LOGNOTICE, "SetVolume: {}", hardwareVolume);
   SetHardwareVolume(hardwareVolume);
   VolumeChanged();
 }
@@ -4355,6 +4358,7 @@ void CApplication::SetHardwareVolume(float hardwareVolume)
   IAE* ae = CServiceBroker::GetActiveAE();
   if (ae)
     ae->SetVolume(hardwareVolume);
+  CLog::Log(LOGNOTICE, "SetHardwareVolume: {}", hardwareVolume);
 }
 
 float CApplication::GetVolume(bool percentage /* = true */) const
@@ -4362,9 +4366,11 @@ float CApplication::GetVolume(bool percentage /* = true */) const
   if (percentage)
   {
     // converts the hardware volume to a percentage
+    CLog::Log(LOGNOTICE, "HW Volume (percent): {}", m_volumeLevel);
     return m_volumeLevel * 100.0f;
   }
 
+  CLog::Log(LOGNOTICE, "HW Volume: {}", m_volumeLevel);
   return m_volumeLevel;
 }
 
@@ -4376,6 +4382,7 @@ void CApplication::VolumeChanged()
   CServiceBroker::GetAnnouncementManager()->Announce(ANNOUNCEMENT::Application, "xbmc", "OnVolumeChanged", data);
 
   // if player has volume control, set it.
+  CLog::Log(LOGNOTICE, "VolumeChanged: {}", m_volumeLevel);
   m_appPlayer.SetVolume(m_volumeLevel);
   m_appPlayer.SetMute(m_muted);
 }
