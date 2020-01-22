@@ -880,115 +880,35 @@ void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities()
   m_info.m_dataFormats.push_back(AE_FMT_RAW);
   m_info.m_streamTypes.clear();
 
-  // if hardware is amlogic but aml_present is false, means permissions are wrong in FW, we run on broken v23 firmware which should not have
-  // been sold to customers. Just add AC3 and return early
-  if (!aml_present() && (StringUtils::StartsWithNoCase(CJNIBuild::HARDWARE, "amlogic") &&
-                         CJNIAudioManager::GetSDKVersion() == 23))
+  if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
   {
-    m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-    CLog::Log(LOGNOTICE, "AMLogic v23 broken FW workaround in place - only AC3 supported");
-    return;
-  }
-
-  if (CJNIAudioFormat::ENCODING_AC3 != -1)
-  {
-    if (VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_AC3))
+    // check if we support opening an IEC sink at all:
+    bool supports_iec = VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO,
+                                                CJNIAudioFormat::ENCODING_IEC61937);
+    if (supports_iec)
     {
+      bool supports_192khz = m_sink_sampleRates.find(192000) != m_sink_sampleRates.end();
+      m_info.m_wantsIECPassthrough = true;
+      m_info.m_streamTypes.clear();
+      m_info.m_dataFormats.push_back(AE_FMT_RAW);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-      CLog::Log(LOGDEBUG, "Firmware implements AC3 RAW");
-    }
-  }
-
-  // EAC3 working on shield, broken on FireTV
-  if (CJNIAudioFormat::ENCODING_E_AC3 != -1)
-  {
-    if (VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_E_AC3))
-    {
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-      CLog::Log(LOGDEBUG, "Firmware implements EAC3 RAW");
-    }
-  }
-
-  if (CJNIAudioFormat::ENCODING_DTS != -1)
-  {
-    if (VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_DTS))
-    {
-      CLog::Log(LOGDEBUG, "Firmware implements DTS RAW");
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
       m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-    }
-  }
-
-  if (aml_present() && CJNIAudioManager::GetSDKVersion() < 23)
-  {
-    // passthrough
-    m_info.m_wantsIECPassthrough = true;
-    m_sink_sampleRates.insert(44100);
-    m_sink_sampleRates.insert(48000);
-    if (HasAmlHD())
-    {
-      m_sink_sampleRates.insert(96000);
-      m_sink_sampleRates.insert(192000);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-      m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-    }
-    std::copy(m_sink_sampleRates.begin(), m_sink_sampleRates.end(), std::back_inserter(m_info.m_sampleRates));
-  }
-  else
-  {
-    if (CJNIAudioManager::GetSDKVersion() >= 23)
-    {
-      if (CJNIAudioFormat::ENCODING_DTS_HD != -1)
+      CLog::Log(LOGDEBUG, "AESinkAUDIOTrack: Using IEC PT mode: %d",
+                CJNIAudioFormat::ENCODING_IEC61937);
+      if (supports_192khz)
       {
-        if (VerifySinkConfiguration(48000, AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1), CJNIAudioFormat::ENCODING_DTS_HD))
+        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
+        // Check for IEC 8 channel 192 khz PT
+        int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
+        if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
         {
-          CLog::Log(LOGDEBUG, "Firmware implements DTS-HD RAW");
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-        }
-      }
-      if (CJNIAudioFormat::ENCODING_DOLBY_TRUEHD != -1)
-      {
-        if (VerifySinkConfiguration(48000, AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1), CJNIAudioFormat::ENCODING_DOLBY_TRUEHD))
-        {
-          CLog::Log(LOGDEBUG, "Firmware implements TrueHD RAW");
           m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-        }
-      }
-    }
-    // Android v24 and backports can do real IEC API
-    if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
-    {
-      // check if we support opening an IEC sink at all:
-      bool supports_iec = VerifySinkConfiguration(48000, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_IEC61937);
-      if (supports_iec)
-      {
-        bool supports_192khz = m_sink_sampleRates.find(192000) != m_sink_sampleRates.end();
-        m_info.m_wantsIECPassthrough = true;
-        m_info.m_streamTypes.clear();
-        m_info.m_dataFormats.push_back(AE_FMT_RAW);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-        m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-        CLog::Log(LOGDEBUG, "AESinkAUDIOTrack: Using IEC PT mode: %d", CJNIAudioFormat::ENCODING_IEC61937);
-        if (supports_192khz)
-        {
-          m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-          // Check for IEC 8 channel 192 khz PT
-          int atChannelMask = AEChannelMapToAUDIOTRACKChannelMask(AE_CH_LAYOUT_7_1);
-          if (VerifySinkConfiguration(192000, atChannelMask, CJNIAudioFormat::ENCODING_IEC61937))
-          {
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD);
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_MA);
-            m_info.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-            CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
-          }
+          CLog::Log(LOGDEBUG, "8 Channel PT via IEC61937 is supported");
         }
       }
     }
