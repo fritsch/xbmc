@@ -29,6 +29,7 @@
 
 bool aml_present()
 {
+  return false;
   static int has_aml = -1;
   if (has_aml == -1)
   {
