@@ -258,6 +258,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_duration_written = 0;
   m_headPos = 0;
   m_timestampPos = 0;
+  m_volume = -1;
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
@@ -318,6 +319,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_info = m_info_iec;
 
   m_format      = format;
+  m_volume = -1;
   m_headPos = 0;
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
@@ -548,12 +550,31 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   }
   format = m_format;
 
+  // Force volume to 100% for IEC passthrough
+  if (m_passthrough && m_info.m_wantsIECPassthrough)
+  {
+    // only needed if PT hackery is used
+    if (CJNIAudioFormat::ENCODING_IEC61937 == CJNIAudioFormat::ENCODING_PCM_16BIT)
+    {
+      CXBMCApp::get()->AcquireAudioFocus();
+      m_volume = CXBMCApp::GetSystemVolume();
+      CXBMCApp::SetSystemVolume(1.0);
+    }
+  }
+
   return true;
 }
 
 void CAESinkAUDIOTRACK::Deinitialize()
 {
   CLog::Log(LOGDEBUG, "CAESinkAUDIOTRACK::Deinitialize");
+
+  // Restore volume if SHITTY is in use
+  if (m_volume != -1 && (CJNIAudioFormat::ENCODING_IEC61937 == CJNIAudioFormat::ENCODING_PCM_16BIT))
+  {
+    CXBMCApp::SetSystemVolume(m_volume);
+    CXBMCApp::get()->ReleaseAudioFocus();
+  }
 
   if (!m_at_jni)
     return;
@@ -921,6 +942,14 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
 
   // Query IEC capabilities
   bool isRaw = false;
+  // SHITTY
+  if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
+  {
+    CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
+    m_info.m_deviceName = "AudioTrack (HARMFUL OWN RISK)";
+    m_info.m_displayName = "AudioTrack (HARMFUL OWN RISK)";
+    CLog::Log(LOGWARNING, "S H I T T Y B U I L D I N U S E!");
+  }
   if (CJNIAudioFormat::ENCODING_IEC61937 != -1)
   {
     UpdateAvailablePCMCapabilities();
