@@ -943,7 +943,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   // Query IEC capabilities
   bool isRaw = false;
   // SHITTY
-  if (CJNIAudioFormat::ENCODING_IEC61937 == -1)
+  if (true)
   {
     CJNIAudioFormat::ENCODING_IEC61937 = CJNIAudioFormat::ENCODING_PCM_16BIT;
     m_info.m_deviceName = "AudioTrack (HARMFUL OWN RISK)";
