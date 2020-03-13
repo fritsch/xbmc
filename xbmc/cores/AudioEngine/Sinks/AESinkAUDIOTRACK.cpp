@@ -1068,7 +1068,8 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
   m_sink_sampleRates.insert(native_sampleRate);
 
   int encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
-  m_sinkSupportsFloat = VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_FLOAT);
+  m_sinkSupportsFloat =
+      false; //VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_FLOAT);
   // Only try for Android 7 or later - there are a lot of old devices that open successfully
   // but won't work correctly under the hood (famouse example: old FireTV)
   // if (CJNIAudioManager::GetSDKVersion() > 23)
