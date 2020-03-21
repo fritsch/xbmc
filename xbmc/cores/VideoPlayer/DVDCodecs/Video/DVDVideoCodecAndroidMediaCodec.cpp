@@ -640,6 +640,9 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
       xbmc_jnienv()->ExceptionClear();
       continue;
     }
+    // Check if decoder is able to reconfigure on the fly - if available set min / max width accordingly
+    m_supportsAdaptive = codec_caps.isFeatureSupported(
+        CJNIMediaCodecInfoCodecCapabilities::FEATURE_AdaptivePlayback);
 
     bool codecIsSecure(
         m_codecname.find(".secure") != std::string::npos ||
@@ -1150,8 +1153,11 @@ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
   AMediaFormat_setString(mediaformat, AMEDIAFORMAT_KEY_MIME, m_mime.c_str());
   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_WIDTH, m_hints.width);
   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_HEIGHT, m_hints.height);
-  AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_WIDTH, m_hints.width);
-  AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_HEIGHT, m_hints.height);
+  if (m_supportsAdaptive)
+  {
+    AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_WIDTH, m_hints.width);
+    AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_HEIGHT, m_hints.height);
+  }
   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_INPUT_SIZE, 0);
 
   if (CJNIBase::GetSDKVersion() >= 23 && m_render_surface)
