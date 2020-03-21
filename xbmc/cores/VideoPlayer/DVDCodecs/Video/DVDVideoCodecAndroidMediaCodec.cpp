@@ -1150,8 +1150,11 @@ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
   AMediaFormat_setString(mediaformat, AMEDIAFORMAT_KEY_MIME, m_mime.c_str());
   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_WIDTH, m_hints.width);
   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_HEIGHT, m_hints.height);
-  AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_WIDTH, m_hints.width);
-  AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_HEIGHT, m_hints.height);
+  if (m_hints.codec == AV_CODEC_ID_H264)
+  {
+    AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_WIDTH, m_hints.width);
+    AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_HEIGHT, m_hints.height);
+  }
   AMediaFormat_setInt32(mediaformat, AMEDIAFORMAT_KEY_MAX_INPUT_SIZE, 0);
 
   if (CJNIBase::GetSDKVersion() >= 23 && m_render_surface)
