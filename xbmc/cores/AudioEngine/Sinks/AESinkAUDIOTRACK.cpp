@@ -146,11 +146,11 @@ static int AEChannelMapToAUDIOTRACKChannelMask(CAEChannelInfo info)
   // For layouts with SL, SR and BL, BR set - we need to
   // make sure that AE takes SL, SR first - we need
   // to swap that when remapping
-  if (info.Count() == 6 && info.HasChannel(AE_CH_LFE))
-    return CJNIAudioFormat::CHANNEL_OUT_5POINT1;
+  //  if (info.Count() == 6 && info.HasChannel(AE_CH_LFE))
+  //    return CJNIAudioFormat::CHANNEL_OUT_5POINT1;
 
-  if (info.Count() == 8 && info.HasChannel(AE_CH_LFE))
-    return CJNIAudioFormat::CHANNEL_OUT_7POINT1_SURROUND;
+  //  if (info.Count() == 8 && info.HasChannel(AE_CH_LFE))
+  //    return CJNIAudioFormat::CHANNEL_OUT_7POINT1_SURROUND;
 
   int atMask = 0;
 
