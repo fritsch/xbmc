@@ -40,6 +40,7 @@ public:
   static void          EnumerateDevicesEx(AEDeviceInfoList &list, bool force = false);
   static void Register();
   static IAESink* Create(std::string &device, AEAudioFormat &desiredFormat);
+  bool HasVolume() override { return true; };
 
 protected:
   static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int channelMask, int encoding, int bufferSize);

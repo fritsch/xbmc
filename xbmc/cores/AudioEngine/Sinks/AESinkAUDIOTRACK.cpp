@@ -1070,3 +1070,9 @@ double CAESinkAUDIOTRACK::GetMovingAverageDelay(double newestdelay)
   return sum * denom;
 }
 
+void CAESinkAUDIOTRACK::SetVolume(float volume)
+{
+    float per_cent_volume = std::max(0.0f, std::min(volume, 1.0f));
+    g_application.SetVolume(per_cent_volume, false);
+}
+
