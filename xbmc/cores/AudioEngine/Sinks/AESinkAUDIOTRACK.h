@@ -41,6 +41,7 @@ public:
   static void Register();
   static IAESink* Create(std::string &device, AEAudioFormat &desiredFormat);
   bool HasVolume() override { return true; };
+  void SetVolume(float volume) override;
 
 protected:
   static jni::CJNIAudioTrack *CreateAudioTrack(int stream, int sampleRate, int channelMask, int encoding, int bufferSize);
