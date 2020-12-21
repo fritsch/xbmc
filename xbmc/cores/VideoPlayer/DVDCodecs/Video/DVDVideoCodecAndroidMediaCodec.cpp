@@ -498,6 +498,12 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
         m_mime = "video/dolby-vision";
         m_formatname = "amc-dvh1";
       }
+      else if (m_hints.codec_tag == MKBETAG('d', 'v', 'v', 'C') ||
+               m_hints.codec_tag == MKBETAG('d', 'v', 'c', 'C'))
+      {
+        m_mime = "video/dolby-vision";
+        m_formatname = "amc-dvh1";
+      }
       else
       {
         m_mime = "video/hevc";
