@@ -925,7 +925,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   m_info.m_deviceType = AE_DEVTYPE_PCM;
   m_info.m_deviceName = "AudioTrack (IEC)";
   m_info.m_displayName = "AudioTrack (IEC)";
-  m_info.m_displayNameExtra = "Kodi IEC packer (recommended)";
+  m_info.m_displayNameExtra = "Kodi IEC packer (superior)";
 
   // Query IEC capabilities
   bool isRaw = false;
@@ -937,7 +937,6 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
     if (!m_info.m_streamTypes.empty())
     {
       m_info_iec = m_info;
-      list.push_back(m_info_iec);
       m_hasIEC = true;
     }
   }
@@ -946,12 +945,14 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
   isRaw = true;
   m_info.m_deviceName = "AudioTrack (RAW)";
   m_info.m_displayName = "AudioTrack (RAW)";
-  m_info.m_displayNameExtra = "Android IEC packer";
+  m_info.m_displayNameExtra = "Android IEC packer (standard)";
   UpdateAvailablePCMCapabilities();
   UpdateAvailablePassthroughCapabilities(isRaw);
   m_info_raw = m_info;
 
   list.push_back(m_info_raw);
+  if (m_hasIEC)
+    list.push_back(m_info_iec);
 }
 
 void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities(bool isRaw)
