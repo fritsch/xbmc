@@ -43,7 +43,7 @@ static float currentRefreshRate()
   if (window)
   {
     float preferredRate = window.getAttributes().getpreferredRefreshRate();
-    if (preferredRate > 20.0 && preferredRate < 70.0)
+    if (preferredRate > 20.0 && preferredRate < 130.0)
     {
       CLog::Log(LOGINFO, "CAndroidUtils: Preferred refresh rate: %f", preferredRate);
       return preferredRate;
@@ -54,7 +54,7 @@ static float currentRefreshRate()
       if (display)
       {
         float reportedRate = display.getRefreshRate();
-        if (reportedRate > 20.0 && reportedRate < 70.0)
+        if (reportedRate > 20.0 && reportedRate < 130.0)
         {
           CLog::Log(LOGINFO, "CAndroidUtils: Current display refresh rate: %f", reportedRate);
           return reportedRate;
