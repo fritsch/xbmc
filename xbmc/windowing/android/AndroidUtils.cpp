@@ -128,6 +128,10 @@ CAndroidUtils::CAndroidUtils()
   if (CJNIBase::GetSDKVersion() >= 24)
   {
     fetchDisplayModes();
+    if (s_res_displayModes.empty())
+    {
+      CLog::Log(LOGWARNING, "Could not query modes - window non existent?");
+    }
     for (const auto& res : s_res_displayModes)
     {
       if (res.iWidth > m_width || res.iHeight > m_height)
@@ -152,6 +156,13 @@ CAndroidUtils::CAndroidUtils()
       }
       CLog::Log(LOGDEBUG, "CAndroidUtils: display-size: %s(%dx%d)", displaySize.c_str(), m_width, m_height);
     }
+  }
+
+  if (!m_width || !m_height)
+  {
+    CLog::Log(LOGWARNING, "Querying GUI resolution failed - will default to 1280x720");
+    m_width = 1280;
+    m_height = 720;
   }
 
   CLog::Log(LOGDEBUG, "CAndroidUtils: maximum/current resolution: %dx%d", m_width, m_height);
