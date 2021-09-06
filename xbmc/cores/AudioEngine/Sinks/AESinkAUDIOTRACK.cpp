@@ -844,6 +844,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       }
 
       usleep(extra_sleep * 1000);
+      CLog::Log(LOGINFO, "m_delay %lf ms Stream Duration %lf Adding-Time %lf Sleep-Time %lf ms", m_delay * 1000, m_format.m_streamInfo.GetDuration(), time_to_add_ms, extra_sleep);
     }
     else
     {
@@ -863,6 +864,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       double time_off = time_should_ms - time_to_add_ms;
       if (time_off > 0)
         usleep(time_off * 500); // sleep half the error away
+
+      CLog::Log(LOGINFO, "m_delay %lf ms period_time %lf ms Adding-Time %lf ms Sleeping-Time %lf ms", m_delay * 1000, period_time * 1000, time_should_ms, time_off / 2);
     }
   }
 
