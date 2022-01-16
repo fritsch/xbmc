@@ -757,9 +757,6 @@ void CActiveAESink::EnumerateOutputDevices(AEDeviceList &devices, bool passthrou
       if (devInfo.m_onlyPassthrough && !passthrough)
         continue;
 
-      if (devInfo.m_onlyPCM && passthrough)
-        continue;
-
       std::string device = sinkInfo.m_sinkName + ":" + devInfo.m_deviceName;
 
       std::stringstream ss;

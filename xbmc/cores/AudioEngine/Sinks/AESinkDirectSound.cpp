@@ -503,7 +503,7 @@ void CAESinkDirectSound::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bo
       goto failed;
     }
     std::string strWinDevType = winEndpoints[(EndpointFormFactor)varName.uiVal].winEndpointType;
-    AEDeviceType aeDeviceType = winEndpoints[(EndpointFormFactor)varName.uiVal].aeDeviceType;
+    AEDeviceType aeDeviceType = AE_DEVTYPE_PCM;
 
     PropVariantClear(&varName);
 
@@ -519,17 +519,6 @@ void CAESinkDirectSound::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bo
       WAVEFORMATEX* smpwfxex = (WAVEFORMATEX*)varName.blob.pBlobData;
       deviceInfo.m_channels = layoutsByChCount[std::max(std::min(smpwfxex->nChannels, (WORD) DS_SPEAKER_COUNT), (WORD) 2)];
       deviceInfo.m_dataFormats.push_back(AEDataFormat(AE_FMT_FLOAT));
-      if (aeDeviceType != AE_DEVTYPE_PCM)
-      {
-        deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-        // DTS is played with the same infrastructure as AC3
-        deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-        deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-        deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-        deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-        // signal that we can doe AE_FMT_RAW
-        deviceInfo.m_dataFormats.push_back(AE_FMT_RAW);
-      }
       deviceInfo.m_sampleRates.push_back(std::min(smpwfxex->nSamplesPerSec, (DWORD) 192000));
     }
     else
@@ -540,10 +529,9 @@ void CAESinkDirectSound::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bo
     deviceInfo.m_deviceName       = strDevName;
     deviceInfo.m_displayName      = strWinDevType.append(strFriendlyName);
     deviceInfo.m_displayNameExtra = std::string("DIRECTSOUND: ").append(strFriendlyName);
-    deviceInfo.m_deviceType       = aeDeviceType;
+    deviceInfo.m_deviceType       = AE_DEVTYPE_PCM;
 
     deviceInfo.m_wantsIECPassthrough = true;
-    deviceInfo.m_onlyPCM = true;
     deviceInfoList.push_back(deviceInfo);
 
     // add the default device with m_deviceName = default
@@ -553,7 +541,6 @@ void CAESinkDirectSound::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bo
       deviceInfo.m_displayName = std::string("default");
       deviceInfo.m_displayNameExtra = std::string("");
       deviceInfo.m_wantsIECPassthrough = true;
-      deviceInfo.m_onlyPCM = true;
       deviceInfoList.push_back(deviceInfo);
     }
   }
@@ -744,7 +731,9 @@ std::string CAESinkDirectSound::GetDefaultDevice()
   hr = pProperty->GetValue(PKEY_AudioEndpoint_FormFactor, &varName);
   EXIT_ON_FAILURE(hr, "Retrieval of DirectSound endpoint form factor failed.")
 
-  aeDeviceType = winEndpoints[(EndpointFormFactor)varName.uiVal].aeDeviceType;
+  // We don't want to announce PT with DirectSound Sink - users should switch to the
+  // exclusive WASAPI instead.
+  aeDeviceType = AE_DEVTYPE_PCM;
   PropVariantClear(&varName);
 
   hr = pProperty->GetValue(PKEY_AudioEndpoint_GUID, &varName);

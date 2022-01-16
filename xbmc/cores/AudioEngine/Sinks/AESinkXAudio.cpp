@@ -416,89 +416,8 @@ void CAESinkXAudio::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bool fo
     }
     SafeDestroyVoice(&mSourceVoice);
 
-    /* Test format Dolby TrueHD */
-    wfxex.SubFormat = KSDATAFORMAT_SUBTYPE_IEC61937_DOLBY_MLP;
-    wfxex.Format.nChannels = 8;
-    wfxex.dwChannelMask = KSAUDIO_SPEAKER_7POINT1_SURROUND;
-
-    hr = xaudio2->CreateSourceVoice(&mSourceVoice, &wfxex.Format);
-    if (FAILED(hr))
-    {
-      CLog::Log(
-          LOGINFO, __FUNCTION__ ": stream type \"{}\" on device \"{}\" seems to be not supported.",
-          CAEUtil::StreamTypeToStr(CAEStreamInfo::STREAM_TYPE_TRUEHD), details.strDescription);
-    }
-    else
-    {
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_TRUEHD);
-      add192 = true;
-    }
-
-    /* Test format Dolby EAC3 */
-    wfxex.SubFormat = KSDATAFORMAT_SUBTYPE_IEC61937_DOLBY_DIGITAL_PLUS;
-    wfxex.Format.nChannels = 2;
-    wfxex.Format.nBlockAlign = wfxex.Format.nChannels * (wfxex.Format.wBitsPerSample >> 3);
-    wfxex.Format.nAvgBytesPerSec = wfxex.Format.nSamplesPerSec * wfxex.Format.nBlockAlign;
-
-    SafeDestroyVoice(&mSourceVoice);
-    SafeDestroyVoice(&mMasterVoice);
     hr2 = xaudio2->CreateMasteringVoice(&mMasterVoice, wfxex.Format.nChannels, wfxex.Format.nSamplesPerSec,
                                         0, deviceId.c_str(), nullptr, AudioCategory_Media);
-    hr = xaudio2->CreateSourceVoice(&mSourceVoice, &wfxex.Format);
-
-    if (FAILED(hr))
-    {
-      CLog::Log(LOGINFO,
-                __FUNCTION__ ": stream type \"{}\" on device \"{}\" seems to be not supported.",
-                CAEUtil::StreamTypeToStr(CAEStreamInfo::STREAM_TYPE_EAC3), details.strDescription);
-    }
-    else
-    {
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_EAC3);
-      add192 = true;
-    }
-
-    /* Test format DTS */
-    wfxex.Format.nSamplesPerSec = 48000;
-    wfxex.dwChannelMask = KSAUDIO_SPEAKER_5POINT1;
-    wfxex.SubFormat = KSDATAFORMAT_SUBTYPE_IEC61937_DTS;
-    wfxex.Format.nBlockAlign = wfxex.Format.nChannels * (wfxex.Format.wBitsPerSample >> 3);
-    wfxex.Format.nAvgBytesPerSec = wfxex.Format.nSamplesPerSec * wfxex.Format.nBlockAlign;
-
-    SafeDestroyVoice(&mSourceVoice);
-    SafeDestroyVoice(&mMasterVoice);
-    hr2 = xaudio2->CreateMasteringVoice(&mMasterVoice, wfxex.Format.nChannels, wfxex.Format.nSamplesPerSec,
-                                        0, deviceId.c_str(), nullptr, AudioCategory_Media);
-    hr = xaudio2->CreateSourceVoice(&mSourceVoice, &wfxex.Format);
-    if (FAILED(hr))
-    {
-      CLog::Log(LOGINFO,
-                __FUNCTION__ ": stream type \"{}\" on device \"{}\" seems to be not supported.",
-                "STREAM_TYPE_DTS", details.strDescription);
-    }
-    else
-    {
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTSHD_CORE);
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_2048);
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_1024);
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_DTS_512);
-    }
-    SafeDestroyVoice(&mSourceVoice);
-
-    /* Test format Dolby AC3 */
-    wfxex.SubFormat = KSDATAFORMAT_SUBTYPE_IEC61937_DOLBY_DIGITAL;
-
-    hr = xaudio2->CreateSourceVoice(&mSourceVoice, &wfxex.Format);
-    if (FAILED(hr))
-    {
-      CLog::Log(LOGINFO,
-                __FUNCTION__ ": stream type \"{}\" on device \"{}\" seems to be not supported.",
-                CAEUtil::StreamTypeToStr(CAEStreamInfo::STREAM_TYPE_AC3), details.strDescription);
-    }
-    else
-    {
-      deviceInfo.m_streamTypes.push_back(CAEStreamInfo::STREAM_TYPE_AC3);
-    }
 
     /* Test format for PCM format iteration */
     wfxex.Format.cbSize = sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX);
@@ -577,7 +496,8 @@ void CAESinkXAudio::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bool fo
 
     /* Store the device info */
     deviceInfo.m_wantsIECPassthrough = true;
-    deviceInfo.m_onlyPCM = true;
+    // we don't want to have any PT capabilites
+    deviceInfo.m_deviceType = AE_DEVTYPE_PCM;
 
     if (!deviceInfo.m_streamTypes.empty())
       deviceInfo.m_dataFormats.push_back(AE_FMT_RAW);
@@ -590,7 +510,7 @@ void CAESinkXAudio::EnumerateDevicesEx(AEDeviceInfoList &deviceInfoList, bool fo
       deviceInfo.m_displayName = std::string("default");
       deviceInfo.m_displayNameExtra = std::string("");
       deviceInfo.m_wantsIECPassthrough = true;
-      deviceInfo.m_onlyPCM = true;
+      deviceInfo.m_deviceType = AE_DEVTYPE_PCM;
       deviceInfoList.push_back(deviceInfo);
     }
   }
