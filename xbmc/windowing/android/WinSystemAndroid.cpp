@@ -218,7 +218,7 @@ void CWinSystemAndroid::InitiateModeChange()
   m_dispResetTimer->Stop();
   if (delay > 0ms)
   {
-    CLog::LogF(LOGDEBUG, "Start dispResetTimer with delay: {}", delay);
+    CLog::LogF(LOGDEBUG, "Start dispResetTimer with delay: {}", delay.count());
     m_dispResetTimer->Start(delay);
   }
 
