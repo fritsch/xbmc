@@ -290,34 +290,40 @@ int CAEEncoderFFmpeg::Encode(uint8_t *in, int in_size, uint8_t *out, int out_siz
 
     avcodec_fill_audio_frame(frame, channelNum, m_CodecCtx->sample_fmt, in, in_size, 0);
 
-    pkt->size = out_size;
-    pkt->data = out;
-
     /* encode it */
     err = avcodec_send_frame(m_CodecCtx, frame);
     if (err < 0)
       throw FFMpegException("Error sending a frame for encoding (error '{}')",
                             FFMpegErrorToString(err));
 
+    bool got_package = false;
     while (err >= 0)
     {
       err = avcodec_receive_packet(m_CodecCtx, pkt);
       if (err == AVERROR(EAGAIN) || err == AVERROR_EOF)
       {
-        av_channel_layout_uninit(&frame->ch_layout);
-        av_frame_free(&frame);
-        av_packet_free(&pkt);
-        return (err == AVERROR(EAGAIN)) ? -1 : 0;
+        // expected and fine
+        break;
       }
       else if (err < 0)
       {
-        throw FFMpegException("Error during encoding (error '{}')", FFMpegErrorToString(err));
+        // caller cannot cope with it
+        // fixup leak of frame
+        return 0;
       }
-
+      if (got_package) // we got a second one - oh noes
+      {
+        CLog::Log(LOGWARNING, "Fix your design");
+        av_packet_unref(pkt); // this pkt is gone forever -> :-(
+        break; // go to clean up and return available paket
+      }
+      got_package = true;
+      // Copy encoded data to out ensuring out_size
+      memset(out, 0, out_size);
+      memcpy(out, pkt->data, (pkt->size > out_size) ? out_size : pkt->size);
+      size = pkt->size;
       av_packet_unref(pkt);
     }
-
-    size = pkt->size;
   }
   catch (const FFMpegException& caught)
   {
