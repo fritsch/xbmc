@@ -638,6 +638,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_delay = 0.0;
   m_hw_delay = 0.0;
   m_customDelay = 0.0;
+  m_initialTimeStamp = 0;
 }
 
 bool CAESinkAUDIOTRACK::IsInitialized()
@@ -788,7 +789,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     CLog::Log(LOGINFO, "Delay Current: {:f} ms", d * 1000);
   }
   status.SetDelay(d);
-  double time_passed_s = (CurrentHostCounter() - m_customTimeStamp) / CurrentHostFrequency();
+  double time_passed_s = (CurrentHostCounter() - m_initialTimeStamp) / CurrentHostFrequency();
   m_customDelay -= time_passed_s;
   if (usesAdvancedLogging)
     CLog::Log(LOGINFO, "Delay compare: {:f} ms {:f} ms", d* 1000, m_customDelay * 1000);
@@ -934,7 +935,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         usleep(time_off * 500); // sleep half the error on average away
     }
   }
-  m_customTimeStamp = CurrentHostCounter();
+  if (m_initialTimeStamp == 0)
+    m_initialTimeStamp = CurrentHostCounter();
   return written_frames;
 }
 
