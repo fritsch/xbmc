@@ -792,7 +792,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   double time_passed_s = (CurrentHostCounter() - m_initialTimeStamp) / CurrentHostFrequency();
   double d2 = m_customDelay - time_passed_s;
   if (usesAdvancedLogging)
-    CLog::Log(LOGINFO, "Delay compare: {:f} ms {:f} ms", d* 1000, m_customDelay * 1000);
+    CLog::Log(LOGINFO, "Delay compare: {:f} ms {:f} ms", d* 1000, d2 * 1000);
   //status.SetDelay(m_customDelay);
 }
 
