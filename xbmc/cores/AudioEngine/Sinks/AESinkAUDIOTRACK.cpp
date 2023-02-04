@@ -637,6 +637,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_at_jni = NULL;
   m_delay = 0.0;
   m_hw_delay = 0.0;
+  m_customDelay = 0.0;
 }
 
 bool CAESinkAUDIOTRACK::IsInitialized()
@@ -787,6 +788,11 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     CLog::Log(LOGINFO, "Delay Current: {:f} ms", d * 1000);
   }
   status.SetDelay(d);
+  double time_passed_s = (CurrentHostCounter() - m_customTimeStamp) / CurrentHostFrequency();
+  m_customDelay -= time_passed_s;
+  if (usesAdvancedLogging)
+    CLog::Log(LOGINFO, "Delay compare: {:f} ms {:f} ms", d* 1000, m_customDelay * 1000);
+  //status.SetDelay(m_customDelay);
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
@@ -872,7 +878,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       if (m_passthrough && !m_info.m_wantsIECPassthrough)
       {
         if (written == size)
+        {
           m_duration_written += m_format.m_streamInfo.GetDuration() / 1000;
+          m_customDelay += m_format.m_streamInfo.GetDuration() / 1000;
+        }
         else
         {
           CLog::Log(LOGDEBUG, "Error writing full package to sink, left: {}", size_left);
@@ -887,6 +896,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
             (static_cast<double>(loop_written) / m_format.m_frameSize) / m_format.m_sampleRate;
         duration /= ratio;
         m_duration_written += duration;
+        m_customTimeStamp += duration; // do same for RAW
       }
 
       // just try again to care for fragmentation
@@ -924,7 +934,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
         usleep(time_off * 500); // sleep half the error on average away
     }
   }
-
+  m_customTimeStamp = CurrentHostCounter();
   return written_frames;
 }
 

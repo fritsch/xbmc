@@ -63,6 +63,8 @@ private:
   unsigned int          m_min_buffer_size;
   uint64_t              m_headPos;
   uint64_t m_timestampPos = 0;
+  uint64_t m_customTimeStamp = 0;
+  double m_customDelay = 0;
   // Moving Average computes the weighted average delay over
   // a fixed size of delay values - current size: 20 values
   double                GetMovingAverageDelay(double newestdelay);
