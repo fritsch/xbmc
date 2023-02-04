@@ -896,7 +896,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
             (static_cast<double>(loop_written) / m_format.m_frameSize) / m_format.m_sampleRate;
         duration /= ratio;
         m_duration_written += duration;
-        m_customTimeStamp += duration; // do same for RAW
+        m_customDelay += duration; // do same for RAW
       }
 
       // just try again to care for fragmentation
