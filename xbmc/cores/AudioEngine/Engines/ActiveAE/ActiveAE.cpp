@@ -1953,7 +1953,10 @@ bool CActiveAE::RunStages()
     }
   }
 
-  if (m_stats.GetWaterLevel() < (MAX_WATER_LEVEL + 0.0001f) &&
+  const bool ignoreWL =
+      (m_mode == MODE_RAW && m_sinkFormat.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD);
+
+  if ((m_stats.GetWaterLevel() < (MAX_WATER_LEVEL + 0.0001f) || ignoreWL) &&
       (m_mode != MODE_TRANSCODE || (m_encoderBuffers && !m_encoderBuffers->m_freeSamples.empty())))
   {
     // calculate sync error
