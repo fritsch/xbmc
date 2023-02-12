@@ -235,7 +235,7 @@ void CWinSystemAndroid::InitiateModeChange()
 void CWinSystemAndroid::SetHdmiState(bool connected)
 {
   std::unique_lock<CCriticalSection> lock(m_resourceSection);
-  CLog::Log(LOGDEBUG, "CWinSystemAndroid::SetHdmiState: state: {}", static_cast<int>(connected));
+  CLog::Log(LOGINFO, "CWinSystemAndroid::SetHdmiState: state: {}", static_cast<int>(connected));
 
   if (connected)
   {
