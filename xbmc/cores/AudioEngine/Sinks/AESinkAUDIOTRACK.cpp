@@ -247,9 +247,12 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sink_frameSize = 0;
   m_encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
   m_audiotrackbuffer_sec = 0.0;
+  m_audiotrackbuffer_sec_orig = 0.0;
   m_at_jni = NULL;
   m_duration_written = 0;
   m_headPos = 0;
+  m_stuckCounter = 0;
+  m_headPosOld = 0;
   m_timestampPos = 0;
   m_sink_sampleRate = 0;
   m_passthrough = false;
@@ -317,6 +320,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
   m_format      = format;
   m_headPos = 0;
+  m_stuckCounter = 0;
+  m_headPosOld = 0;
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
   m_pause_ms = 0.0;
@@ -572,6 +577,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
               "Created Audiotrackbuffer with playing time of {:f} ms min buffer size: {} bytes",
               m_audiotrackbuffer_sec * 1000, m_min_buffer_size);
 
+    m_audiotrackbuffer_sec_orig = m_audiotrackbuffer_sec;
+
     m_jniAudioFormat = m_encoding;
     m_at_jni = CreateAudioTrack(stream, m_sink_sampleRate, atChannelMask,
                                 m_encoding, m_min_buffer_size);
@@ -640,6 +647,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
 
   m_duration_written = 0;
   m_headPos = 0;
+  m_headPosOld = 0;
   m_timestampPos = 0;
   m_stampTimer.SetExpired();
 
@@ -677,6 +685,14 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // clear lower 32 bit values, e.g. 0x0001 FFFF FFFF -> 0x0001 0000 0000
   // and add head_pos which wrapped around, e.g. 0x0001 0000 0000 -> 0x0001 0000 0004
   m_headPos = (m_headPos & UINT64_UPPER_BYTES) | (uint64_t)head_pos;
+  // check if sink is stuck
+  if (m_headPos == m_headPosOld)
+    m_stuckCounter++;
+  else
+  {
+    m_stuckCounter = 0;
+    m_headPosOld = m_headPos;
+  }
 
   double gone = static_cast<double>(m_headPos) / m_sink_sampleRate;
 
@@ -823,11 +839,15 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     return INT_MAX;
 
   const bool isRawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
-  const double max_delay = isRawPt ? 3.0 : 1.0;
 
-  if (m_delay > max_delay)
+  // If the sink did not move for twice configure buffer time, kick it
+  double stime = 1000.0 * frames / m_format.m_sampleRate;
+  if (isRawPt)
+    stime = m_format.m_streamInfo.GetDuration();
+  if (m_stuckCounter * stime > (m_audiotrackbuffer_sec_orig * 2000.0))
   {
-    CLog::Log(LOGERROR, "Sink got stuck with large buffer {:f} - reopening", m_delay);
+    CLog::Log(LOGERROR, "Sink got stuck - ask AE for reopening");
+    usleep (200 * 1000);
     return INT_MAX;
   }
 
@@ -994,6 +1014,7 @@ void CAESinkAUDIOTRACK::Drain()
   }
   m_duration_written = 0;
   m_headPos = 0;
+  m_stuckCounter = 0;
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
   m_stampTimer.SetExpired();
