@@ -909,8 +909,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     {
       double time_should_ms = 1000.0 * written_frames / m_format.m_sampleRate;
       double time_off = time_should_ms - time_to_add_ms;
-      if (time_off > 0)
-        usleep(time_off * 500); // sleep half the error on average away
+     // if (time_off > 0)
+     //   usleep(time_off * 500); // sleep half the error on average away
     }
   }
 
