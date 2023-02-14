@@ -201,7 +201,7 @@ void CVideoPlayerAudio::UpdatePlayerInfo()
 
   // print a/v discontinuity adjustments counter when audio is not resampled (passthrough mode)
   if (m_synctype == SYNC_DISCON)
-    s << ", a/v corrections: " << m_disconAdjustCounter;
+    s << ", a/v corrections " << "(" << m_disconAdjustTimeMs << "): " << m_disconAdjustCounter;
 
   //print the inverse of the resample ratio, since that makes more sense
   //if the resample ratio is 0.5, then we're playing twice as fast
