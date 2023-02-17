@@ -838,6 +838,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     while (written < size)
     {
       loop_written = AudioTrackWrite((char*)out_buf, 0, size_left);
+      if (loop_written < 0)
+      {
+        CLog::Log(LOGERROR, "Sink died - requesting to reopen: {}", loop_written);
+        return INT_MAX;
+      }
       written += loop_written;
       size_left -= loop_written;
 
