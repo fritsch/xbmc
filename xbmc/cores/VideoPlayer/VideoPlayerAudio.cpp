@@ -548,9 +548,16 @@ bool CVideoPlayerAudio::ProcessDecoderOutput(DVDAudioFrame &audioframe)
 
     if (m_disconLearning)
     {
-      const double syncErr = fabs(syncerror);
+      const double syncErr = std::abs(syncerror);
       if (syncErr > DVD_MSEC_TO_TIME(m_disconAdjustTimeMs))
+      {
         m_disconAdjustTimeMs = DVD_TIME_TO_MSEC(syncErr);
+        if (m_disconAdjustTimeMs > 100)
+        {
+          m_disconTimer.SetExpired();
+          CLog::LogF(LOGINFO, "Cancelling self-learning as error too high: {} ms", m_disconAdjustTimeMs);
+        }
+      }
       if (m_disconTimer.IsTimePast())
       {
         m_disconLearning = false;
@@ -562,7 +569,7 @@ bool CVideoPlayerAudio::ProcessDecoderOutput(DVDAudioFrame &audioframe)
                    m_disconAdjustTimeMs);
       }
     }
-    else if (fabs(syncerror) > DVD_MSEC_TO_TIME(m_disconAdjustTimeMs))
+    if (std::abs(syncerror) > DVD_MSEC_TO_TIME(m_disconAdjustTimeMs))
     {
       double correction = m_pClock->ErrorAdjust(syncerror, "CVideoPlayerAudio::OutputPacket");
       if (correction != 0)
