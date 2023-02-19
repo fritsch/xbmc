@@ -45,6 +45,9 @@ include ../../download-files.include
 download: $(TARBALLS_LOCATION)/$(ARCHIVE).$(HASH_TYPE)
 all: .installed-$(PLATFORM)
 
+$(TARBALLS_LOCATION)/$(ARCHIVE):
+	cd $(TARBALLS_LOCATION); $(RETRIEVE_TOOL) -Ls --create-dirs -f -o $(TARBALLS_LOCATION)/$(ARCHIVE) $(BASE_URL)/archive/$(VERSION).tar.gz
+
 $(PLATFORM): $(DEPS) | $(TARBALLS_LOCATION)/$(ARCHIVE).$(HASH_TYPE)
 	rm -rf $(PLATFORM); mkdir -p $(PLATFORM)
 	rm -rf $(PLATFORM); mkdir -p $(PLATFORM)/build
