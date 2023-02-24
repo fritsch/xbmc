@@ -224,7 +224,10 @@ void CWinSystemAndroid::InitiateModeChange()
                                     "videoscreen.delayrefreshchange") *
                                 100);
 
-  if (delay > 0ms && delay < 2000ms)
+  // On Android the Reset event might never come. Therefore help that out with a default 2000 timer
+  // unless user has set the Setting to -1, which means Auto mode. Auto mode can be a hit or miss
+  // and therefore is not the default
+  if (delay > -1ms && delay < 2000ms)
     delay = 2000ms;
 
   m_dispResetTimer->Stop();

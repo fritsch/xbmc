@@ -726,6 +726,7 @@ void CDisplaySettings::SettingOptionsRefreshChangeDelaysFiller(
     int& current,
     void* data)
 {
+  list.emplace_back(g_localizeStrings.Get(13549), -1);
   list.emplace_back(g_localizeStrings.Get(13551), 0);
 
   for (int i = 1; i <= MAX_REFRESH_CHANGE_DELAY; i++)

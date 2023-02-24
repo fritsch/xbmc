@@ -7587,7 +7587,11 @@ msgctxt "#13525"
 msgid "When enabled, use the original year of release rather than the album release year (if available)."
 msgstr ""
 
-#empty strings from id 13526 to 13549
+#empty strings from id 13526 to 13548
+
+msgctxt "#13549"
+msgid "Auto"
+msgstr ""
 
 #: system/settings/settings.xml
 msgctxt "#13550"
@@ -19371,7 +19375,7 @@ msgstr ""
 #. Description of setting with label #13550 "Delay after change of refresh rate"
 #: system/settings/settings.xml
 msgctxt "#36165"
-msgid "Delay of reset event after a change of refresh rate"
+msgid "Delay of reset event after a change of refresh rate. Off: don't wait. Auto: Wait for system event. This might be unsupported by your Operating system."
 msgstr ""
 
 #. Description of setting with label #13510 "Sync playback to display"
