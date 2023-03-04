@@ -815,7 +815,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   if (!IsInitialized())
     return INT_MAX;
 
-  if (m_delay > 1.0)
+  const bool isRawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
+  const double max_delay = isRawPt ? 2.0 : 1.0
+
+  if (!isRawPt && m_delay > max_delay)
   {
     CLog::Log(LOGERROR, "Sink got stuck with large buffer {:f} - reopening", m_delay);
     return INT_MAX;
