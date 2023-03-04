@@ -254,6 +254,8 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
+  m_raw_reopen = false;
+  m_raw_toggles = 0;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -648,6 +650,8 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_at_jni = NULL;
   m_delay = 0.0;
   m_hw_delay = 0.0;
+  m_raw_reopen = false;
+  m_raw_toggles = 0;
 }
 
 bool CAESinkAUDIOTRACK::IsInitialized()
@@ -817,6 +821,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     return INT_MAX;
   }
 
+  if (m_raw_reopen)
+  {
+    CLog::Log(LOGERROR, "RAW Sink failed to sync - will reopen!");
+    return INT_MAX;
+  }
+
   // for debugging only - can be removed if everything is really stable
   uint64_t startTime = CurrentHostCounter();
 
@@ -939,9 +949,25 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
+  // if we get called with pause in the middle of playback ask for reopening
+  // as we cannot reliably resume. If we toggle out and in let's reopen
+
+  double time_played_ms = (1000.0 * m_headPos) / m_sink_sampleRate;
+
   // just sleep out the frames
   if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
+  {
     m_at_jni->pause();
+    CLog::Log(LOGINFO, "Toggle {}", m_raw_toggles);
+    if (time_played_ms > 2000)
+      m_raw_toggles++;
+  }
+
+  if (m_raw_toggles > 5)
+  {
+    m_raw_toggles = 0;
+    m_raw_reopen = true;
+  }
 
   usleep(millis * 1000);
 }

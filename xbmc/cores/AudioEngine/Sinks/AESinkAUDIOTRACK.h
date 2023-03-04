@@ -90,6 +90,8 @@ private:
   int                m_encoding;
   double m_delay = 0.0;
   double m_hw_delay = 0.0;
+  bool m_raw_reopen = false;
+  unsigned int m_raw_toggles = 0;
   CJNIAudioTimestamp m_timestamp;
   XbmcThreads::EndTime<> m_stampTimer;
 
