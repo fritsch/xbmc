@@ -446,10 +446,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_min_buffer_size = (unsigned int) min_buffer;
     CLog::Log(LOGINFO, "Minimum size we need for stream: {} Bytes", m_min_buffer_size);
     double rawlength_in_seconds = 0.0;
-    int multiplier = 1;
-    unsigned int ac3FrameSize = 1;
     if (m_passthrough && !m_info.m_wantsIECPassthrough)
     {
+      const unsigned int ac3_max_bytes_buffer = 640 * 1000 / 8 / 5; // 200 ms in bytes AC3
+      const unsigned int eac3_max_bytes_buffer = 6144 * 1000 / 8 / 5; // 200 ms in bytes EAC3
       switch (m_format.m_streamInfo.m_type)
       {
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
@@ -479,19 +479,15 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000;
           break;
         case CAEStreamInfo::STREAM_TYPE_AC3:
-           ac3FrameSize = m_format.m_streamInfo.m_ac3FrameSize;
-           if (ac3FrameSize == 0)
-             ac3FrameSize = 1536; // fallback if not set, e.g. Transcoding
-           m_min_buffer_size = std::max(m_min_buffer_size * 3, ac3FrameSize * 8);
-           m_format.m_frames = m_min_buffer_size;
-           multiplier = m_min_buffer_size / ac3FrameSize; // int division is wanted
-           rawlength_in_seconds = multiplier * m_format.m_streamInfo.GetDuration() / 1000;
+           m_min_buffer_size = std::max(ac3_max_bytes_buffer, m_min_buffer_size * 2);
+           m_format.m_frames = ac3_max_bytes_buffer / 2;
+           rawlength_in_seconds = 0.2;
           break;
           // EAC3 is currently not supported
         case CAEStreamInfo::STREAM_TYPE_EAC3:
-          m_min_buffer_size = 2 * 10752; // least common multiple of 1792 and 1536
-          m_format.m_frames = m_min_buffer_size; // needs testing
-          rawlength_in_seconds = 8 * m_format.m_streamInfo.GetDuration() / 1000;
+          m_min_buffer_size = std::max(eac3_max_bytes_buffer, m_min_buffer_size * 2);
+          m_format.m_frames = eac3_max_bytes_buffer / 2;
+          rawlength_in_seconds = 0.2;
           break;
         default:
           m_min_buffer_size = MAX_RAW_AUDIO_BUFFER;
