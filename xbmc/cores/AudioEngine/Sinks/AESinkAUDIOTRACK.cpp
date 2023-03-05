@@ -765,12 +765,14 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   const bool rawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
   if (rawPt)
   {
-    if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
+    // wait on start until sink moves
+    if (m_headPos == 0 || m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
     {
-      delay = m_audiotrackbuffer_sec;
+      // sink might buffer more than what we assumed
+      delay = std::max(m_audiotrackbuffer_sec, delay);
       if (usesAdvancedLogging)
       {
-        CLog::Log(LOGINFO, "Fake delay: {} ms", delay * 1000);
+        CLog::Log(LOGINFO, "Fake delay: {} ms Buffer: {}", delay * 1000, m_audiotrackbuffer_sec * 1000);
       }
     }
   }
