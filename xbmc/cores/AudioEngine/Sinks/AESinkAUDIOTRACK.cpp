@@ -773,8 +773,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     if (m_headPos == m_raw_headPause || m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
     {
       // sink might buffer more than what we assumed
-      delay = std::max(m_audiotrackbuffer_sec, delay);
-      CLog::Log(LOGINFO, "Fake delay: {} ms Buffer: {}", delay * 1000, m_audiotrackbuffer_sec * 1000);
+      delay = m_audiotrackbuffer_sec;
+      CLog::Log(LOGINFO, "Fake delay: {} ms ", delay * 1000);
     }
   }
 
