@@ -250,11 +250,13 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_at_jni = NULL;
   m_duration_written = 0;
   m_headPos = 0;
+  m_raw_headPause = 0;
   m_timestampPos = 0;
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
   m_raw_reopen = false;
+  m_raw_headPause = 0;
   m_raw_toggles = 0;
 }
 
@@ -319,6 +321,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
   m_format      = format;
   m_headPos = 0;
+  m_raw_headPause = 0;
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
   CLog::Log(LOGDEBUG,
@@ -651,6 +654,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_delay = 0.0;
   m_hw_delay = 0.0;
   m_raw_reopen = false;
+  m_raw_headPause = 0;
   m_raw_toggles = 0;
 }
 
@@ -766,7 +770,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   if (rawPt)
   {
     // wait on start until sink moves
-    if (m_headPos == 0 || m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
+    if (m_headPos == m_raw_headPause || m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
     {
       // sink might buffer more than what we assumed
       delay = std::max(m_audiotrackbuffer_sec, delay);
@@ -963,7 +967,8 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
   {
     m_at_jni->pause();
-    CLog::Log(LOGINFO, "Toggle {}", m_raw_toggles);
+    m_raw_headPause = m_headPos;
+    CLog::Log(LOGINFO, "Toggle {} HeadPos {}", m_raw_toggles, m_raw_headPause);
     if (time_played_ms > 2000)
       m_raw_toggles++;
   }
@@ -991,6 +996,7 @@ void CAESinkAUDIOTRACK::Drain()
   }
   m_duration_written = 0;
   m_headPos = 0;
+  m_raw_headPause = 0;
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
   m_stampTimer.SetExpired();
