@@ -770,10 +770,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     {
       // sink might buffer more than what we assumed
       delay = std::max(m_audiotrackbuffer_sec, delay);
-      if (usesAdvancedLogging)
-      {
-        CLog::Log(LOGINFO, "Fake delay: {} ms Buffer: {}", delay * 1000, m_audiotrackbuffer_sec * 1000);
-      }
+      CLog::Log(LOGINFO, "Fake delay: {} ms Buffer: {}", delay * 1000, m_audiotrackbuffer_sec * 1000);
     }
   }
 
@@ -845,7 +842,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   if (frames)
   {
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
+    {
+      CLog::Log(LOGINFO, "AddPacket - Resuming to play");
       m_at_jni->play();
+    }
 
     bool retried = false;
     int size_left = size;
