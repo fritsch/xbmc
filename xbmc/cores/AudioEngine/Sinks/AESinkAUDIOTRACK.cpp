@@ -254,6 +254,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
+  m_extTimer.SetExpired();
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -319,6 +320,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
   m_headPos = 0;
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
+  m_extTimer.SetExpired();
   CLog::Log(LOGDEBUG,
             "CAESinkAUDIOTRACK::Initialize requested: sampleRate {}; format: {}; channels: {}",
             format.m_sampleRate, CAEUtil::DataFormatToStr(format.m_dataFormat),
@@ -643,6 +645,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_stampTimer.SetExpired();
 
   m_linearmovingaverage.clear();
+  m_extTimer.SetExpired();
 
   delete m_at_jni;
   m_at_jni = NULL;
@@ -761,7 +764,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   const bool rawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
   if (rawPt)
   {
-    if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
+    if (m_extTimer.GetTimeLeft().count() > 0)
     {
       delay = m_audiotrackbuffer_sec;
       if (usesAdvancedLogging)
@@ -832,6 +835,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   int loop_written = 0;
   if (frames)
   {
+
+    if (m_headPos > 0 && m_extTimer.GetTimeLeft().count() > 0)
+    {
+      double sleeptime = std::min((double) m_extTimer.GetTimeLeft().count(), m_format.m_streamInfo.GetDuration());
+      usleep(sleeptime * 500);
+    }
     if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PLAYING)
       m_at_jni->play();
 
@@ -942,11 +951,15 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
-  // just sleep out the frames
-  if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
-    m_at_jni->pause();
-
-  usleep(millis * 1000);
+  // on startup the buffer is empty, it "should" take the silence if we would really send some
+  // without any delay. In between we need to sleep out the frames though
+  if (m_extTimer.GetTimeLeft().count() + millis <= m_audiotrackbuffer_sec * 1000 && m_headPos == 0)
+    m_extTimer.Set(m_extTimer.GetTimeLeft() + std::chrono::milliseconds(millis));
+  else
+  {
+    usleep(millis * 1000);
+    m_extTimer.Set(m_extTimer.GetTimeLeft() + std::chrono::milliseconds(millis));
+  }
 }
 
 void CAESinkAUDIOTRACK::Drain()
@@ -966,6 +979,7 @@ void CAESinkAUDIOTRACK::Drain()
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
   m_stampTimer.SetExpired();
+  m_extTimer.SetExpired();
 }
 
 void CAESinkAUDIOTRACK::Register()
