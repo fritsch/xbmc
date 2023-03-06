@@ -641,6 +641,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_headPos = 0;
   m_timestampPos = 0;
   m_stampTimer.SetExpired();
+  m_pause_ms = 0.0;
 
   m_linearmovingaverage.clear();
 
@@ -758,17 +759,11 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   delay += m_hw_delay;
 
-  const bool rawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
-  if (rawPt)
+  // this time is only used in the RAW path of things
+  if (m_pause_ms > 0)
   {
-    if (m_at_jni->getPlayState() == CJNIAudioTrack::PLAYSTATE_PAUSED)
-    {
-      delay = m_audiotrackbuffer_sec;
-      if (usesAdvancedLogging)
-      {
-        CLog::Log(LOGINFO, "Fake delay: {} ms", delay * 1000);
-      }
-    }
+    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms", m_audiotrackbuffer_sec * 1000, delay * 1000);
+    delay = m_audiotrackbuffer_sec;
   }
 
   if (usesAdvancedLogging)
@@ -782,7 +777,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   // Audiotrack is caching more than we thought it would
   if (d > m_audiotrackbuffer_sec)
+  {
+    CLog::Log(LOGINFO, "Increased audio buffer: {}", d * 1000);
     m_audiotrackbuffer_sec = d;
+  }
 
   // track delay in local member
   m_delay = d;
@@ -916,9 +914,18 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) / 2;
 
     // if there is still place, just add it without blocking
-    if (m_delay < (m_audiotrackbuffer_sec - (m_format.m_streamInfo.GetDuration() / 1000.0)))
+    double real_delay = m_delay - m_pause_ms / 1000.0;
+    if (real_delay < (m_audiotrackbuffer_sec - (m_format.m_streamInfo.GetDuration() / 1000.0)))
+    {
       extra_sleep = 0;
-
+    }
+    else if (m_pause_ms > 0)
+    {
+      double add = std::min(extra_sleep, m_pause_ms);
+      extra_sleep += add;
+      m_pause_ms -= add;
+      CLog::Log(LOGINFO, "Sleeping pause away: {} ms rest {} ms extra_sleep {} ms", add, m_pause_ms, extra_sleep);
+    }
     usleep(extra_sleep * 1000);
   }
   else
@@ -942,11 +949,33 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   if (!m_at_jni)
     return;
 
-  // just sleep out the frames
-  if (m_at_jni->getPlayState() != CJNIAudioTrack::PLAYSTATE_PAUSED)
-    m_at_jni->pause();
+  // We want to block when sum of pause + current delay (without pause)
+  // sums up to m_audiotrackbuffer_sec
+  double tresh_s = m_audiotrackbuffer_sec;
+  double pause_s = m_pause_ms / 1000.0;
+  double data_s = m_delay - pause_s;
+  double sleep_ms = millis;
 
-  usleep(millis * 1000);
+  // pause + real delay
+  if (data_s + pause_s >= tresh_s)
+  {
+    usleep(millis * 1000);
+    CLog::Log(LOGINFO, "Slept AddPause {}", millis);
+    sleep_ms = 0;
+  }
+  else
+  {
+    double space_ms = (tresh_s - data_s) * 1000.0;
+    if (sleep_ms > space_ms)
+    {
+      double delta = sleep_ms - space_ms;
+      sleep_ms = space_ms;
+      usleep(delta * 1000);
+    }
+
+    m_pause_ms += sleep_ms;
+  }
+  CLog::Log(LOGINFO, "AddPause: new {} sum m_pause_ms {} Delay {} Buffer {}", sleep_ms, m_pause_ms, m_delay * 1000, m_audiotrackbuffer_sec * 1000);
 }
 
 void CAESinkAUDIOTRACK::Drain()
@@ -966,6 +995,7 @@ void CAESinkAUDIOTRACK::Drain()
   m_timestampPos = 0;
   m_linearmovingaverage.clear();
   m_stampTimer.SetExpired();
+  m_pause_ms = 0.0;
 }
 
 void CAESinkAUDIOTRACK::Register()
