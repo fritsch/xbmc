@@ -915,7 +915,8 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
     // if there is still place, just add it without blocking
     double real_delay = m_delay - m_pause_ms / 1000.0;
-    if (real_delay < (m_audiotrackbuffer_sec - (m_format.m_streamInfo.GetDuration() / 1000.0)))
+    CLog::Log(LOGINFO, "Real-Delay AddPackets: {}", real_delay);
+    if (real_delay < 0.2)
     {
       extra_sleep = 0;
     }
