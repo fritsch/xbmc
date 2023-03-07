@@ -971,6 +971,10 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   {
     usleep(millis * 1000);
     CLog::Log(LOGINFO, "Slept AddPause {}", millis);
+    // if we get a pause when still having data
+    // this data is reduced and we need to get up to hold the level
+    if (data_s > 0)
+      m_pause_ms += millis;
     sleep_ms = 0;
   }
   else
