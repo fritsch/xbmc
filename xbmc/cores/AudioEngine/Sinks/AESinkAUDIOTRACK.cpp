@@ -914,22 +914,27 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     // exactly once with the last package for some 100 ms
     double extra_sleep = 0.0;
     if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
-      extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) / 2;
+      extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms);
 
 
     // if there is still place, just add it without blocking
     double real_delay = m_delay - m_pause_ms / 1000.0;
-    CLog::Log(LOGINFO, "Real-Delay AddPackets: {}", real_delay);
-    if (real_delay < 0.2)
+    CLog::Log(LOGINFO, "Real-Delay AddPackets: {} ms", 1000 * real_delay);
+    if (real_delay < 0.1)
     {
       extra_sleep = 0;
     }
-    else if (m_pause_ms > 0)
+    else if (real_delay < 0.2)
     {
-      double add = std::min(extra_sleep, m_pause_ms);
-      extra_sleep += add;
-      m_pause_ms -= add;
-      CLog::Log(LOGINFO, "Sleeping pause away: {} ms rest {} ms extra_sleep {} ms", add, m_pause_ms, extra_sleep);
+      extra_sleep /= 2;
+    }
+    else
+    {
+      if (m_pause_ms > 0)
+      {
+        m_pause_ms -= (extra_sleep / 2);
+        CLog::Log(LOGINFO, "Sleeping pause away: {} ms rest {} ms extra_sleep {} ms", (extra_sleep / 2), m_pause_ms, extra_sleep);
+      }
     }
     usleep(extra_sleep * 1000);
   }
