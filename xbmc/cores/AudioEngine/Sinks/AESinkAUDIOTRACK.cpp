@@ -778,8 +778,11 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // Audiotrack is caching more than we thought it would
   if (d > m_audiotrackbuffer_sec)
   {
-    CLog::Log(LOGINFO, "Increased audio buffer: {}", d * 1000);
-    m_audiotrackbuffer_sec = d;
+    if (m_pause_ms <= 0)
+    {
+      CLog::Log(LOGINFO, "Increased audio buffer: {}", d * 1000);
+      m_audiotrackbuffer_sec = d;
+    }
   }
 
   // track delay in local member
@@ -912,6 +915,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     double extra_sleep = 0.0;
     if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
       extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) / 2;
+
 
     // if there is still place, just add it without blocking
     double real_delay = m_delay - m_pause_ms / 1000.0;
