@@ -919,7 +919,7 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
     // if there is still place, just add it without blocking
     double real_delay = m_delay - m_pause_ms / 1000.0;
-    CLog::Log(LOGINFO, "Real-Delay AddPackets: {} ms", 1000 * real_delay);
+    //CLog::Log(LOGINFO, "Real-Delay AddPackets: {} ms", 1000 * real_delay);
     if (real_delay < 0.15)
     {
       extra_sleep = 0;
@@ -947,7 +947,12 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       double time_should_ms = 1000.0 * written_frames / m_format.m_sampleRate;
       double time_off = time_should_ms - time_to_add_ms;
       if (time_off > 0)
-        usleep(time_off * 500); // sleep half the error on average away
+      {
+        if (m_delay > 0.2)
+          usleep(time_off * 1000); // sleep entire error away
+        else
+          usleep(time_off * 500); // sleep half the error away
+      }
     }
   }
 
