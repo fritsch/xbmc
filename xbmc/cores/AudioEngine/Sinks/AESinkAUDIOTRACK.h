@@ -91,7 +91,7 @@ private:
   double m_delay = 0.0;
   double m_hw_delay = 0.0;
   double m_pause_ms = 0.0;
-  m_raw_reopen = false;
+  bool m_raw_reopen = false;
   CJNIAudioTimestamp m_timestamp;
   XbmcThreads::EndTime<> m_stampTimer;
 
