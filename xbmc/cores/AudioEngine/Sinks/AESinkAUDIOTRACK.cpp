@@ -776,7 +776,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     }
 
     delay = m_pause_ms / 1000.0 + delay;
-    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms m_pause_ms {} ms", (m_pause_ms / 1000.0 + delay) * 1000, delay * 1000, m_pause_ms);
+    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms m_pause_ms {} ms", delay * 1000, delay * 1000 - m_pause_ms, m_pause_ms);
   }
 
   if (usesAdvancedLogging)
