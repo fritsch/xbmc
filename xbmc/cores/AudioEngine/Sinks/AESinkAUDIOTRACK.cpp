@@ -254,6 +254,7 @@ CAESinkAUDIOTRACK::CAESinkAUDIOTRACK()
   m_sink_sampleRate = 0;
   m_passthrough = false;
   m_min_buffer_size = 0;
+  m_raw_reopen = false;
 }
 
 CAESinkAUDIOTRACK::~CAESinkAUDIOTRACK()
@@ -642,6 +643,7 @@ void CAESinkAUDIOTRACK::Deinitialize()
   m_timestampPos = 0;
   m_stampTimer.SetExpired();
   m_pause_ms = 0.0;
+  m_raw_reopen = false;
 
   m_linearmovingaverage.clear();
 
@@ -772,6 +774,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
     if (delay < 0)
     {
+      m_raw_reopen = true;
       CLog::Log(LOGINFO, "This does not work like intended - we underrun {} ms", delay * 1000);
     }
 
@@ -923,6 +926,9 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   double time_to_add_ms = 1000.0 * (CurrentHostCounter() - startTime) / CurrentHostFrequency();
   if (m_passthrough && !m_info.m_wantsIECPassthrough)
   {
+    if (m_raw_reopen)
+      return INT_MAX;
+
     // AT does not consume in a blocking way - it runs ahead and blocks
     // exactly once with the last package for some 100 ms
     double extra_sleep = 0.0;
@@ -1028,6 +1034,7 @@ void CAESinkAUDIOTRACK::Drain()
   m_linearmovingaverage.clear();
   m_stampTimer.SetExpired();
   m_pause_ms = 0.0;
+  m_raw_reopen = false;
 }
 
 void CAESinkAUDIOTRACK::Register()
