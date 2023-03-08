@@ -766,8 +766,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     if (combined_delay > m_audiotrackbuffer_sec)
       m_pause_ms -= (combined_delay - m_audiotrackbuffer_sec) * 1000;
 
-    if (pause_ms < 0)
-      pause_ms = 0;
+    if (m_pause_ms < 0)
+      m_pause_ms = 0;
 
     if (delay < 0)
     {
