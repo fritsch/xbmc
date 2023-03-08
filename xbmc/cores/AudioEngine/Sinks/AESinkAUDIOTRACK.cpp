@@ -911,6 +911,10 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
     double extra_sleep = 0.0;
     if (time_to_add_ms < m_format.m_streamInfo.GetDuration())
       extra_sleep = (m_format.m_streamInfo.GetDuration() - time_to_add_ms) / 2;
+    else if (time_to_add_ms > m_format.m_streamInfo.GetDuration())
+    {
+      CLog::Log(LOGINFO, "RAW Sink needed to much time for: Payload: {} ms Time Needed: {} ms Delta: {} ms", m_format.m_streamInfo.GetDuration(), time_to_add_ms, (time_to_add_ms - m_format.m_streamInfo.GetDuration()));
+    }
 
     // if there is still place, just add it without blocking
     if (m_delay < (m_audiotrackbuffer_sec - (m_format.m_streamInfo.GetDuration() / 1000.0)))
@@ -928,6 +932,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
       double time_off = time_should_ms - time_to_add_ms;
       if (time_off > 0)
         usleep(time_off * 500); // sleep half the error on average away
+
+      if (time_off < 0)
+      {
+        CLog::Log(LOGINFO, "IEC / PCM Sink needed to much time for: Payload: {} ms Time Needed: {} ms Delta: {} ms", time_should_ms, time_to_add_ms, (time_to_add_ms - time_should_ms));
+      }
     }
   }
 
