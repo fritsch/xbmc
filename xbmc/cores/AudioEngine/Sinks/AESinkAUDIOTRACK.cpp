@@ -762,8 +762,15 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // this time is only used in the RAW path of things
   if (m_pause_ms > 0)
   {
-    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms", (m_pause_ms / 1000.0 + delay) * 1000, delay * 1000);
+    double combined_delay = m_pause / 1000.0 + delay;
+    if (combined_delay > m_audiotrackbuffer_sec)
+      m_pause_ms -= (combined_delay - m_audiotrackbuffer_sec) * 1000;
+
+    if (pause_ms < 0)
+      pause_ms = 0;
+
     delay = m_pause_ms / 1000.0 + delay;
+    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms", (m_pause_ms / 1000.0 + delay) * 1000, delay * 1000);
   }
 
   if (usesAdvancedLogging)
