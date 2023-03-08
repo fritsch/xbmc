@@ -763,6 +763,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   if (m_pause_ms > 0)
   {
     double combined_delay = m_pause_ms / 1000.0 + delay;
+    CLog::Log(LOGINFO, "Combined Delay: {} Buffer: {} m_pause: {}", combined_delay * 1000, m_audiotrackbuffer_sec * 1000, m_pause_ms);
     if (combined_delay > m_audiotrackbuffer_sec)
       m_pause_ms -= (combined_delay - m_audiotrackbuffer_sec) * 1000;
 
@@ -775,7 +776,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     }
 
     delay = m_pause_ms / 1000.0 + delay;
-    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms", (m_pause_ms / 1000.0 + delay) * 1000, delay * 1000);
+    CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms m_pause_ms {} ms", (m_pause_ms / 1000.0 + delay) * 1000, delay * 1000, m_pause_ms);
   }
 
   if (usesAdvancedLogging)
