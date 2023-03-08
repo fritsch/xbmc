@@ -762,7 +762,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // this time is only used in the RAW path of things
   if (m_pause_ms > 0)
   {
-    double combined_delay = m_pause / 1000.0 + delay;
+    double combined_delay = m_pause_ms / 1000.0 + delay;
     if (combined_delay > m_audiotrackbuffer_sec)
       m_pause_ms -= (combined_delay - m_audiotrackbuffer_sec) * 1000;
 
