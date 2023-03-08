@@ -769,6 +769,11 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     if (pause_ms < 0)
       pause_ms = 0;
 
+    if (delay < 0)
+    {
+      CLog::Log(LOGINFO, "This does not work like intended - we underrun {} ms", delay * 1000);
+    }
+
     delay = m_pause_ms / 1000.0 + delay;
     CLog::Log(LOGINFO, "Faking Delay with {} ms for {} ms", (m_pause_ms / 1000.0 + delay) * 1000, delay * 1000);
   }
