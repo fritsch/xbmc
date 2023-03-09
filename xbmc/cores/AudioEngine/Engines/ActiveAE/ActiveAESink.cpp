@@ -1153,9 +1153,7 @@ void CActiveAESink::SetSilenceTimer()
   {
     // only true with AudioTrack RAW + passthrough + TrueHD or EAC3 (DD+)
     const bool noSilenceOnPause =
-        !m_needIecPack && m_requestedFormat.m_dataFormat == AE_FMT_RAW &&
-        (m_sinkFormat.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD ||
-         m_sinkFormat.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_EAC3);
+        !m_needIecPack && m_requestedFormat.m_dataFormat == AE_FMT_RAW;
 
     m_extSilenceTimeout = (noSilenceOnPause) ? 0ms : m_silenceTimeOut;
   }
