@@ -1050,6 +1050,7 @@ void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)
 
 void CAESinkAUDIOTRACK::UpdateAvailablePassthroughCapabilities(bool isRaw)
 {
+  return;
   m_info.m_deviceType = AE_DEVTYPE_HDMI;
   m_info.m_wantsIECPassthrough = false;
   m_info.m_dataFormats.push_back(AE_FMT_RAW);
@@ -1176,7 +1177,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
   m_sink_sampleRates.insert(native_sampleRate);
 
   int encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
-  m_sinkSupportsFloat = VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_FLOAT);
+  m_sinkSupportsFloat = false; //VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_FLOAT);
   // Only try for Android 7 or later - there are a lot of old devices that open successfully
   // but won't work correctly under the hood (famouse example: old FireTV)
   // As even newish devices like Android Chromecast don't do it properly - just disable it ... and use 16 bit Integer
