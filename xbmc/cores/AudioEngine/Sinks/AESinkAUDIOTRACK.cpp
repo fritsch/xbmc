@@ -305,15 +305,34 @@ bool CAESinkAUDIOTRACK::IsSupported(int sampleRateInHz, int channelConfig, int e
 bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 {
 
-  // try to recover used device
-  if (!m_hasIEC)
+  // try to recover used device but fix broken settings as well
+  // IEC device is set but no IEC device available anymore
+  if (!m_hasIEC && device == "AudioTrack (IEC)")
+    return false;
+
+  // RAW device is in config, but PCM format is requested and this PCM sink
+  // only exists if there is no IEC one, so return false here
+  if (device == "AudioTrack (RAW)" && format.m_dataFormat != AE_FMT_RAW)
+  {
+    if (m_hasIEC)
+      return false;
+  }
+
+  // Proper device recovery
+  if (device == "AudioTrack (RAW)")
     m_info = m_info_raw;
-  else if (device == "Default" && !m_info.m_wantsIECPassthrough)
-    m_info = m_info_raw;
-  else if (device == "AudioTrack (RAW)")
-    m_info = m_info_raw;
-  else
+  else if (device == "AudioTrack (IEC)")
     m_info = m_info_iec;
+
+  // m_info_raw only has a PCM sink if IEC not available
+  // therefore only choose it as fallback
+  if (device == "Default")
+  {
+    if (m_hasIEC)
+      m_info = m_info_iec;
+    else
+      m_info = m_info_raw;
+  }
 
   m_format      = format;
   m_headPos = 0;
