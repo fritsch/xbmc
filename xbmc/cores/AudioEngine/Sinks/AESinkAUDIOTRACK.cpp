@@ -838,17 +838,17 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   if (!IsInitialized())
     return INT_MAX;
 
-  const bool isRawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
-
-  // If the sink did not move for twice configure buffer time, kick it
-  double stime = 1000.0 * frames / m_format.m_sampleRate;
-  if (isRawPt)
-    stime = m_format.m_streamInfo.GetDuration();
-  if (m_stuckCounter * stime > (m_audiotrackbuffer_sec_orig * 2000.0))
+  if (m_passthrough && m_info.m_wantsIECPassthrough)
   {
-    CLog::Log(LOGERROR, "Sink got stuck - ask AE for reopening");
-    usleep (200 * 1000);
-    return INT_MAX;
+    // If the sink did not move for twice configured buffer time, kick it
+    const double stime = 1000.0 * frames / m_format.m_sampleRate;
+    const double max_time = m_audiotrackbuffer_sec_orig * 2000.0;
+    if (m_stuckCounter * stime > max_time)
+    {
+      CLog::Log(LOGERROR, "Sink got stuck with {:f} ms - ask AE for reopening", max_time);
+      usleep (200 * 1000);
+      return INT_MAX;
+    }
   }
 
   // for debugging only - can be removed if everything is really stable
