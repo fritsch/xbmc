@@ -23,6 +23,7 @@
 #include "cores/VideoPlayer/VideoRenderers/RenderManager.h"
 #include "media/decoderfilter/DecoderFilterManager.h"
 #include "messaging/ApplicationMessenger.h"
+#include "settings/AdvancedSettings.h"
 #include "settings/Settings.h"
 #include "settings/SettingsComponent.h"
 #include "utils/BitstreamConverter.h"
@@ -541,11 +542,12 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
         bool displaySupportsDovi = CAndroidUtils::GetDisplayHDRCapabilities().SupportsDolbyVision();
         bool mediaCodecSupportsDovi =
             CAndroidUtils::SupportsMediaCodecMimeType("video/dolby-vision");
+       bool enforceDVOutput = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_enforceDolbyVisionOutput;
 
-        CLog::Log(LOGDEBUG,
+        CLog::Log(LOGINFO,
                   "CDVDVideoCodecAndroidMediaCodec::Open Dolby Vision playback support: "
-                  "Display: {}, MediaCodec: {}",
-                  displaySupportsDovi, mediaCodecSupportsDovi);
+                  "Display: {}, MediaCodec: {} ForcedOutput: {}",
+                  displaySupportsDovi, mediaCodecSupportsDovi, enforceDVOutput);
 
         // For Dolby Vision profiles that don't have HDR10 fallback, always use
         // the dvhe decoder even if the display not supports Dolby Vision.
@@ -553,7 +555,7 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
         // ensure HDR10 output if display is not DV capable.
         bool notHasHDR10fallback = (m_hints.dovi.dv_profile == 4 || m_hints.dovi.dv_profile == 5);
 
-        if (mediaCodecSupportsDovi && (displaySupportsDovi || notHasHDR10fallback))
+        if (mediaCodecSupportsDovi && (displaySupportsDovi || notHasHDR10fallback || enforceDVOutput))
         {
           m_mime = "video/dolby-vision";
           m_formatname = isDvhe ? "amc-dvhe" : "amc-dvh1";
