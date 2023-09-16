@@ -1871,7 +1871,7 @@ void CVideoPlayer::HandlePlaySpeed()
         CGUIDialogKaiToast::QueueNotification(g_localizeStrings.Get(21454), g_localizeStrings.Get(21455));
         SetCaching(CACHESTATE_INIT);
       }
-      if (cache.level >= 1.0)
+      if (cache.time > 8.0)
         SetCaching(CACHESTATE_INIT);
     }
     else
