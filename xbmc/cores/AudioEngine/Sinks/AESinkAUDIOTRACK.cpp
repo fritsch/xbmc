@@ -838,16 +838,16 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   if (!IsInitialized())
     return INT_MAX;
 
-  // If the sink did not move twice the buffer size in time it was opened
+  // If the sink did not move four times the buffer size in time it was opened
   // take action. Some sinks open with e.g. 128 ms nicely but under the
   // hood need a bit more samples to start moving on sink start.
-  // Simple equation: N x stime packages in ms > 2 configured audiotrack_buffer in ms
+  // Simple equation: N x stime packages in ms > 3 x configured audiotrack_buffer in ms
   // will result in the error condition triggering.
 
   const bool isRawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
   if (!isRawPt)
   {
-    const double max_stuck_delay_ms = m_audiotrackbuffer_sec_orig * 2000.0;
+    const double max_stuck_delay_ms = m_audiotrackbuffer_sec_orig * 3000.0;
     const double stime_ms = 1000.0 * frames / m_format.m_sampleRate;
 
     if (m_stuckCounter * stime_ms > max_stuck_delay_ms)
