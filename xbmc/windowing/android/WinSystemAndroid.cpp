@@ -211,9 +211,16 @@ void CWinSystemAndroid::InitiateModeChange()
       std::chrono::milliseconds(CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
                                     "videoscreen.delayrefreshchange") *
                                 100);
+  // This is a magic constant, reason for this: Some Devices need a longer time for their handshake
+  // kindly wait a certain guessed value.
+  if (delay > 0ms && delay < 5000ms)
+    delay = 5000ms;
 
-  if (delay < 2000ms)
-    delay = 2000ms;
+  // AUTO value comes here
+
+  if (delay == 0ms) // this is a fallback value in case no HDMI value would come
+    delay = 10000ms;
+
   m_dispResetTimer->Stop();
   m_dispResetTimer->Start(delay);
 
@@ -231,7 +238,7 @@ void CWinSystemAndroid::SetHdmiState(bool connected)
     {
       // We stop the timer if OS supports HDMI_AUDIO_PLUG intent
       // and configured delay is smaller than the time HDMI_PLUG took.
-      // Note that timer is always started with minimum of 2 seconds
+      // Note that timer is always started with minimum of 5 seconds
       // regardless if the configured delay is smaller
       if (m_dispResetTimer->GetElapsedMilliseconds() >=
           CServiceBroker::GetSettingsComponent()->GetSettings()->GetInt(
