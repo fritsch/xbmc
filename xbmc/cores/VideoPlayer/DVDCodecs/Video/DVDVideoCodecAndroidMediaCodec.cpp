@@ -483,15 +483,6 @@ bool CDVDVideoCodecAndroidMediaCodec::Open(CDVDStreamInfo &hints, CDVDCodecOptio
     {
       switch (m_hints.profile)
       {
-        case FF_PROFILE_HEVC_MAIN:
-          profile = CJNIMediaCodecInfoCodecProfileLevel::HEVCProfileMain;
-          break;
-        case FF_PROFILE_HEVC_MAIN_10:
-          profile = CJNIMediaCodecInfoCodecProfileLevel::HEVCProfileMain10;
-          break;
-        case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
-          profile = CJNIMediaCodecInfoCodecProfileLevel::HEVCProfileMainStill;
-          break;
         case FF_PROFILE_HEVC_REXT:
           // No known h/w decoder supporting Hi10P
           goto FAIL;
