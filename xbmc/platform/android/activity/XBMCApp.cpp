@@ -732,6 +732,13 @@ void CXBMCApp::SetDisplayMode(int mode, float rate)
   runNativeOnUiThread(SetDisplayModeCallback, variant);
   if (g_application.IsInitialized())
     m_displayChangeEvent.Wait(5000ms);
+
+  CLog::Log(LOGINFO, "XBMCApp: Setting decorview 2");
+  if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_guiLayoutTransparent)
+  {
+    CLog::Log(LOGINFO, "XBMCApp: Value was set 2");
+    SetDecorViewBackgroundColor(0);
+  }
 }
 
 int CXBMCApp::android_printf(const char* format, ...)
@@ -1667,6 +1674,30 @@ std::shared_ptr<CNativeWindow> CXBMCApp::GetNativeWindow(int timeout) const
     m_mainView->waitForSurface(timeout);
 
   return m_window;
+}
+
+void CXBMCApp::SetDecorViewBackgroundColorCallback(void* colorVariant)
+{
+  CVariant* colorV = static_cast<CVariant*>(colorVariant);
+  const int color = colorV->asInteger();
+  delete colorV;
+
+  CJNIWindow window = getWindow();
+  if (window)
+  {
+    CJNIView view = window.getDecorView();
+    if (view)
+    {
+      view.setBackgroundColor(color);
+    }
+  }
+}
+
+void CXBMCApp::SetDecorViewBackgroundColor(const int color)
+{
+  // this object is deallocated in the callback
+  CVariant* variant = new CVariant(color);
+  runNativeOnUiThread(SetDecorViewBackgroundColorCallback, variant);
 }
 
 void CXBMCApp::RegisterInputDeviceCallbacks(IInputDeviceCallbacks* handler)
