@@ -666,6 +666,13 @@ bool CApplication::Initialize()
       }
     }
 
+#if defined(TARGET_ANDROID)
+  if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_guiLayoutTransparent)
+  {
+    CLog::Log(LOGINFO, "XBMCApp: Value was set 3");
+    CXBMCApp::Get().SetDecorViewBackgroundColor((signed int) 0x0f00ff00);
+  }
+#endif
     // Start splashscreen and load skin
     CServiceBroker::GetRenderSystem()->ShowSplash("");
     skinHandling->m_confirmSkinChange = true;
