@@ -737,7 +737,7 @@ void CXBMCApp::SetDisplayMode(int mode, float rate)
   if (CServiceBroker::GetSettingsComponent()->GetAdvancedSettings()->m_guiLayoutTransparent)
   {
     CLog::Log(LOGINFO, "XBMCApp: Value was set 2");
-    SetDecorViewBackgroundColor((signed int) 0xff00ff00);
+    SetDecorViewBackgroundColor((signed int) 0x0f00ff00);
   }
 }
 
