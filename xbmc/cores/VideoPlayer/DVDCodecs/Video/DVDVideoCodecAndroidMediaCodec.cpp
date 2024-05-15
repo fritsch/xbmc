@@ -1514,6 +1514,8 @@ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
       case AVCOL_PRI_UNSPECIFIED:
         CLog::Log(LOGDEBUG, "CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec Color primaries: "
                             "AVCOL_PRI_UNSPECIFIED");
+        mediaformat.setInteger(CJNIMediaFormat::KEY_COLOR_STANDARD,
+                               CJNIMediaFormat::COLOR_STANDARD_BT2020);
         break;
       case AVCOL_PRI_BT709:
         mediaformat.setInteger(CJNIMediaFormat::KEY_COLOR_STANDARD,
@@ -1536,6 +1538,8 @@ bool CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec(void)
       case AVCOL_TRC_UNSPECIFIED:
         CLog::Log(LOGDEBUG, "CDVDVideoCodecAndroidMediaCodec::ConfigureMediaCodec Transfer "
                             "characteristic: AVCOL_TRC_UNSPECIFIED");
+        mediaformat.setInteger(CJNIMediaFormat::KEY_COLOR_TRANSFER,
+                               CJNIMediaFormat::COLOR_TRANSFER_ST2084);
         break;
       case AVCOL_TRC_LINEAR:
         mediaformat.setInteger(CJNIMediaFormat::KEY_COLOR_TRANSFER,
