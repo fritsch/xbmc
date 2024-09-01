@@ -240,6 +240,7 @@ bool CAESinkAUDIOTRACK::VerifySinkConfiguration(int sampleRate,
 {
   int minBufferSize = CJNIAudioTrack::getMinBufferSize(sampleRate, channelMask, encoding);
   bool supported = (minBufferSize > 0);
+  return supported;
 
   // make sure to have enough buffer as minimum might not be enough to open
   if (!isRaw)
