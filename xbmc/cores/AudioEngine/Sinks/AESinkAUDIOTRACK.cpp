@@ -438,7 +438,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         // we aim at 250 ms buffer
         case CAEStreamInfo::STREAM_TYPE_TRUEHD:
           length_per_second = 24500 * 1000 / 8; // 3062500 Bytes
-          m_min_buffer_size = ((length_per_second / 4) / 61440) * 61440; // 737280 Bytes <-> ~ 240 ms - this rounds
+          m_min_buffer_size = ((length_per_second / 8) / 61440) * 61440; // 368640 Bytes <-> ~ 128 ms - this rounds
           m_format.m_frames = 61440; // Our Packer output
           rawlength_in_seconds = static_cast<double>(m_min_buffer_size) / length_per_second;
           break;
