@@ -329,9 +329,8 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
     if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_DTSHD_MA)
     {
-      // we keep the 48 khz sample rate, reason: Androids packer only packs DTS Core
-      // even if we ask for DTS-HD-MA it seems.
       m_format.m_channelLayout = AE_CH_LAYOUT_7_1;
+      m_sink_sampleRate = 192000;
     }
 
     if (m_format.m_streamInfo.m_type == CAEStreamInfo::STREAM_TYPE_TRUEHD)
