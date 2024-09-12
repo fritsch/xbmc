@@ -57,10 +57,9 @@ static int AEStreamFormatToATFormat(const CAEStreamInfo::DataType& dt)
     case CAEStreamInfo::STREAM_TYPE_DTS_1024:
     case CAEStreamInfo::STREAM_TYPE_DTS_2048:
     case CAEStreamInfo::STREAM_TYPE_DTSHD_CORE:
-      return CJNIAudioFormat::ENCODING_DTS;
     case CAEStreamInfo::STREAM_TYPE_DTSHD:
     case CAEStreamInfo::STREAM_TYPE_DTSHD_MA:
-      return CJNIAudioFormat::ENCODING_DTS_HD;
+      return CJNIAudioFormat::ENCODING_DTS;
     case CAEStreamInfo::STREAM_TYPE_EAC3:
       return CJNIAudioFormat::ENCODING_E_AC3;
     case CAEStreamInfo::STREAM_TYPE_TRUEHD:
