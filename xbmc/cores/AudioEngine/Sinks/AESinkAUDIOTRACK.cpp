@@ -683,7 +683,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     gone = m_duration_written;
 
   double delay = m_duration_written - gone;
+  CLog::Log(LOGINFO, "Duration ms {} Gone {} ms Delay {} RAW Head-Position {}",
+                     m_duration_written * 1000, gone * 1000, delay * 1000, m_headPos);
 
+#if 0
   if (m_stampTimer.IsTimePast())
   {
     if (!m_at_jni->getTimestamp(m_timestamp))
@@ -756,6 +759,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
       CLog::Log(LOGINFO, "HW-Delay (1): {} ms", hw_delay * 1000);
     }
   }
+#endif
 
   delay += m_hw_delay;
 
