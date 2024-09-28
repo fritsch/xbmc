@@ -680,7 +680,10 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   // if sink is run dry without buffer time written anymore
   if (gone > m_duration_written)
+  {
+    CLog::Log(LOGINFO, "Gone moving too fast {} ms", gone);
     gone = m_duration_written;
+  }
 
   double delay = m_duration_written - gone;
   CLog::Log(LOGINFO, "Duration ms {} Gone {} ms Delay {} RAW Head-Position {}",
