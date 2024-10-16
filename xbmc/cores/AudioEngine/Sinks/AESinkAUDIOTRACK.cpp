@@ -757,7 +757,8 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     }
   }
 
-  delay += m_hw_delay;
+  // ignore hw_delay for a moment
+  delay += 0; //m_hw_delay;
 
   if (usesAdvancedLogging)
   {
