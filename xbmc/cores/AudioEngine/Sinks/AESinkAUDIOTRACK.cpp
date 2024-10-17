@@ -1201,7 +1201,7 @@ void CAESinkAUDIOTRACK::UpdateAvailablePCMCapabilities()
   m_sink_sampleRates.insert(native_sampleRate);
 
   int encoding = CJNIAudioFormat::ENCODING_PCM_16BIT;
-  m_sinkSupportsFloat = VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_FLOAT);
+  m_sinkSupportsFloat = false; //VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_STEREO, CJNIAudioFormat::ENCODING_PCM_FLOAT);
 
   m_sinkSupportsMultiChannelFloat =
       VerifySinkConfiguration(native_sampleRate, CJNIAudioFormat::CHANNEL_OUT_7POINT1_SURROUND,
