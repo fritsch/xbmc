@@ -518,7 +518,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
       constexpr double max_time = 0.064;
       constexpr double min_time = 0.032;
-      constexpr double target_duration = 0.128;
+      constexpr double target_duration = 0.512;
 
       while (m_audiotrackbuffer_sec < target_duration)
       {
