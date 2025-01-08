@@ -957,14 +957,16 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   }
   else
   {
-    // waiting should only be done if sink is not run dry
+    // on stream start - framework might not yet be ready - throttle properly
     double period_time = m_format.m_frames / static_cast<double>(m_sink_sampleRate);
-    if (m_delay >= (m_audiotrackbuffer_sec - period_time))
+    if (m_headPos == 0 && (m_delay >= (m_audiotrackbuffer_sec - period_time)))
     {
       double time_should_ms = 1000.0 * written_frames / m_format.m_sampleRate;
       double time_off = time_should_ms - time_to_add_ms;
       if (time_off > 0)
-        usleep(time_off * 500); // sleep half the error on average away
+      {
+        usleep(time_off * 1000); // sleep the error away on stream start
+      }
     }
   }
   if (forceBlock)
