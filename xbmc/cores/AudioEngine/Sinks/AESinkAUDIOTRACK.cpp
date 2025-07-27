@@ -240,6 +240,10 @@ bool CAESinkAUDIOTRACK::VerifySinkConfiguration(int sampleRate,
                                                 int encoding,
                                                 bool isRaw)
 {
+  // This FireTV machines seems to have issues with Float
+  if (encoding == CJNIAudioFormat::CJNIAudioFormat::ENCODING_PCM_FLOAT)
+    return false;
+
   int minBufferSize = CJNIAudioTrack::getMinBufferSize(sampleRate, channelMask, encoding);
   bool supported = (minBufferSize > 0);
 
