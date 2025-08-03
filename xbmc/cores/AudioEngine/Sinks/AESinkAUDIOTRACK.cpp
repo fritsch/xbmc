@@ -152,7 +152,11 @@ jni::CJNIAudioTrack *CAESinkAUDIOTRACK::CreateAudioTrack(int stream, int sampleR
     CLog::Log(LOGINFO, "AESinkAUDIOTRACK - AudioTrack creation (channelMask {:#08x}): {}",
               channelMask, e.what());
   }
-
+  if (jniAt)
+  {
+    jniAt->pause();
+    jniAt->flush();
+  }
   return jniAt;
 }
 
@@ -641,6 +645,9 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   // return a 32bit "int" that you should "interpret as unsigned."  As such,
   // for wrap safety, we need to do all ops on it in 32bit integer math.
 
+  int32_t hp = m_at_jni->getPlaybackHeadPosition();
+  CLog::Log(LOGINFO, "RAW Head-Position - Verification {}", hp);
+  
   uint32_t head_pos = (uint32_t)m_at_jni->getPlaybackHeadPosition();
 
   // Wraparound
