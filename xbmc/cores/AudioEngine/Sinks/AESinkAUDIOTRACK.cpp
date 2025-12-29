@@ -514,6 +514,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       double period_time =
           static_cast<double>(period_size) / (m_sink_frameSize * m_sink_sampleRate);
 
+#if 0
       // This will result in minimum 32 ms
       while (period_time >= max_time)
       {
@@ -527,6 +528,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         period_size *= 2;
         period_time *= 2;
       }
+#endif
       m_format.m_frames = static_cast<int>(period_size / m_format.m_frameSize);
 
       CLog::Log(LOGINFO,
