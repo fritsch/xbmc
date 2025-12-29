@@ -755,33 +755,21 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
   if (delay < 0.0)
     delay = 0.0;
 
-  // the RAW hack for simulating pause bursts should not come
-  // into the way of hw delay
-  if (m_pause_ms > m_audiotrackbuffer_sec * 1000.0)
-    m_pause_ms = m_audiotrackbuffer_sec * 1000.0;
-
-  if (m_pause_ms > 0.0)
-  {
-    if (delay < m_audiotrackbuffer_sec)
-      delay = m_audiotrackbuffer_sec;
-    else
-      m_audiotrackbuffer_sec = delay;
-  }
   const double d = GetMovingAverageDelay(delay);
 
   // Audiotrack is caching more than we thought it would
   if (d > m_audiotrackbuffer_sec)
     m_audiotrackbuffer_sec = d;
 
-  // track delay in local member
+  // track sink delay in local member
   m_delay = d;
   if (usesAdvancedLogging)
   {
-    CLog::Log(LOGINFO, "Delay Current: {:f} ms", d * 1000);
+    CLog::Log(LOGINFO, "Real Sink Delay: {:f} ms", d * 1000);
     if (m_pause_ms > 0.0)
-      CLog::Log(LOGINFO, "Delay faked due to pause delay: {:f} ms", m_pause_ms);
+      CLog::Log(LOGINFO, "Delay on top faked with pause delay: {:f} ms", m_pause_ms);
   }
-  status.SetDelay(d);
+  status.SetDelay(d + (m_pause_ms / 1000.0));
 }
 
 double CAESinkAUDIOTRACK::GetLatency()
@@ -982,8 +970,24 @@ void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
   // This is a mixture to get it right between
   // blocking, sleeping roughly and GetDelay smoothing
   // In short: Shit in, shit out
-  usleep(millis * 1000);
-  m_pause_ms += millis;
+  double space_ms = 1000.0 * (m_audiotrackbuffer_sec - (m_delay + (m_pause_ms / 1000.0)));
+  if (space_ms > millis)
+  {
+    // can go in non blocking
+    m_pause_ms += millis;
+  }
+  else if (space_ms <= 0)
+  {
+    // already full - just block
+    usleep(millis * 1000);
+  }
+  else
+  {
+    // mix - fill up the rest
+    double s = millis - space_ms;
+    m_pause_ms += (millis - s);
+    usleep(s * 1000);
+  }
 }
 
 void CAESinkAUDIOTRACK::Drain()
