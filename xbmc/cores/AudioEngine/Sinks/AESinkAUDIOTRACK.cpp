@@ -499,9 +499,9 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
       // update potential new buffertime
       m_audiotrackbuffer_sec =
           static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
-      constexpr double max_time = 0.064;
-      constexpr double min_time = 0.032;
-      constexpr double target_duration = 0.128;
+//      constexpr double max_time = 0.064;
+//      constexpr double min_time = 0.032;
+      constexpr double target_duration = 0.8;
 
       while (m_audiotrackbuffer_sec < target_duration)
       {
@@ -510,7 +510,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
         m_audiotrackbuffer_sec =
             static_cast<double>(m_min_buffer_size) / (m_sink_frameSize * m_sink_sampleRate);
       }
-      unsigned int period_size = m_min_buffer_size / c;
+      unsigned int period_size = m_min_buffer_size / 4;
       double period_time =
           static_cast<double>(period_size) / (m_sink_frameSize * m_sink_sampleRate);
 
