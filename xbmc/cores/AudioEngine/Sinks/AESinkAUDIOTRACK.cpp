@@ -734,7 +734,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
     }
     double hw_delay = m_duration_written - playtime;
     // correct by subtracting above measured delay, if lower delay gets automatically reduced
-    hw_delay -= delay;
+    //hw_delay -= delay;
     // sometimes at the beginning of the stream m_timestampPos is more accurate and ahead of
     // m_headPos - don't use the computed value then and wait
 //    if (hw_delay > -1.0 && hw_delay < 1.0)
@@ -749,7 +749,7 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 
   //if (usesAdvancedLogging)
   {
-    CLog::Log(LOGINFO, "Head Pos Delay: {} ms Head Position: {} Old: {} ms", delay * 1000, m_headPos, (delay + m_hw_delay) * 1000);
+    CLog::Log(LOGINFO, "Head Pos Delay: {} ms Head Position: {} Timestamp Delay: {} ms", delay * 1000, m_headPos, m_hw_delay * 1000);
   }
   if (delay < 0.0)
     delay = 0.0;
