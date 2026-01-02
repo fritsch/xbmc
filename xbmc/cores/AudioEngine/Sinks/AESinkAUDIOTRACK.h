@@ -92,6 +92,7 @@ private:
   double m_audiotrackbuffer_sec_orig;
   int                m_encoding;
   double m_pause_ms = 0.0;
+  double m_raw_sample_time_bytes = 0.0;
   double m_delay = 0.0;
   double m_hw_delay = 0.0;
   CJNIAudioTimestamp m_timestamp;

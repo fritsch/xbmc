@@ -808,6 +808,17 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
   // will result in the error condition triggering.
 
   const bool isRawPt = m_passthrough && !m_info.m_wantsIECPassthrough;
+  if (isRawPt)
+  {
+    if (m_raw_sample_time_bytes == 0)
+      m_raw_sample_time_bytes = frames * m_format.m_frameSize;
+    else
+    {
+      // For DTS-HD we can only estimate due to subframes that vary and also need time
+      // This is the average size of a GetDuration() packet
+      m_raw_sample_time_bytes = (m_raw_sample_time_bytes + (frames * m_format.m_frameSize)) / 2;
+    }
+  }
   bool forceBlock = false;
   if (!isRawPt)
   {
