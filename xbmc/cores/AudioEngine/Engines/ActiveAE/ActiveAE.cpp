@@ -1993,13 +1993,13 @@ bool CActiveAE::RunStages()
 
         if (error > maxError)
         {
-          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: {:f}", error);
-          error = maxError;
+          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: {:f} ignoring", error);
+          error = 0;
         }
         else if (error < -maxError)
         {
-          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: {:f}", error);
-          error = -maxError;
+          CLog::Log(LOGWARNING, "ActiveAE - large audio sync error: {:f} ignoring", error);
+          error = 0;
         }
         (*it)->m_syncError.Add(error);
       }
