@@ -98,6 +98,8 @@ private:
   XbmcThreads::EndTime<> m_stampTimer;
   bool m_superviseAudioDelay = false;
 
+  bool m_force_reopen = false;
+
   std::vector<float> m_floatbuf;
   std::vector<int16_t> m_shortbuf;
   std::vector<char> m_charbuf;

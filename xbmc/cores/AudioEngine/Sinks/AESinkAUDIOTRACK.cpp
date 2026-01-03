@@ -698,7 +698,16 @@ void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
         // check if frameposition is valid and nano timer less than 50 ms outdated
         if (m_timestamp.get_framePosition() > 0 &&
             (CurrentHostCounter() - m_timestamp.get_nanoTime()) < 50 * 1000 * 1000)
+        {
           m_stampTimer.Set(1000ms);
+          // Check Underruns
+          const int underruns = m_at_jni->getUnderrunCount();
+          if (underruns > 100)
+          {
+            CLog::Log(LOGERROR, "Underruns increased to: {} will ask for reopening Buffer {}", underruns, m_at_jni->getBufferSizeInFrames());
+            m_force_reopen = true;
+          }
+        }
         else
           m_stampTimer.Set(100ms);
       }
@@ -794,6 +803,9 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 {
   if (!IsInitialized())
     return INT_MAX;
+
+   if (m_force_reopen)
+     return INT_MAX;
 
   // If the sink did not move twice the buffer size at least 400 ms in time it was opened
   // take action. Some sinks open with e.g. 128 ms nicely but under the
