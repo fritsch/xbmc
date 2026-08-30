@@ -97,6 +97,7 @@ private:
   CJNIAudioTimestamp m_timestamp;
   XbmcThreads::EndTime<> m_stampTimer;
   bool m_superviseAudioDelay = false;
+  bool m_silentMode = false;
 
   std::vector<float> m_floatbuf;
   std::vector<int16_t> m_shortbuf;

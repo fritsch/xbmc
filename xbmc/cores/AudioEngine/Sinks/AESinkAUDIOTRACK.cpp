@@ -578,9 +578,10 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
           continue;
         }
       }
-      CLog::Log(LOGERROR, "AESinkAUDIOTRACK - Unable to create AudioTrack");
+      CLog::Log(LOGERROR, "AESinkAUDIOTRACK - Unable to create AudioTrack - using silent mode");
       Deinitialize();
-      return false;
+      m_silentMode = true;
+      return true;
     }
     const char* method = m_passthrough ? (m_info.m_wantsIECPassthrough ? "IEC (PT)" : "RAW (PT)") : "PCM";
     CLog::Log(LOGINFO,
@@ -598,6 +599,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
 
 void CAESinkAUDIOTRACK::Deinitialize()
 {
+  m_silentMode = false;
   if (!m_at_jni)
     return;
 
@@ -633,6 +635,11 @@ bool CAESinkAUDIOTRACK::IsInitialized()
 
 void CAESinkAUDIOTRACK::GetDelay(AEDelayStatus& status)
 {
+  if (m_silentMode)
+  {
+    status.SetDelay(m_audiotrackbuffer_sec);
+    return;
+  }
   if (!m_at_jni)
   {
     status.SetDelay(0);
@@ -792,6 +799,25 @@ double CAESinkAUDIOTRACK::GetCacheTotal()
 // when it returns ActiveAESink will take the next buffer out of a queue
 unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, unsigned int offset)
 {
+  if (m_silentMode)
+  {
+    if (m_passthrough)
+    {
+      if (!m_info.m_wantsIECPassthrough)
+      {
+        usleep(static_cast<uint32_t>(m_format.m_streamInfo.GetDuration() * 1000));
+      }
+      else
+      {
+        usleep(static_cast<uint32_t>((1000000.0 * frames) / m_format.m_sampleRate));
+      }
+    }
+    else
+    {
+      usleep(static_cast<uint32_t>((1000000.0 * frames) / m_format.m_sampleRate));
+    }
+    return frames;
+  }
   if (!IsInitialized())
     return INT_MAX;
 
@@ -965,6 +991,11 @@ unsigned int CAESinkAUDIOTRACK::AddPackets(uint8_t **data, unsigned int frames, 
 
 void CAESinkAUDIOTRACK::AddPause(unsigned int millis)
 {
+  if (m_silentMode)
+  {
+    usleep(static_cast<uint32_t>(millis * 1000));
+    return;
+  }
   if (!m_at_jni)
     return;
 
